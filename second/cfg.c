@@ -18,6 +18,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include "silo.h"
+#include "stringops.h"
 #include "setjmp.h"
 #ifndef NULL
 #define NULL (void *)0

@@ -22,6 +22,7 @@
 typedef int FILE;
 #  include <linux/ext2_fs.h>
 
+#include "stringops.h"
 #include "ext2fs/ext2fs.h"
 
 int ls_opt = 0;

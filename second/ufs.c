@@ -43,6 +43,8 @@ typedef int FILE;
 #include <sys/stat.h>
 #endif
 
+#include "stringops.h"
+
 #define SUPUFS (struct ufs_superblock *)(fs->io->private_data)
 #define cgstart(cg) ((sb->fs_fpg * (cg)) + sb->fs_cgoffset * ((cg) & ~(sb->fs_cgmask)))
 #define cgimin(cg) (cgstart(cg) + sb->fs_iblkno)

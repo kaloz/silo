@@ -21,6 +21,7 @@
 #include "silo.h"
 #include <asm/idprom.h>
 #include <asm/machines.h>
+#include "stringops.h"
 
 void fatal (const char *msg)
 {
@@ -467,7 +468,7 @@ void set_prollargs (char *params, unsigned int kbase, int ksize)
         return;
     }
     /* PROLL's base address is floating often. Mask the linking address off. */
-    p = v[3] & (0x40000-1);
+    p = (struct silo_to_proll *)(v[3] & (0x40000-1));
     if (p->magic[0] != 'L' || p->magic[1] != 'R') {
 	printf ("Bad magic in PROLL parameter");
 	return;

@@ -9,7 +9,6 @@ install:
 	cp -f -b boot/*.b /boot
 	if [ \! -f /etc/silo.conf ]; then cp etc/silo.conf /etc; fi
 	cp -f -b sbin/silo /sbin
-	/sbin/silo -f
 else
 ifeq (SunOS,$(shell uname -s))
 ifeq (5.,$(findstring 5.,$(shell uname -r)))
@@ -17,7 +16,6 @@ install:
 	if [ \! -d /boot ]; then mkdir /boot; fi
 	cp -f -b boot/*.b /boot
 	if [ \! -f /etc/silo.conf ]; then cp etc/silo.conf /etc; fi
-	misc/solarissilo -f
 else
 install:
 	@echo SunOS SILO not yet supported

@@ -1,3 +1,34 @@
+Tue May 22 00:06:50 EDT 2001 Ben Collins <bcollins@debian.org>
+
+	* Makefile: do not execute silo/solarissilo on the install target
+	* first/Makefile: Add -Wall to CFLAGS. Also, get rid of the gcc/as/rm
+	combinations and use gcc with -Wa instead.
+	* second/Makefile: Likewise.
+	* silo/Makefile: Likewise.
+
+	* second/stringops.h: New file. Declerations for stringops1.c and
+	stringops2.c
+	* second/9660.c: Include it.
+	* second/cfg.c: Likewise.
+	* second/file.c: Likewise.
+	* second/inflate.c: Likewise.
+	* second/ls.c: Likewise.
+	* second/main.c: Likewise.
+	* second/tree.c: Likewise.
+	* second/ufs.c: Likewise.
+	* second/romfs.c: Likewise.
+	* second/disk.c: Likewise.
+	* second/misc.c: Likewise.
+	* second/silo.h: Remove declerations added to stringops.h
+	* second/stringops1.c: Remove size_t typedef and include stringops.h.
+	* second/stringops2.c: Likewise.
+	
+	* second/disk.c (read): Remove unused vars.
+	* second/misc.c (set_prollargs): Cast integer to struct silo_to_proll.
+
+	* silo/silocheck.c: General cleanup. Removed unused vars and
+	initialized others.
+
 Mon May 21 20:00:19 EDT 2001 Ben Collins <bcollins@debian.org>
 
 	* Updated URL's and emails to point to the sourceforge site and

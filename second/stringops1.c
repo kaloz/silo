@@ -5,11 +5,8 @@
    	Copyright (C) 1991, 1992  Linus Torvalds
  */
  
-#ifndef __SIZE_TYPE__
-#define __SIZE_TYPE__ long unsigned int
-#endif
-typedef __SIZE_TYPE__ size_t;
- 
+#include "stringops.h"
+
 char *strcpy(char *dest, const char *src)
 {
 	char *tmp = dest;

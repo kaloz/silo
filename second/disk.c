@@ -18,6 +18,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include "silo.h"
+#include "stringops.h"
 
 static int net = 0;
 static int floppy = 0;
@@ -175,7 +176,7 @@ int read (char *buff, int size, unsigned long long offset)
     	    return (*romvec->pv_v0devops.v0_rdnetdev) (fd, size, buff);
 	else {
 	    char buffer[512];
-	    int i = 0, j, k, rc, ret = 0;
+	    int i = 0, j, k, rc = 0, ret = 0;
 
 	    if (offset & 0x1ff) {
 	        if (size > 512 - (offset & 0x1ff))
@@ -233,7 +234,7 @@ int read (char *buff, int size, unsigned long long offset)
 	    return ret;
 	}
     } else {
-	int rc;
+	int rc = 0;
 
         if (flash) {
             unsigned int word;

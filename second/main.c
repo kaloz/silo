@@ -25,6 +25,7 @@
 #include "silo.h"
 #include <asm/page.h>
 #include <linux/elf.h>
+#include "stringops.h"
 
 #ifndef NULL
 #define NULL (void *)0

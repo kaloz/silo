@@ -21,7 +21,8 @@
 #include <stdarg.h>
 #include <string.h>
 #include <stdlib.h>
-#include <features.h>
+#include <unistd.h>
+#include <sys/ioctl.h>
 #ifdef __GLIBC__
 #  include <sys/stat.h>
 #  define _LINUX_STAT_H
@@ -166,9 +167,7 @@ void read_sb (char *device, char *bootdev)
     int fd, partno;
     char buff[512];
     struct sun_disklabel *sdl;
-    struct silo_ufs_super_block ufs;
-    struct ext2_super_block sb;	/* Super Block Info */
-    int offset, i;
+    int offset;
 
     if ((fd = open (device, O_RDONLY)) == -1)
 	fatal ("Cannot open superblock on %s", device);
@@ -195,7 +194,7 @@ void read_sb (char *device, char *bootdev)
 
 int get_partition_blocks (char *device, char *filename)
 {
-    int fd, fd2;
+    int fd;
     int block, i, j, k;
     struct stat st;
     int size;
@@ -246,7 +245,7 @@ char *find_dev(int number)
     if ((dp = opendir(DEVNAME)) == NULL) return NULL;
     strcpy(name,DEVNAME "/");
     p = strchr (name, 0);
-    while (dir = readdir(dp)) {
+    while ((dir = readdir(dp)) != NULL) {
         strcpy(p,dir->d_name);
         if (stat(name,&s) < 0) return NULL;
         if (S_ISBLK(s.st_mode) && s.st_rdev == number) return name;
@@ -268,13 +267,11 @@ void usage (char *s)
 
 int main(int argc,char **argv)
 {
-    struct stat st1, st2, st3;
-    int fd;
+    struct stat st1;
     int i, j, printblocks = 0;
     char *name;
     char bootdev[1024], bootdev2[1024];
     char *filename;
-    char *p;
 
     name = *argv++;
     argc--;

@@ -1,4 +1,4 @@
-/* $Id: tree.c,v 1.1 2001/04/27 21:55:51 bencollins Exp $
+/* $Id: tree.c,v 1.2 2001/05/22 04:21:14 bencollins Exp $
  * tree.c: Basic device tree traversal/scanning for the Linux
  *         prom library.
  *
@@ -7,6 +7,7 @@
  */
 
 #include "silo.h"
+#include "stringops.h"
 
 static char promlib_buf[128];
 

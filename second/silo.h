@@ -126,8 +126,6 @@ int sun4c_mapio (unsigned long, unsigned long, int);
 void sun4c_unmapio (unsigned long);
 /* libc */
 char *strdup (const char *);
-char *strchr (const char *, char);
-char *strrchr (const char *, char);
 char *strstr (const char *, const char *);
 int sprintf (char *buf, char *fmt,...);
 int strcmp (const char *, const char *);
@@ -138,5 +136,4 @@ char *strncpy (char *, const char *, int);
 #undef tolower
 int tolower (int);
 int strcasecmp (const char *, const char *);
-int strncasecmp (const char *, const char *, int);
 #endif

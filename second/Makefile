@@ -21,7 +21,7 @@ GREP=grep
 SED=sed
 CP=cp
 
-CFLAGS = -I../include -O2 -I. -Wall
+CFLAGS = -I../include -O2 -I. -Wall -fomit-frame-pointer
 
 # Relocate to 2.5MB. The Hitchhiker's Guide to Open Boot Rev 3 claims
 # that 3MB are guaranteed to be mapped.
@@ -113,24 +113,16 @@ clean:
 	$(RM) $(OBJS) *.o second second2 second.b silotftp silotftp2 silotftp.b second.l *.map core *~ util second.b second.image.tmp *.s
 
 crt0.o:	crt0.S
-	$(CC) $(CFLAGS) -E -o crt0.s -DVERSION='"SILO$(VERSION)"' crt0.S
-	$(AS) -Av9 -o crt0.o crt0.s
-	$(RM) crt0.s
+	$(CC) $(CFLAGS) -c -Wa,-Av9 -DVERSION='"SILO$(VERSION)"' crt0.S
 
 prom.o: prom.c
-	$(CC) $(CFLAGS) -S -o prom.s prom.c
-	$(AS) -Av9 -o prom.o prom.s
-	$(RM) prom.s
+	$(CC) $(CFLAGS) -c -Wa,-Av9 prom.c
 
 memory.o: memory.c
-	$(CC) $(CFLAGS) -S -o memory.s memory.c
-	$(AS) -Av9 -o memory.o memory.s
-	$(RM) memory.s
+	$(CC) $(CFLAGS) -c -Wa,-Av9 memory.c
 
 timer.o: timer.c
-	$(CC) $(CFLAGS) -S -o timer.s timer.c
-	$(AS) -Av9a -o timer.o timer.s
-	$(RM) timer.s
+	$(CC) $(CFLAGS) -c -Wa,-Av9a timer.c
 
 second.b: second util
 	$(CP) second second.tmp

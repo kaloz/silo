@@ -36,6 +36,7 @@ static struct {
 #include <ext2fs/ext2_err.et>
 }
 };
+#include "stringops.h"
 #include "ufs.h"
 #include "romfs.h"
 #include "9660.h"

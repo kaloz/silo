@@ -15,7 +15,7 @@ DD=dd
 ELFTOAOUT=/usr/bin/elftoaout
 
 # Linux
-CFLAGS = -O2 -I../include -fomit-frame-pointer
+CFLAGS = -Wall -fno-builtin -O2 -I../include -fomit-frame-pointer
 
 # Relocate to 2.5MB. The Hitchhiker's Guide to Open Boot Rev 3 claims
 # that 3MB are guaranteed to be mapped.
@@ -73,9 +73,7 @@ first.b: first
 	ln -f first.b ../boot/first.b
 
 ultra.o: ultra.S
-	$(CC) $(CFLAGS) -E ultra.S -o ultra.s
-	$(AS) -Av9a -o ultra.o ultra.s
-	$(RM) ultra.s
+	$(CC) $(CFLAGS) -c -Wa,-Av9a ultra.S
 
 ultra: ultra.o
 	$(LD) $(LDFLAGS) -o ultra ultra.o
@@ -90,9 +88,7 @@ ultra.b: ultra
 	ln -f ultra.b ../boot/ultra.b
 
 cd.o: cd.S
-	$(CC) $(CFLAGS) -E cd.S -o cd.s
-	$(AS) -Av9a -o cd.o cd.s
-	$(RM) cd.s
+	$(CC) $(CFLAGS) -c -Wa,-Av9a cd.S
 
 cd: cd.o
 	$(LD) $(LDFLAGS) -o cd cd.o
@@ -107,9 +103,7 @@ cd.b: cd
 	ln -f cd.b ../boot/cd.b
 
 generic.o: generic.S
-	$(CC) $(CFLAGS) -E generic.S -o generic.s
-	$(AS) -Av9a -o generic.o generic.s
-	$(RM) generic.s
+	$(CC) $(CFLAGS) -c -Wa,-Av9a generic.S
 
 generic: generic.o
 	$(LD) $(LDFLAGS) -o generic generic.o
@@ -124,9 +118,7 @@ generic.b: generic
 	#ln -f generic.b ../boot/generic.b
 
 fd.o: fd.S
-	$(CC) $(CFLAGS) -E fd.S -o fd.s
-	$(AS) -Av9a -o fd.o fd.s
-	$(RM) fd.s
+	$(CC) $(CFLAGS) -c -Wa,-Av9a fd.S
 
 fd: fd.o
 	$(LD) $(LDFLAGS) -o fd fd.o

@@ -36,6 +36,7 @@ typedef int FILE;
 
 #endif
 
+#include "stringops.h"
 #include "romfs.h"
 
 #define SUPROMFS (struct romfs_super_block *)(fs->io->private_data)

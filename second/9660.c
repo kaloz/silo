@@ -38,6 +38,7 @@ typedef int FILE;
 
 #endif
 
+#include "stringops.h"
 #include "ext2fs/ext2fs.h"
 #include "9660.h"
 

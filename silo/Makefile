@@ -19,31 +19,30 @@ all:
 endif
 endif
 
+CFLAGS=-Wall -g -O2 -I../include
+CC=gcc
+
 silo: silo.c floppy.h prom.c prom.h headers
-	gcc -Wall -I../include -I/usr/include -I/usr/src/linux/include -O2 -o silo silo.c prom.c
-	strip silo
+	$(CC) $(CFLAGS) -I/usr/src/linux/include -o silo silo.c prom.c
 	ln -f silo ../sbin
 
 silocheck: silocheck.c
-	gcc -I../include -I/usr/include -I/usr/src/linux/include -O2 -o silocheck silocheck.c
-	strip silocheck
+	$(CC) $(CFLAGS) -I/usr/src/linux/include -o silocheck silocheck.c
 	ln -f silocheck ../misc
 
 solarissilo: silo.c ufs.c ufs.h floppy.h prom.c prom.h headers
-	gcc -D__solaris__ -I../include -o solarissilo silo.c ufs.c prom.c
-	strip solarissilo
+	$(CC) $(CFLAGS) -D__solaris__ -o solarissilo silo.c ufs.c prom.c
 	ln -f solarissilo ../misc
 
 solarissilocheck: silocheck.c ufs.c ufs.h
-	gcc -D__solaris__ -I../include -o solarissilocheck silocheck.c ufs.c
-	strip solarissilocheck
+	$(CC) $(CFLAGS) -D__solaris__ -o solarissilocheck silocheck.c ufs.c
 	ln -f solarissilocheck ../misc
 
 floppy.h: floppy.label util
 	./util floppy.label | sed 's/cdrom/floppy/' > floppy.h
 
 util: util.c
-	gcc -o util util.c
+	$(CC) $(CFLAGS) -o util util.c
 
 ufs.h: ../second/ufs.h
 	ln -sf ../second/ufs.h ufs.h

@@ -95,6 +95,8 @@
    the two sets of lengths.
  */
 
+#include "stringops.h"
+
 #define slide window
 
 /* Huffman code lookup table entry--this entry is four bytes for machines
