@@ -2,6 +2,7 @@
    
    Copyright (C) 1996 Maurizio Plaza
    		 1996,1997,1999 Jakub Jelinek
+		 2001 Ben Collins
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -383,9 +384,15 @@ static int ls_ext2_proc(struct ext2_dir_entry *dirent, int offset,
     struct silo_inode *sino = (struct silo_inode *)filebuffer;
     struct ext2_inode ino;
     unsigned char *p;
+    int name_len = dirent->name_len & 0xFF;
+    char *match = (char *)private;
 
-    strncpy(sino->name, dirent->name, dirent->name_len & 0xFF);
-    sino->name[dirent->name_len & 0xFF] = 0;
+    if (match != NULL)
+	if (strlen(match) > name_len || strncmp(match, dirent->name, strlen(match)))
+	    return 0;
+
+    strncpy(sino->name, dirent->name, name_len);
+    sino->name[name_len] = 0;
     if (ext2fs_read_inode(fs, dirent->inode, &ino))
 	strcpy (sino->name, "--- error ---");
     sino->mtime = ino.i_mtime;
@@ -410,14 +417,16 @@ static int ls_ext2_proc(struct ext2_dir_entry *dirent, int offset,
     return 0;
 }
 
-static int ls_ext2 (ino_t inode)
+static int ls_ext2 (ino_t inode, char *match)
 {
     errcode_t retval;
     struct silo_inode *sino;
 
     retval = ext2fs_dir_iterate (fs, inode, DIRENT_FLAG_INCLUDE_EMPTY,
-				 0, ls_ext2_proc, 0);
-    if (retval) {
+				 0, ls_ext2_proc, match);
+
+    /* Only print an error if we aren't matching */
+    if (retval && match == NULL) {
         printf ("\n");
     	ext2fs_error (retval);
         printf ("\n");
@@ -581,6 +590,7 @@ int load_file (char *device, int partno, char *filename, char *buffer, char *lim
     char bogusdev[] = "/dev/sdaX";
     char *bogdev;
     void *mmark;
+    char *match = NULL, *dir = NULL;
 
     mark (&mmark);
     if (!device)
@@ -599,13 +609,14 @@ int load_file (char *device, int partno, char *filename, char *buffer, char *lim
         bogusdev[8] = partno + '0';
     if (setdisk (device) < 0)
 	return 0;
-    do_gunzip = cmd & 1;
+    do_gunzip = cmd & LOADFILE_GZIP;
     filebuffer = buffer;
     filelimit = limit;
     if (*filename == '[') {
-	if (cmd & 2) {
+	if (cmd & LOADFILE_LS) {
+	    if (!(cmd & LOADFILE_QUIET))
 		printf ("You cannot ls a device range\n");
-		return 0;
+	    return 0;
 	}
     	solaris = 0;
 	retval = dump_device_range (filename, bogdev, len, lenfunc);
@@ -616,7 +627,8 @@ int load_file (char *device, int partno, char *filename, char *buffer, char *lim
         if (!open_romfs (bogdev)) {
             if (!open_isofs (bogdev)) {
 		if (!open_ufs (bogdev)) {
-                    fatal ("Unable to open filesystem");
+		    if (!(cmd & LOADFILE_QUIET))
+			fatal ("Unable to open filesystem");
                     release (mmark);
                     return 0;
                 } else type = ufs;
@@ -629,23 +641,42 @@ int load_file (char *device, int partno, char *filename, char *buffer, char *lim
     if (type != ufs)
     	solaris = 0;
     if (type == ext2) {
-        if ((retval = ext2fs_namei_follow (fs, root, root, filename, &inode))) {
-	    printf ("\nCannot find %s (", filename);
-	    ext2fs_error (retval);
-	    printf (")\n");
+	size_t fn_len = strlen(filename);
+	retval = 0;
+	if (cmd & LOADFILE_MATCH && fn_len > 1 && filename[fn_len - 1] != '/') {
+	    dir = strdup(filename);
+	    if ((match = strrchr(dir, '/')) != NULL && strlen(match) > 1) {
+		char *base = "/";
+		if (match != dir) base = dir;
+		*match = '\0';
+		match++;
+		retval = ext2fs_namei_follow (fs, root, root, base, &inode);
+	    }
+	} else
+	    retval = ext2fs_namei_follow (fs, root, root, filename, &inode);
+
+	if (retval) {
+	    if (!(cmd & LOADFILE_QUIET)) {
+		printf ("\nCannot find %s (", dir != NULL ? dir : filename);
+		ext2fs_error (retval);
+		printf (")\n");
+	    }
+	    if (dir) free(dir);
 	    ext2fs_close (fs);
 	    release (mmark);
 	    return 0;
-        }
+	}
     } else if (type == romfs) {
         if (romfs_namei (fs, root, root, filename, &inode)) {
-	    printf ("\nCannot find %s\n", filename);
+	    if (!(cmd & LOADFILE_QUIET))
+		printf ("\nCannot find %s\n", filename);
 	    release (mmark);
 	    return 0;
         }
     } else if (type == isofs) {
 	if (iso9660_namei (fs, filename, &iso_inode)) {
-	    printf ("\nCannot find %s\n", filename);
+	    if (!(cmd & LOADFILE_QUIET))
+		printf ("\nCannot find %s\n", filename);
 	    release (mmark);
 	    return 0;
 	}
@@ -675,7 +706,8 @@ int load_file (char *device, int partno, char *filename, char *buffer, char *lim
             	}
             }
             if (!syspkg) {
-	        printf ("\nCannot find %s.", filename);
+		if (!(cmd & LOADFILE_QUIET))
+		    printf ("\nCannot find %s.", filename);
 	        ufs_close (fs);
 	        release (mmark);
 	        return 0;
@@ -685,8 +717,9 @@ int load_file (char *device, int partno, char *filename, char *buffer, char *lim
             ino_t sinode;
             
             if (ufs_namei (fs, root, cwd, "ufsboot", &sinode)) {
-                printf ("\nCannot find Solaris kernel bootloader `ufsboot'. Will try to load it,\n"
-                        "but it may fail\n");
+		if (!(cmd & LOADFILE_QUIET))
+		    printf ("\nCannot find Solaris kernel bootloader `ufsboot'. Will try to load it,\n"
+			    "but it may fail\n");
                 solaris = 0;
             } else
             	inode = sinode;
@@ -699,7 +732,7 @@ int load_file (char *device, int partno, char *filename, char *buffer, char *lim
 	else
 	    size = get_len (inode);
         (*lenfunc)(size, (char **)&filebuffer, (char **)&filelimit);
-        do_gunzip = cmd & 1;
+        do_gunzip = cmd & LOADFILE_GZIP;
     }
     first_block = do_gunzip;
     last_blockcnt = 0;
@@ -707,10 +740,14 @@ int load_file (char *device, int partno, char *filename, char *buffer, char *lim
     block_cnt = 0;
     retval = 0;
     if (inode) {
-	if (cmd & 2)
+	if (cmd & LOADFILE_LS)
 	    switch (type) {
-	    case ext2: retval = ls_ext2 (inode); break;
-	    default: printf ("ls not supported outside of ext2\n"); retval = 0; break;
+	    case ext2: retval = ls_ext2 (inode, match); if (dir) free(dir); break;
+	    default:
+		if (!(cmd & LOADFILE_QUIET))
+		    printf ("ls not supported outside of ext2\n");
+		retval = 0;
+ 		break;
 #if 0
             case ufs: retval = ls_ufs (inode); break;
             case romfs: retval = ls_romfs (inode); break;

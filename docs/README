@@ -218,7 +218,6 @@ jsflash flash.img
 	* NetBoot
 	* More silo.conf keywords/commands
 	* Sun4 support
-	* File completion on TAB?
 
 4. Credits.
 

@@ -1,6 +1,7 @@
 /* ls command handling
    
    Copyright (C) 1999 Jakub Jelinek
+		 2001 Ben Collins
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -137,7 +138,7 @@ void print_number (unsigned int num, int pad, char padc)
     }
 }
 
-void do_ls (unsigned char *buf)
+int do_ls (unsigned char *buf, int *tab_ambiguous)
 {
     int i, n, j;
     struct silo_inode *sino;
@@ -147,13 +148,13 @@ void do_ls (unsigned char *buf)
     for (sino = (struct silo_inode *) buf; sino->inolen;
 	 sino = (struct silo_inode *) (((char *)sino) + sino->inolen))
 	n++;
-    if (!n) return;
+    if (!n) return 0;
     array = p = (struct silo_inode **)sino;
     for (sino = (struct silo_inode *) buf, i = 0; i < n;
 	 sino = (struct silo_inode *) (((char *)sino) + sino->inolen), i++)
 	*p++ = sino;
     sortit (array, n, array + n);
-    if (ls_opt & LSOPT_L) {
+    if (tab_ambiguous == NULL && ls_opt & LSOPT_L) {
 	char mode[11];
 	char *q;
 	unsigned int mtime, day, hour, min, month, year;
@@ -207,13 +208,61 @@ void do_ls (unsigned char *buf)
 	    printf ("\n");
 	}
     } else {
-	for (i = 0; i < n; i++) {
-	    printf ("%s", array[i]->name);
-	    j = 19 - strlen(array[i]->name);
-	    if ((i & 3) == 3 || i == n - 1)
-		printf ("\n");
-	    else
-		do printf (" "); while (j-- > 0);
+	if (tab_ambiguous == NULL || *tab_ambiguous) {
+	    /* Either this is a normal ls, or we have an ambiguous
+	     * completion.  */
+	    if (tab_ambiguous != NULL)
+		printf("\n");
+
+	    for (i = 0; i < n; i++) {
+		printf ("%s", array[i]->name);
+		j = 19 - strlen(array[i]->name);
+		if ((i & 3) == 3 || i == n - 1)
+		    printf ("\n");
+		else
+		    do printf (" "); while (j-- > 0);
+	    }
+	    return 1;
+	} else if (tab_ambiguous != NULL) {
+	    /* A possible completion. If we cannot add anything to the
+	     * command line, then set tab_ambiguous, so the next go round
+	     * can do a listing.  */
+	    char *index = strrchr(cbuff, '/') + 1;
+	    int len = strlen(index);
+
+	    if (!*index) {
+		*tab_ambiguous = 1;
+	    } else if (n == 1) {
+		/* One entry, just complete to that.  */
+		while (array[0]->name[len]) {
+		    index[len] = array[0]->name[len];
+		    index[len + 1] = 0;
+		    prom_puts(index + len, 1);
+		    len++;
+		}
+		index[len] = (LINUX_S_ISDIR (array[0]->mode)) ? '/' : ' ';
+		index[len + 1] = 0;
+		prom_puts(index + len, 1);
+	    } else {
+		/* Ok, complete as much as is common between all the
+		 * entries.  */
+		int common = 1, orig = len;
+		while (common && array[0]->name[len]) {
+		    for (i = 1; i < n && common; i++)
+			if (array[i]->name[len] != array[0]->name[len])
+			    common = 0;
+
+		    if (common) {
+			index[len] = array[0]->name[len];
+			index[len + 1] = 0;
+			prom_puts(index + len, 1);
+			len++;
+		    }
+		}
+		if (orig == len)
+		    *tab_ambiguous = 1;
+	    }
 	}
     }
+    return 0;
 }

@@ -2,6 +2,7 @@
    
    Copyright (C) 1995 Werner Almesberger
    		 1996,1998 Jakub Jelinek
+		 2001 Ben Collins
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -17,7 +18,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-/* This file gets included by the confcheck (usespace), try to be nice */
+/* This file gets included by the silo program (usespace), try to be nice */
 #ifndef SILOCONFCHECK
 
 #include <silo.h>
@@ -396,26 +397,37 @@ int cfg_get_flag (char *image, char *item)
 }
 
 static int printl_count = 0;
-static void printlabel (char *label)
+static void printlabel (const char *label, char **addr, const char *match)
 {
     int len = strlen (label);
 
-    if (!printl_count)
-	printf ("\n");
-    printf ("%s", label);
-    while (len++ < 25)
-	putchar (' ');
-    printl_count++;
-    if (printl_count == 3)
-	printl_count = 0;
+    if (match == NULL ||
+	(strlen(label) >= strlen(match) &&
+	!strncmp(match, label, strlen(match)))) {
+
+	if (*addr != NULL) {
+	    strcpy(*addr, label);
+	    *addr += strlen(label) + 1;
+	    **addr = '\0';
+	} else {
+	    if (!(printl_count % 3))
+		printf ("\n");
+	    printf ("%s", label);
+	    while (len++ < 25)
+		putchar (' ');
+	}
+	printl_count++;
+    }
 }
 
-void cfg_print_images (void)
+int cfg_print_images (char *addr, char *match)
 {
     struct IMAGES *p;
     char *label, *alias;
 
     printl_count = 0;
+    if (addr) addr[0] = '\0';
+ 
     for (p = images; p; p = p->next) {
 	label = cfg_get_strg_i (p->table, "label");
 	if (!label) {
@@ -425,11 +437,13 @@ void cfg_print_images (void)
 		label = alias + 1;
 	}
 	alias = cfg_get_strg_i (p->table, "alias");
-	printlabel (label);
+	printlabel(label, &addr, match);
 	if (alias)
-	    printlabel (alias);
+	    printlabel (alias, &addr, match);
     }
-    printf ("\n");
+    if (!addr && printl_count)
+	printf ("\n");
+    return printl_count;
 }
 
 char *cfg_get_default (void)

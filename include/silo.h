@@ -57,6 +57,13 @@ struct silo_inode {
     unsigned char name[0];
 };
 
+/* Options for cmd for load_file */
+#define LOADFILE_GZIP		0x01
+#define LOADFILE_LS		0x02
+#define LOADFILE_MATCH		0x04
+#define LOADFILE_LS_MATCH	0x06
+#define LOADFILE_QUIET		0x08
+
 /* cmdline.c */
 void cmdinit ();
 void cmdedit (void (*)(void),int);
@@ -67,7 +74,7 @@ extern char passwdbuff[];
 #define LSOPT_T 2
 #define LSOPT_R 4
 extern int ls_opt;
-void do_ls (unsigned char *);
+int do_ls (unsigned char *, int *);
 /* disk.c */
 extern char bootdevice[];
 int diskinit (void);
@@ -104,7 +111,7 @@ char *seed_part_into_device (char *device, int part);
 int cfg_parse (char *, char *, int);
 char *cfg_get_strg (char *, char *);
 int cfg_get_flag (char *, char *);
-void cfg_print_images (void);
+int cfg_print_images (char *, char *);
 char *cfg_get_default (void);
 /* strtol.c */
 int strtol (const char *, char **, int);

@@ -5,6 +5,7 @@
    		 1996 David S. Miller
    		 1996 Miguel de Icaza
    		 1996,1997,1998,1999 Jakub Jelinek
+		 2001 Ben Collins
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,7 +21,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-/* TODO: This file is a good candidate for rewrite from scratch */
+/* TODO: This file is a good candidate for rewrite from scratch.  */
 
 #include <silo.h>
 #include <asm/page.h>
@@ -35,8 +36,6 @@
 
 extern unsigned char silo_conf[256];
 extern unsigned char silo_conf_part, silo_conf_parts[32], raid_dsk_number;
-
-//extern int _start;
 
 int useconf = 0;
 enum {
@@ -63,16 +62,108 @@ static int fill_reboot_cmd = 0;
 static char other_device [512];
 static int reboot = 0;
 static int floppyswap = 0;
+int tab_ambiguous = 0;
 unsigned int linux_end = 0;
 int other_part = -1;
 int solaris = 0;
 int other = 0;
 char *password = 0;
 
-void maintabfunc (void)
+void parse_name (char *, int, char **, int *, char **);
+
+static char *next_tok (char *t) {
+    while (*t++); /* That was easy */
+    return t;
+}
+
+/* Check for possible file and target completions. Return non-zero if
+ * the caller needs to re-output the command line.  */
+static int tab_complete(void) {
+    int image_len, defpart, part, ret = 0;
+    char *device;
+    char *p = cfg_get_strg (0, "partition");
+    char *kname, *r = strdup(cbuff);
+
+    if (p && *p >= '1' && *p <= '8' && !p[1])
+	defpart = *p - '0';
+    else {
+	fatal("\nDefault partition could not be found");
+	free(r);
+	return 1;
+    }
+
+    parse_name (r, defpart, &device, &part, &kname);
+    if (!kname) {
+	/* Maybe this isn't a disk file. Maybe it's a silo.conf defined
+	 * alias/label.  */
+	if (tab_ambiguous) {
+	    ret = cfg_print_images (NULL, r);
+	} else {
+	    char *addr = (char *)0x4000;
+	    int count = cfg_print_images (addr, r);
+	    if (*addr) {
+		int len = strlen(cbuff);
+		/* We have some completions... */
+		if (count == 1) {
+		    /* Just one, complete it... */
+		    while (addr[len]) {
+			cbuff[len] = addr[len];
+			cbuff[len + 1] = 0;
+			prom_puts(cbuff + len, 1);
+			len++;
+		    }
+		    cbuff[len] = ' ';
+		    cbuff[len + 1] = 0;
+		    prom_puts(cbuff + len, 1);
+		} else if (count > 1) { /* This should always be true, if we get here */
+		    /* Complete the line as much as possible */
+		    int common = 1, orig = len, i;
+		    while (common && addr[len]) {
+			char *cur = next_tok(addr);
+			for (i = 1; i < count && common; i++, cur = next_tok(cur))
+			    if (addr[len] != cur[len])
+				common = 0;
+
+			if (common) {
+			    cbuff[len] = addr[len];
+			    cbuff[len + 1] = 0;
+			    prom_puts(cbuff + len, 1);
+			    len++;
+			}
+		    }
+		    if (orig == len)
+			tab_ambiguous = 1;
+		}
+	    } else
+		tab_ambiguous = 1;
+	}
+    } else {
+	if (!device) device = cfg_get_strg (0, "device");
+
+	if (load_file(device, part, kname, (unsigned char *) 0x4000,
+		(unsigned char *) &_start, &image_len, LOADFILE_LS_MATCH|LOADFILE_QUIET, 0))
+	    if (do_ls((unsigned char *)0x4000, &tab_ambiguous))
+		ret = 1;
+    }
+
+    free(r);
+    return ret;
+}
+
+static void maintabfunc (void)
 {
-    cfg_print_images ();
-    printf ("boot: %s", cbuff);
+    if (cbuff[0] == 0) {
+	/* Nothing on the command line, just list the possible images from
+	 * the config file.  */
+	if (cfg_print_images (NULL, NULL))
+	    printf ("boot: %s", cbuff);
+    } else if (strchr(cbuff, ' ') == NULL) {
+	/* If tab_complete() returns non-zero, then it just listed
+	 * possible completions, and we need to redo our command line.  */
+	if (tab_complete())
+	    printf ("boot: %s", cbuff);
+    }
+    return;
 }
 
 void parse_name (char *imagename, int defpart, char **device, int *part, char **kname)
@@ -308,6 +399,7 @@ int get_params (char **device, int *part, char **kname, char **proll, char **par
 		        maintabfunc ();
 		        tabbedout = 1;
 		    } else if (c >= ' ') {
+			tab_ambiguous = 0;
 		        cbuff[0] = c;
 		        cbuff[1] = 0;
 		    }
@@ -342,6 +434,7 @@ int get_params (char **device, int *part, char **kname, char **proll, char **par
 		            maintabfunc ();
 		            tabbedout = 1;
 		        } else if (c >= ' ') {
+			    tab_ambiguous = 0;
 		            cbuff[0] = c;
 		            cbuff[1] = 0;
 			    if (cfg_get_flag (cbuff, "single-key"))
@@ -958,7 +1051,7 @@ int bootmain (void)
     if (*silo_conf && silo_conf_partition >= 1 && silo_conf_partition <= 8) {
 	int len;
 	solaris = 0;
-	fileok = load_file (0, silo_conf_partition, silo_conf, (unsigned char *) 0x4000, (unsigned char *) &_start, &len, 1, 0);
+	fileok = load_file (0, silo_conf_partition, silo_conf, (unsigned char *) 0x4000, (unsigned char *) &_start, &len, LOADFILE_GZIP, 0);
 	if (!fileok || (unsigned) len >= 65535)
 	    printf ("\nCouldn't load %s\n", silo_conf);
 	else {
@@ -980,7 +1073,7 @@ int bootmain (void)
 			if (!device)
 			    device = cfg_get_strg (0, "device");
 			solaris = 0;
-			if (load_file (device, part, kname, (unsigned char *) 0x4000, (unsigned char *) &_start, &len, 1, 0)) {
+			if (load_file (device, part, kname, (unsigned char *) 0x4000, (unsigned char *) &_start, &len, LOADFILE_GZIP, 0)) {
 			    *(unsigned char *) (0x4000 + len) = 0;
 			    printf ("\n");
 			    print_message ((char *) 0x4000);
@@ -1039,7 +1132,7 @@ int bootmain (void)
 		continue;
 	    }
 	    if (!load_file (device, part, proll, (unsigned char *) 0x4000,
-			(unsigned char *) 0x40000, &image_len, 1, 0)) {
+			(unsigned char *) 0x40000, &image_len, LOADFILE_GZIP, 0)) {
 	        printf ("\nProll not found.... try again\n");
 		continue;
 	    }
@@ -1049,7 +1142,7 @@ int bootmain (void)
 
 	    image_base = (char *) 0x40000;
 	    if (!load_file (device, part, kname, image_base,
-			(unsigned char *) &_start, &image_len, 1, 0)) {
+			(unsigned char *) &_start, &image_len, LOADFILE_GZIP, 0)) {
 	        printf ("\nImage not found.... try again\n");
 		continue;
 	    }
@@ -1062,7 +1155,7 @@ int bootmain (void)
 	    image_base = (unsigned char *) 0x4000;
 	    if (!load_file (device, part, kname, image_base,
 			(unsigned char *) &_start, &image_len,
-			load_cmd == CMD_LS ? 2 : 1, 0)) {
+			load_cmd == CMD_LS ? LOADFILE_LS : LOADFILE_GZIP, 0)) {
 		printf ("\nImage not found.... try again\n");
         	continue;
             }
@@ -1074,7 +1167,7 @@ int bootmain (void)
 	    }
 
 	    if (load_cmd == CMD_LS) {
-		do_ls (image_base);
+		do_ls (image_base, NULL);
         	continue;
 	    }
 

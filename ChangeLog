@@ -1,3 +1,45 @@
+Mon Jun  4 22:42:03 EDT 2001  Ben Collins <bcollins@debian.org>
+
+	* Rules.make: Update for 1.1.0 release.
+	* silo.spec: Likewise.
+	* docs/LSM: Likewise.
+
+	* include/silo.h: Add macros for load_file cmd options.
+	(do_ls): Returns int, and takes int* as second arg now.
+	(cfg_print_images): Also returns int, and now takes two char* args.
+
+	* second/cmdline.c: Rewrote logic into a case switch, and added extra
+	handling of the tab function.
+
+	* second/cfg.c (cfg_print_images): Take two extra args, one for an
+	address to write the aliases/labels to (nil delimited), and another to
+	use as a matching. Pass these two args to printlabel. Also, return
+	number of labels printed/written.
+	(printlabel): Accept the two extra args from above, and use them.
+
+	* second/file.c (ls_ext2): Take an extra arg to match against. Rework
+	for new macro setup. Allow for no error output if matching. Pass the
+	match as private to ls_ext2_proc.
+	(ls_ext2_proc): Use the extra private data for matching, if present.
+	(load_file): Use new macros. For matching, breakdown the dir/file
+	components, and pass them along to ls_ext2. Don't print any errors if
+	LOADFILE_QUIET.
+
+	* second/ls.c (do_ls): Take an extra arg, which is used for ambiguity
+	in matching. This signifies that our output is for tab completion. If
+	ambiguous, output a list of possible completions, if not, then
+	complete the command line as much as possible.
+
+	* second/main.c (maintabfunc): Recognize new tab completion. Call
+	tab_complete if the command line is non-empty, and contains no spaces.
+	Call cfg_print_images if it is empty.
+	(tab_complete): New function. Handles parsing of the command line, and
+	attempted completion against either files on an ext2 fs, or
+	aliases/labels in silo.conf.
+	Use new macros.
+
+	* docs/README: Scratch tab completion from the TODO list.
+
 Sat Jun  2 23:43:11 EDT 2001  Ben Collins <bcollins@debian.org>
 
 	* Makefile: Ok, if we aren't using DESTDIR, then warn user that they
