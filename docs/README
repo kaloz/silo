@@ -1,52 +1,52 @@
-    This is the first attempt at a complete boot loader for Linux
-on the Sparc.  Because of the lack of space on the bootblock, we have
-to do it in two steps, the first step is a very simple loader based on
-Peter Zaitcev's silo (we will call this the first stage loader) which
-should fit in 512B and its sole purpose is to load a more
-complete bootstrap loader, herein refered to as the second stage boot
-loader. The cool thing about the second stage loader we implemented is
-that it makes use of the ext2 library (provided with the ext2fs tools) and
-some ufs code, and thus allows the loader to access any file on a ext2 fs
-and ufs, uses silo.conf, handles gunzipping and a lot of other things.
-This is different from Linux/i386 lilo which needs a map for each
-kernel. In silo we just keep one map file for the second stage
-loader, we don't expect you to be changing the second stage loader on
-your daily routine (you can do so, you will just need to use a tool to
-reinstall the maps).
+This is the first attempt at a complete boot loader for Linux on Sparc.
+Because of the lack of space on the bootblock, we have to do it in two
+steps, the first step is a very simple loader based on Peter Zaitcev's
+silo (we will call this the first stage loader) which should fit in 512B
+and its sole purpose is to load a more complete bootstrap loader, herein
+refered to as the second stage boot loader. The cool thing about the
+second stage loader we implemented is that it makes use of the ext2
+library (provided with the ext2fs tools) and some ufs code, and thus
+allows the loader to access any file on a ext2 fs and ufs, uses silo.conf,
+handles gunzipping and a lot of other things.  This is different from
+Linux/i386 lilo which needs a map for each kernel. In silo we just keep
+one map file for the second stage loader, we don't expect you to be
+changing the second stage loader on your daily routine (you can do so, you
+will just need to use a tool to reinstall the maps).
 
-   There are two distinct versions of the Sun EPROM, those before 2.0
-("old") and those of 2.0 and later ("new"). Unfortunately these details
-are visible at various points.
-With old proms, the device is specified as dev(X,Y,Z) [e.g. sd(0,3,1)]
-where dev is the device (normally sd), X is the controller, Y is the
-unit number, and Z is the partition number. Note that numbers start at 0,
-rather than Linux's convention of starting at 1, so sd(0,3,1) is /dev/sda2.
-Note also that many systems have the "first" disk (sda) as unit 3.
-With new proms, the device is specified in "open boot prom" format,
-e.g. /iommu/sbus/espdma/esp/sd@1,0  is target 1, LUN 0 and
-/sbus/esp@0,800000/sd@3,0 is target 3, LUN 0.
+There are two distinct versions of the Sun EPROM, those before 2.0 ("old")
+and those of 2.0 and later ("new"). Unfortunately these details are
+visible at various points.  With old proms, the device is specified as
+dev(X,Y,Z) [e.g. sd(0,3,1)] where dev is the device (normally sd), X is
+the controller, Y is the unit number, and Z is the partition number. Note
+that numbers start at 0, rather than Linux's convention of starting at 1,
+so sd(0,3,1) is /dev/sda2.  Note also that many systems have the "first"
+disk (sda) as unit 3.  With new proms, the device is specified in "open
+boot prom" format, e.g. /iommu/sbus/espdma/esp/sd@1,0  is target 1, LUN 0
+and /sbus/esp@0,800000/sd@3,0 is target 3, LUN 0.
 
-   Due to a bug in some (all??) v2 PROMs (what about v0??) all the files
-which SILO can load must be below a magic boundary 1GB from the start of the
-disk (not from start of the partition). The easiest way is to put your /
-filesystem completely inside first 1GB (and if you want to boot other OS on
-the same harddisk, put their / partitions under that boundary as well). Then
-just make sure you always leave the images you want to boot in those
+Due to a bug in some (all??) v2 PROMs (what about v0??) all the files
+which SILO can load must be below a magic boundary 1GB from the start of
+the disk (not from start of the partition). The easiest way is to put your
+/ filesystem completely inside first 1GB (and if you want to boot other OS
+on the same harddisk, put their / partitions under that boundary as well).
+Then just make sure you always leave the images you want to boot in those
 partitions...
 
-   During the installation, SILO saves the original boot loader under
-a user especified file name, so, when silo prompts for a kernel name
-it is possible to load the original boot loader, either by adding it to
-your silo.conf or by typing its path on your SILO command line.
-Assuming the original boot block is stored in boot/old.b on partition 4,
-it can be accessed by having silo.conf containing:
+During the installation, SILO saves the original boot loader under a user
+especified file name, so, when silo prompts for a kernel name it is
+possible to load the original boot loader, either by adding it to your
+silo.conf or by typing its path on your SILO command line.  Assuming the
+original boot block is stored in boot/old.b on partition 4, it can be
+accessed by having silo.conf containing:
+
 	other = 1
 		bootblock = 4/boot/old.b
 		label=sunos
-(old proms need "other = sd(0,3,0) bootblock = sd(0,3,3)/boot/old.b")
-or by typing 1 bootblock=/boot/old.b on your SILO command line.
 
-   There is a magic image name `halt' that gets you back to the prom, and
+(old proms need "other = sd(0,3,0) bootblock = sd(0,3,3)/boot/old.b") or
+by typing 1 bootblock=/boot/old.b on your SILO command line.
+
+There is a magic image name `halt' that gets you back to the prom, and
 `help' displays some help text.
 
    If you wan to uninstall SILO, restore the original blocks by running e.g.
@@ -54,37 +54,37 @@ or by typing 1 bootblock=/boot/old.b on your SILO command line.
 
 1. Installation.
 
-    You need all the proper compilers and linkers for Linux/SPARC native ELF
-compile, if you want to compile SILO yourself. But the standard distribution
-comes with all the necessary binaries.
+You need all the proper compilers and linkers for Linux/SPARC native ELF
+compile, if you want to compile SILO yourself. But the standard
+distribution comes with all the necessary binaries.
 
-    Under the boot, etc and sbin subdirs you will find all the programs 
+Under the boot, etc and sbin subdirs you will find all the programs
 already compiled and ready to run on Linux/SPARC. Those three directories
 should be probably copied to your /boot, /etc and /sbin on your root
-partition to make things easy.
-Then you just run /sbin/silo and if /boot doesn't contain old.b file yet,
-your old loader (usually sunos or solaris) will be copied there and silo
-will be installed. Bootblocks will be installed after the label of the disk
-which contains your second.b and silo.conf (both have to be on the same
-physical disk), e.g. if second.b is on /dev/sda5 and silo.conf on /dev/sda1,
-bootblocks will be installed into /dev/sda.
-In case you are creating a new root file system (e.g. your current root
-filesystem is nfs and you are setting up an ext2 root filesystem in /mnt),
-then you should run silo after installing boot, etc and sbin directories into
-/mnt/boot, /mnt/etc and /mnt/sbin with the -r parameter, e.g.
-/mnt/sbin/silo -r /mnt
+partition to make things easy.  Then you just run /sbin/silo and if /boot
+doesn't contain old.b file yet, your old loader (usually sunos or solaris)
+will be copied there and silo will be installed. Bootblocks will be
+installed after the label of the disk which contains your second.b and
+silo.conf (both have to be on the same physical disk), e.g. if second.b is
+on /dev/sda5 and silo.conf on /dev/sda1, bootblocks will be installed into
+/dev/sda.  In case you are creating a new root file system (e.g. your
+current root filesystem is nfs and you are setting up an ext2 root
+filesystem in /mnt), then you should run silo after installing boot, etc
+and sbin directories into /mnt/boot, /mnt/etc and /mnt/sbin with the -r
+parameter, e.g.  /mnt/sbin/silo -r /mnt
 
-   The firts loader pumps you into the second one very quickly, printing
+The firts loader pumps you into the second one very quickly, printing
 letters SILO after some actions are performed. If it prints only some of
-these letters and then dies, it means some error happened, e.g. if it prints
-SIL it means that it loaded a second stage loader, but with wrong magic.
-Then SILO prints a boot: prompt. If you give silo arguments on the prom
-command line already, SILO will try to load it (image params). This image
-can be either a full name (described later) or alias or label of
+these letters and then dies, it means some error happened, e.g. if it
+prints SIL it means that it loaded a second stage loader, but with wrong
+magic.  Then SILO prints a boot: prompt. If you give silo arguments on the
+prom command line already, SILO will try to load it (image params). This
+image can be either a full name (described later) or alias or label of
 some image in case you have silo.conf.
+
 Otherwise SILO refers to your silo.conf file, which is similar the iX86
-lilo.conf with some additions and omissions (some are not needed,
-others are not implemented).  To the boot: prompt, you can:
+lilo.conf with some additions and omissions (some are not needed, others
+are not implemented).  To the boot: prompt, you can:
 
 1) wait for the timeout (if any) to expire, which loads the "default"
 2) press enter, which loads the "default"
