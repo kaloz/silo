@@ -4,11 +4,11 @@
 			 Jan Vondrak (C) 1998
 			 Ben Collins (C) 2001
 
-This is a tool for building a simple TFTP boot loader which embodies several
-kernel images for different Sun architectures and a ramdisk root image. To
-minimize memory usage, the images are gzipped. After starting the boot
-loader, the architecture is detected,  the appropriate kernel is unpacked
-and then the booting procedure is launched.
+This is a tool for building a simple TFTP boot loader which embodies
+several kernel images for different Sun architectures and a ramdisk root
+image. To minimize memory usage, the images are gzipped. After starting
+the boot loader, the architecture is detected,  the appropriate kernel is
+unpacked and then the booting procedure is launched.
 
 How to build the boot image:
 
