@@ -1,3 +1,7 @@
+Sun Apr 13 2002  Ben Collins <bcollins@debian.org>
+
+	* Lots of changes regarding addition of first-isofs.
+
 Thu Aug 29 06:22:08 EDT 2002  Ben Collins <bcollins@debian.org>
 
 	* second/crt0.S: Another patch from Dave to support III and all
