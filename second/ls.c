@@ -15,16 +15,17 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
+   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307,
+   USA.  */
 
-#  include <ctype.h>
-#  include <sys/types.h>
-#  include <silo.h>
+#include <ctype.h>
+#include <sys/types.h>
+#include <silo.h>
 typedef int FILE;
-#  include <linux/ext2_fs.h>
+#include <linux/ext2_fs.h>
 
 #include <stringops.h>
-#include "ext2fs/ext2fs.h"
+#include <ext2fs/ext2fs.h>
 
 int ls_opt = 0;
 

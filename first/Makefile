@@ -23,8 +23,6 @@ LDFLAGS=-N -Ttext 0x4000
 .S.o:
 	$(CC) $(CFLAGS) -c $*.S
 
-ifeq ($(OPSYS),Linux)
- ifeq (sparc,$(MACHINE))
 all: first.b first.h ultra.b ultra.h cd.b generic.b generic.h fd.b ieee32.b
 
 first.h: first
@@ -41,20 +39,6 @@ generic.h: generic
 fd.h: fd
 	sed -n 's/^\(000000000000\|0000\)4\([0-9a-f][0-9a-f][0-9a-f]\) .*digit_here.*$$/#define FD_DIGIT_OFFSET_TMP 0x\2/p' < fd.map > fd.h
 	sed -n 's/^\(000000000000\|0000\)4\([0-9a-f][0-9a-f][0-9a-f]\) .*letter_here.*$$/#define FD_LETTER_OFFSET_TMP 0x\2/p' < fd.map >> fd.h
- else
-all:
-	@echo First stage bootblock should be build under Linux/Sparc only
-
-first.h ultra.h generic.h fd.h:
-	@if [ ! -f first.h ]; then echo 'First do make under Linux/Sparc (and do not make clean until compiled on this platform)'; exit 1; fi
- endif
-else
-all:
-	@echo First stage bootblock should be build under Linux/Sparc only
-
-first.h ultra.h generic.h fd.h:
-	@if [ ! -f first.h ]; then echo 'First do make under Linux/Sparc (and do not make clean until compiled on this platform)'; exit 1; fi
-endif
 
 first.o: first.S
 	$(CC) $(CFLAGS) -c first.S -o first.o

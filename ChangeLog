@@ -1,3 +1,10 @@
+Fri Jun 15 23:45:53 EDT 2001  Ben Collins <bcollins@debian.org>
+
+	* The "Fix the FSF Address Update". Replace the COPYING file with the
+	latest GPL v2.
+
+	* Lots of Makefile updates and cleanups.
+
 Fri Jun 15 14:23:20 EDT 2001  Ben Collins <bcollins@debian.org>
 
 	* Updates for makefiles, including revup

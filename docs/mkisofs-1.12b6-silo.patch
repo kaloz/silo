@@ -110,7 +110,7 @@
  #endif
 --- mkisofs/silo.c.jj	Fri Jan 28 10:34:38 2000
 +++ mkisofs/silo.c	Fri Jan 28 10:34:38 2000
-@@ -0,0 +1,254 @@
+@@ -0,0 +1,255 @@
 +/*
 + * Program silo.c - Handle SILO bootable iso9660 CD-ROMs.
 + * 
@@ -129,10 +129,11 @@
 +
 +   You should have received a copy of the GNU General Public License
 +   along with this program; if not, write to the Free Software
-+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.   */
++   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307,
++   USA.   */
 +
 +
-+static char rcsid[] ="$Id: mkisofs-1.12b6-silo.patch,v 1.1 2001/04/27 21:54:55 bencollins Exp $";
++static char rcsid[] ="$Id: mkisofs-1.12b6-silo.patch,v 1.2 2001/06/16 03:48:06 bencollins Exp $";
 +
 +#include <stdio.h>
 +#include <sys/types.h>

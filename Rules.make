@@ -5,10 +5,15 @@ CC=gcc
 LD=ld
 ELFTOAOUT=elftoaout
 BIN2H=../common/bin2h
-CFLAGS=-O2 -Wall -I. -I../include -fomit-frame-pointer
+CFLAGS=-O2 -Wall -I. -I../include -fomit-frame-pointer -Werror
 
 OPSYS=$(shell uname)
 OSREV=$(shell uname -r)
+ifeq ($(OPSYS),SunOS)
+  ifeq (5.,$(findstring 5.,$(OSREV)))
+    OPSYS=Solaris
+  endif
+endif
 MACHINE=$(subst sparc64,sparc,$(shell uname -m))
 
 ../common/%:
