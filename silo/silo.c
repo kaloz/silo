@@ -996,6 +996,9 @@ struct hwdevice *get_device(int majno, int minno)
 			hwdev = NULL;
 			last = NULL;
 			for (i = 0; i < md_array_info.nr_disks; i++) {
+				if (i == md_array_info.nr_disks - 1 && md_disk_info.majorno == 0 &&
+				    md_disk_info.minorno == 0)
+					break; // That's all folks
 				md_disk_info.number = i;
 				if (ioctl (md_fd, GET_DISK_INFO, &md_disk_info) < 0)
 					fatal ("Could not get RAID disk info for disk %d\n", i);
