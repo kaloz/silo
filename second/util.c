@@ -113,34 +113,36 @@ int main(int argc, char **argv)
     int first_start, first_end, second_start, second_end;
     int end, rodata_start, rodata_end;
     int net = 0;
-    int format = 11, formatchecked = 0;
-     
+    char sym[256];
+    unsigned int addr;
+
     if (!strcmp (argv[1], "-a"))
     	net = 1;
+
     f = fopen(argv[2], "r");
     while (fgets (buffer, 256, f)) {
-        if (!formatchecked) {
-            formatchecked = 1;
-            if (!strncmp (buffer, "00000000", 8) && isxdigit(buffer[8]))
-            	format += 8;
-        }
-        if (!strcmp (buffer+format, "start\n"))
-            reloc = strtol (buffer, NULL, 16);
-        else if (!strcmp (buffer+format, "main_text_start\n"))
-            first_start = strtol (buffer, NULL, 16) -  reloc;
-        else if (!strcmp (buffer+format, "main_text_end\n"))
-            first_end = strtol (buffer, NULL, 16) - reloc;
-        else if (!strcmp (buffer+format, "main_data_start\n"))
-            second_start = strtol (buffer, NULL, 16) - reloc;
-        else if (!strcmp (buffer+format, "main_data_end\n"))
-            second_end = strtol (buffer, NULL, 16) - reloc;
-        else if (!strcmp (buffer+format, "main_rodata_start\n"))
-            rodata_start = strtol (buffer, NULL, 16) - reloc;
-        else if (!strcmp (buffer+format, "main_rodata_end\n"))
-            rodata_end = strtol (buffer, NULL, 16) - reloc;
-        else if (!strcmp (buffer+format, "__bss_start\n"))
-            end = strtol (buffer, NULL, 16) - reloc;
-    }   
+	char sym[256];
+	unsigned int addr;
+
+	if (sscanf(buffer, "%x %*c %s\n", &addr, sym) == 2) {
+	    if (!strcmp (sym, "start"))
+		reloc = addr;
+	    else if (!strcmp (sym, "main_text_start"))
+		first_start = addr -  reloc;
+	    else if (!strcmp (sym, "main_text_end"))
+		first_end = addr - reloc;
+	    else if (!strcmp (sym, "main_data_start"))
+		second_start = addr - reloc;
+	    else if (!strcmp (sym, "main_data_end"))
+		second_end = addr - reloc;
+	    else if (!strcmp (sym, "main_rodata_start"))
+		rodata_start = addr - reloc;
+	    else if (!strcmp (sym, "main_rodata_end"))
+		rodata_end = addr - reloc;
+	    else if (!strcmp (sym, "__bss_start"))
+		end = addr - reloc;
+	}
+    }
     fclose (f);
     f = fopen(argv[3], "r");
     e = fopen(argv[4], "r");
