@@ -48,9 +48,17 @@ static char *match;
 /* Externally provided filesystem operations */
 extern struct fs_ops ext2_fs_ops;
 extern struct fs_ops iso_fs_ops;
+extern struct fs_ops rom_fs_ops;
+extern struct fs_ops ufs_fs_ops;
 
 /* Array of our supported ops */
-static struct fs_ops *silo_fs_ops[] = { &ext2_fs_ops, &iso_fs_ops, NULL };
+static struct fs_ops *silo_fs_ops[] = {
+    &ext2_fs_ops,
+    &iso_fs_ops,
+    &rom_fs_ops,
+    &ufs_fs_ops,
+    NULL,
+};
 
 static struct fs_ops *cur_ops;
 

@@ -91,7 +91,7 @@ static struct iso_primary_descriptor *isofs_read_super(isofs_filsys fs)
     return iso;
 }
 
-int open_isofs (char *device)
+static int open_isofs (char *device)
 {
     fs = (isofs_filsys) malloc (sizeof (struct struct_ext2_filsys));
     if (!fs)
@@ -403,7 +403,7 @@ static int open_namei(isofs_filsys fs, const char *pathname,
 
 struct fs_ops iso_fs_ops;
 
-int isofs_namei (const char *filename)
+static int isofs_namei (const char *filename)
 {
     int ret;
     link_count = 0;
@@ -414,13 +414,13 @@ int isofs_namei (const char *filename)
     return ret;
 }
 
-void isofs_close(isofs_filsys fs)
+static void isofs_close(isofs_filsys fs)
 {
     free (fs->io);
     free (fs);
 }
 
-int isofs_block_iterate(isofs_filsys fs,
+static int isofs_block_iterate(isofs_filsys fs,
 			  int (*func)(isofs_filsys, blk_t *, int, void *), 
 			  void *private)
 {

@@ -45,7 +45,7 @@ OBJS5 = cmdline.o disk.o file.o misc.o cfg.o strtol.o ranges.o timer.o \
 OBJS = $(OBJS1) $(OBJS2) $(OBJS3) bmark.o $(OBJS4) $(OBJS5)
 OBJSNET = $(OBJS1) $(OBJS2N) $(OBJS3) bmark.o $(OBJS4N) $(OBJS5)
 
-FS_OBJS = fs/iom.o fs/ext2.o fs/isofs.o
+FS_OBJS = fs/iom.o fs/ext2.o fs/isofs.o fs/romfs.o fs/ufs.o
 
 ifeq (Linux,$(shell uname))
 ifeq (sparc,$(subst sparc64,sparc,$(shell uname -m)))

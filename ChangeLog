@@ -1,3 +1,12 @@
+Wed Jun  6 14:48:30 EDT 2001  Ben Collins <bcollins@debian.org>
+
+	* second/Makefile: Add fs/ufs.o and fs/romfs.o to libfs.a.
+	* second/file.c: Add ufs and romfs file ops.
+	* second/fs/romfs.c: Romfs support for SILO.
+	* second/fs/ufs.c: UFS support for SILO.
+
+	* second/fs/isofs.c: Oops, forget to set/unset have_inode.
+
 Wed Jun  6 13:02:34 EDT 2001  Ben Collins <bcollins@debian.org>
 
 	* common/Makefile: Clean up the "clean" target.
