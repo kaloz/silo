@@ -1,3 +1,7 @@
+Fri Jun 15 12:36:26 EDT 2001  Ben Collins <bcollins@debian.org>
+
+	* common/printf.c: Check for null pointer for %s format.
+
 Fri Jun  8 10:27:29 EDT 2001  Ben Collins <bcollins@debian.org>
 
 	* second/main.c (tab_complete): Support tab completion for other than

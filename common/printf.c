@@ -26,6 +26,10 @@
  */
 #define OBSIZE      200
 
+#ifndef NULL
+#define NULL (void *)0
+#endif
+
 static void putchar_1 (char c)
 {
     /* P3: This buffer can be static while xprintf flushes it on exit. */
@@ -93,6 +97,8 @@ void vprintf (char *fmt, va_list adx)
 	    putchar (va_arg (adx, unsigned));
 	} else if (c == 's') {
 	    s = va_arg (adx, char *);
+	    if (s == NULL)
+		s = (char *)"(null)";
 	    while ((c = *s++))
 		putchar (c);
 	} else if (c == 'l' || c == 'O') {
