@@ -269,9 +269,15 @@ int get_ticks (void)
     switch (architecture) {
         case sun4c: i = sun4c_timer->count10; break;
         case sun4m: i = sun4m_timer->count; break;
-        case sun4p: i = sun4p_lda(PCIC_PHYSADDR+PCIC_SYS_COUNT);
-                    i >>= 2;  /* PROLL does this and its timing is sure right */
-                    break;
+        case sun4p:
+		i = sun4p_lda(PCIC_PHYSADDR+PCIC_SYS_COUNT) & 0x7FFFFFFF;
+		if (i >= lasti)
+			ticks += i - lasti;
+		else
+			ticks += (0x7FFFFFFF - lasti) + i;
+		lasti = i;
+		/* 1 increment every 4 CPU clocks (@ 100MHz) */
+		return (int) (ticks / 250000);
         case sun4d: /* I cannot get the normal sun4d timer working
 		       during bootstrapping, so unfortunately I can give
 		       just a 1000ms precision. */

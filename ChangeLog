@@ -1,3 +1,8 @@
+Thu Aug  9 23:49:39 EDT 2001  Ben Collins <bcollins@debian.org>
+
+	* second/timer.c: Fix tick counting for javastation, but
+	Pete Zaitcev <zaitcev@redhat.com>
+
 Mon Jun 18 12:14:58 EDT 2001  Ben Collins <bcollins@debian.org>
 
 	* silo/silo.c: Fix suggested options to genromfs, patch from Pieter
