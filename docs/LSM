@@ -13,8 +13,9 @@ Author:		jakub@redhat.com (Jakub Jelinek)
 		ecd@skynet.be (Eddie C. Dost)
 		tridge@anu.edu.au (Andrew Tridgell)
 		tdyas@xenophanes.rutgers.edu (Tom Dyas)
+		bcollins@debian.org (Ben Collins)
 		sparclinux@vger.rutgers.edu (the Sparc Linux team)
-Maintained-by:  jakub@redhat.com (Jakub Jelinek)
+Maintained-by:  bcollins@debian.org (Ben Collins)
 Primary-site:	sunsite.mff.cuni.cz /pub/silo
 			275kB silo-0.9.9.tgz
 Original-site:  sunsite.mff.cuni.cz /pub/silo

@@ -171,7 +171,7 @@ setup_stack:
 	 mov	%i0, %o0			! Prom vector or cifh on sun4m
 	call	flush_icache
 	 nop
-	jmpl	%o0 + %g0, %g0
+	jmpl	%o0 + %g0, %g0			! Jump to return addressefrom tilo_main gunzipmain
 	 restore
 
 /* l0 from, l1 to, l2 len, l7 ret. Returns from + len in l0 */
