@@ -1,6 +1,7 @@
 Tue May 22 00:06:50 EDT 2001 Ben Collins <bcollins@debian.org>
 
-	* Makefile: do not execute silo/solarissilo on the install target
+	* Makefile: do not execute silo/solarissilo on the install target.
+	Add a clean target, and remove boot/*.b
 	* first/Makefile: Add -Wall to CFLAGS. Also, get rid of the gcc/as/rm
 	combinations and use gcc with -Wa instead.
 	* second/Makefile: Likewise.

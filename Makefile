@@ -1,7 +1,11 @@
 DIRS=first second silo
 
-all clean dep depend:
+all dep depend:
 	@for I in $(DIRS); do cd $$I; make $@ || exit 1; cd ..; done
+
+clean:
+	@for I in $(DIRS); do cd $$I; make $@ || exit 1; cd ..; done
+	rm -f boot/*.b sbin/silo misc/silocheck
 
 ifeq (Linux,$(shell uname))
 install:
