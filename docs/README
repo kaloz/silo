@@ -215,8 +215,10 @@ jsflash flash.img
 
 3. TODO
 
-	* Redo filesystem support so it is easier to plug in more
-	* Add ls and cat support for more filesystems
+	* (DONE) Redo filesystem support so it is easier to plug in more
+	* (All except ufs done) Add ls support for more filesystems
+	* Fix ls so you can do "ls -l /some/file", since ls only works on
+	  directories right now.
 	* Someway to cache the filesystems, so we don't have to
 	  open/read/close on every access to them.
 	* NetBoot
