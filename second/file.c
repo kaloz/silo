@@ -16,62 +16,25 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
+   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307,
+   USA.  */
 
-/* TODO: This file is a good candidate for rewrite from scratch */
-
-#include <ctype.h>
 #include <sys/types.h>
-#include <errno.h>
 #include <silo.h>
-typedef int FILE;
-#include <linux/ext2_fs.h>
-#include <ext2fs/ext2fs.h>
-#define ec ,},{
-static struct {
-    int errnum;
-    char *desc;
-} ext2errors[] = { 
-{ 0, "OK"
-#include <ext2fs/ext2_err.et>
-}
-};
+#include <file.h>
 #include <stringops.h>
-#include "ufs.h"
-#include "romfs.h"
-#include "9660.h"
 #include <setjmp.h>
 
-static errcode_t linux_open (const char *name, int flags, io_channel * channel);
-static errcode_t linux_close (io_channel channel);
-static errcode_t linux_set_blksize (io_channel channel, int blksize);
-static errcode_t linux_read_blk (io_channel channel, unsigned long block, int count, void *data);
-static errcode_t linux_write_blk (io_channel channel, unsigned long block, int count, const void *data);
-static errcode_t linux_flush (io_channel channel);
-
-static struct struct_io_manager struct_linux_manager =
-{
-    EXT2_ET_MAGIC_IO_MANAGER,
-    "linux I/O Manager",
-    linux_open,
-    linux_close,
-    linux_set_blksize,
-    linux_read_blk,
-    linux_write_blk,
-    linux_flush
-};
-
 ext2_filsys fs = 0;
-static ino_t root, cwd;
-static io_manager linux_io_manager = &struct_linux_manager;
+
+unsigned int bs;
+unsigned char *filebuffer;
+ino_t root, cwd;
+
 static int do_gunzip = 0;
 static unsigned int *gzipped_blocks;
 static unsigned int *cur_gzipped_block;
 
-static unsigned int bs;		/* Block Size */
-static unsigned long long doff;	/* Block where partition starts */
-
-static unsigned char *filebuffer;
 static unsigned char *filelimit;
 static int first_block;
 static int block_no;
@@ -80,219 +43,53 @@ static int last_blockcnt;
 static char *gunzip_buffer;
 static char *gunzip_inp;
 static char *gunzip_endbuf;
-static enum { ext2, ufs, romfs, isofs } type;
+static char *match;
 
-extern int solaris;
+/* Externally provided filesystem operations */
+extern struct fs_ops ext2_fs_ops;
+extern struct fs_ops iso_fs_ops;
 
-static int read_sun_partition (int partno)
-{
-    int rc;
-    sun_partition sdl;
-    unsigned short csum, *ush;
+/* Array of our supported ops */
+static struct fs_ops *silo_fs_ops[] = { &ext2_fs_ops, &iso_fs_ops, NULL };
 
-    rc = read ((char *) &sdl, 512, 0);
-    if (rc != 512) {
-	fatal ("Cannot read partition");
-	return 0;
-    }
-    if (sdl.magic != SUN_LABEL_MAGIC)
-	fatal ("Wrong disklabel magic");
-    for (csum = 0, ush = ((unsigned short *) ((&sdl) + 1)) - 1; ush >= (unsigned short *) &sdl;)
-	csum ^= *ush--;
-    if (csum)
-	printf ("\nWarning: Your disklabel has wrong checksum. Use fdisk to correct it.");
-    doff = (((unsigned long long)sdl.ntrks) * sdl.nsect * sdl.partitions[partno - 1].start_cylinder) << 9;
-    return 1;
-}
-
-void com_err (const char *a, long i, const char *fmt,...)
-{
-    printf ((char *) fmt);
-}
-
-static errcode_t linux_open (const char *name, int flags, io_channel * channel)
-{
-    int partno;
-    io_channel io;
-
-    if (!name)
-	return EXT2_ET_BAD_DEVICE_NAME;
-    io = (io_channel) malloc (sizeof (struct struct_io_channel));
-    if (!io)
-	return EXT2_ET_BAD_DEVICE_NAME;
-    memset (io, 0, sizeof (struct struct_io_channel));
-    io->magic = EXT2_ET_MAGIC_IO_CHANNEL;
-    io->manager = linux_io_manager;
-    io->name = (char *) malloc (strlen (name) + 1);
-    strcpy (io->name, name);
-    io->block_size = bs;
-    io->read_error = 0;
-    io->write_error = 0;
-
-    doff = 0LL;
-    if (strncmp (name, "/dev/fd0", 8) && partitionable()) {
-        partno = *(name + strlen (name) - 1) - '0';
-        if (partno && !read_sun_partition (partno))
-	    return EXT2_ET_BAD_DEVICE_NAME;
-    }
-    *channel = io;
-    return 0;
-}
-
-static errcode_t linux_close (io_channel channel)
-{
-    return 0;
-}
-
-static errcode_t linux_set_blksize (io_channel channel, int blksize)
-{
-    channel->block_size = bs = blksize;
-    return 0;
-}
-
-static errcode_t linux_read_blk (io_channel channel, unsigned long block, int count, void *data)
-{
-    int size;
-
-    size = (count < 0) ? -count : count * bs;
-    if (read (data, size, ((unsigned long long)block) * bs + doff) != size) {
-	printf ("\nRead error on block %d\n", block);
-	return EXT2_ET_SHORT_READ;
-    }
-    return 0;
-}
-
-static errcode_t linux_write_blk (io_channel channel, unsigned long block, int count, const void *data)
-{
-    return 0;
-}
-
-static errcode_t linux_flush (io_channel channel)
-{
-    return 0;
-}
-
-static void ext2fs_error (int errcode)
-{
-    int i;
-    
-    for (i = 0; i < sizeof (ext2errors) / sizeof (ext2errors[0]); i++)
-    	if (ext2errors [i].errnum == errcode) {
-    	    printf ("%s", ext2errors [i].desc);
-    	    return;
-    	}
-    printf ("Unknown ext2 error");
-}
-
-static int open_ext2 (char *device)
-{
-    int retval;
-
-    retval = ext2fs_open (device, EXT2_FLAG_RW, 0, 0, linux_io_manager, &fs);
-    if (retval == EXT2_ET_BAD_MAGIC)
-        return 0;
-    if (retval) {
-        printf ("\n");
-        ext2fs_error (retval);
-        printf ("\n");
-	return 0;
-    }
-    root = EXT2_ROOT_INO;
-    return 1;
-}
-
-static int open_ufs (char *device)
-{
-    if (ufs_open (device, linux_io_manager, &fs)) return 0;
-    root = UFS_ROOTINO;
-    return 1;
-}
-
-static int open_romfs (char *device)
-{
-    if (romfs_open (device, linux_io_manager, &fs)) return 0;
-    root = ((struct romfs_super_block *)(fs->io->private_data))->checksum;
-    return 1;
-}
-
-static int open_isofs (char *device)
-{
-    return !iso9660_open (device, linux_io_manager, &fs);
-}
-
-static int dump_block (ext2_filsys fs, blk_t * blocknr, int blockcnt,
-		       void *private)
-{
-    if (blockcnt < 0)
-	return 0;
-
-    if (!first_block && do_gunzip) {
-    	if (blockcnt != last_blockcnt + 1) {
-            int i;
-            
-            for (i = blockcnt - last_blockcnt - 1; i > 0; i--)
-            	*cur_gzipped_block++ = 0xffffffff;
-        }
-	*cur_gzipped_block++ = *blocknr;
-	last_blockcnt = blockcnt;
-	return 0;
-    }
-    if (*blocknr || block_no) {
-	if (first_block || !*blocknr || blockcnt != last_blockcnt + 1 || (block_no && *blocknr != block_no + block_cnt)) {
-	    if (first_block) {
-		block_no = *blocknr;
-		block_cnt = 1;
-		if (blockcnt) {
-		    fatal ("File cannot have a hole at beginning");
-		    return BLOCK_ABORT;
-		}
-		last_blockcnt = -1;
-	    }
-	    if (filebuffer + (block_cnt + ((*blocknr) ? (blockcnt - last_blockcnt - 1) : 0)) * bs > filelimit) {
-		fatal ("Image too large to fit in destination");
-		return BLOCK_ABORT;
-	    }
-	    if (block_cnt > 0 && io_channel_read_blk (fs->io, block_no, block_cnt, filebuffer))
-		return BLOCK_ABORT;
-	    if (first_block) {
-		first_block = 0;
-		last_blockcnt = 0;
-		if (*filebuffer == 037 && (filebuffer[1] == 0213 || filebuffer[1] == 0236)) {	/* gzip magic */
-		    unsigned long sa = (unsigned long)&_start;
-		    gunzip_buffer = malloc (16 * bs);
-		    memcpy (gunzip_buffer, filebuffer, bs);
-		    gzipped_blocks = (unsigned int *) malloc ((sa / 512) * sizeof (int));
-		    cur_gzipped_block = gzipped_blocks;
-		    *cur_gzipped_block++ = *blocknr;
-		    printf ("Uncompressing image...\n");
-		    return 0;
-		}
-		do_gunzip = 0;
-		filebuffer += bs;
-		block_no = 0;
-		block_cnt = 0;
-		return 0;
-	    }
-	    filebuffer += block_cnt * bs;
-	    if (*blocknr && blockcnt && blockcnt != last_blockcnt + 1) {
-	    	memset (filebuffer, 0, (blockcnt - last_blockcnt - 1) * bs);
-	    	filebuffer += (blockcnt - last_blockcnt - 1) * bs;
-	    }
-	    block_no = 0;
-	}
-	if (*blocknr) {
-	    if (!block_no) {
-		block_no = *blocknr;
-		block_cnt = 1;
-	    } else
-		block_cnt++;
-	    last_blockcnt = blockcnt;
-	}
-    }
-    return 0;
-}
+static struct fs_ops *cur_ops;
 
 extern jmp_buf gunzip_env;
+
+void register_silo_inode (unsigned int mtime, unsigned int size,
+			  unsigned int mode, unsigned int uid,
+			  unsigned int gid, const char *name,
+			  const char *symlink)
+{
+    struct silo_inode *sino = (struct silo_inode *)filebuffer;
+    unsigned char *p;
+    int name_len = strlen(name);
+
+    if (match != NULL)
+        if (strlen(match) > name_len || strncmp(match, name, strlen(match)))
+            return;
+
+    strncpy(sino->name, name, name_len);
+    sino->name[name_len] = 0;
+    sino->mtime = mtime;
+    sino->size = size;
+    sino->mode = mode;
+    sino->uid = uid;
+    sino->gid = gid;
+
+    p = strchr (sino->name, 0) + 1;
+    if (symlink) {
+        strncpy (p, symlink, size);
+        p[size] = 0;
+        p += size + 1;
+    }
+    if ((long)p & 3) p += 4 - ((long)p & 3);
+    sino->inolen = p - filebuffer;
+    filebuffer = p;
+
+    return;
+}
+
 static unsigned char get_gzip_input (void)
 {
 
@@ -303,7 +100,7 @@ static unsigned char get_gzip_input (void)
 	unsigned int first = *cur_gzipped_block++;
 
 	if (!first) {
-	    printf ("\nDecompression error: run out of compressed data\n");
+	    printf ("\nDecompression error: ran out of compressed data\n");
 	    longjmp (gunzip_env, 1);
 	}
 	if (first == 0xffffffff) {
@@ -342,7 +139,79 @@ static void unget_gzip_input (void)
 
 static int gunzipped_len = 0;
 
-static int dump_finish (void)
+int dump_block (ext2_filsys fs, blk_t * blocknr, int blockcnt,
+                       void *private)
+{
+    if (blockcnt < 0)
+        return 0;
+
+    if (!first_block && do_gunzip) {
+        if (blockcnt != last_blockcnt + 1) {
+            int i;
+
+            for (i = blockcnt - last_blockcnt - 1; i > 0; i--)
+                *cur_gzipped_block++ = 0xffffffff;
+        }
+        *cur_gzipped_block++ = *blocknr;
+        last_blockcnt = blockcnt;
+        return 0;
+    }
+    if (*blocknr || block_no) {
+        if (first_block || !*blocknr || blockcnt != last_blockcnt + 1 || (block_no && *blocknr != block_no + block_cnt)) {
+            if (first_block) {
+                block_no = *blocknr;
+                block_cnt = 1;
+                if (blockcnt) {
+                    fatal ("File cannot have a hole at beginning");
+                    return BLOCK_ABORT;
+                }
+                last_blockcnt = -1;
+            }
+            if (filebuffer + (block_cnt + ((*blocknr) ? (blockcnt - last_blockcnt - 1) : 0)) * bs > filelimit) {
+                fatal ("Image too large to fit in destination");
+                return BLOCK_ABORT;
+            }
+            if (block_cnt > 0 && io_channel_read_blk (fs->io, block_no, block_cnt, filebuffer))
+                return BLOCK_ABORT;
+            if (first_block) {
+                first_block = 0;
+                last_blockcnt = 0;
+                if (*filebuffer == 037 && (filebuffer[1] == 0213 || filebuffer[1] == 0236)) {   /* gzip magic */
+                    unsigned long sa = (unsigned long)&_start;
+                    gunzip_buffer = malloc (16 * bs);
+                    memcpy (gunzip_buffer, filebuffer, bs);
+                    gzipped_blocks = (unsigned int *) malloc ((sa / 512) * sizeof (int));
+                    cur_gzipped_block = gzipped_blocks;
+                    *cur_gzipped_block++ = *blocknr;
+                    printf ("Uncompressing image...\n");
+                    return 0;
+                }
+                do_gunzip = 0;
+                filebuffer += bs;
+                block_no = 0;
+                block_cnt = 0;
+                return 0;
+            }
+            filebuffer += block_cnt * bs;
+            if (*blocknr && blockcnt && blockcnt != last_blockcnt + 1) {
+                memset (filebuffer, 0, (blockcnt - last_blockcnt - 1) * bs);
+                filebuffer += (blockcnt - last_blockcnt - 1) * bs;
+            }
+            block_no = 0;
+        }
+        if (*blocknr) {
+            if (!block_no) {
+                block_no = *blocknr;
+                block_cnt = 1;
+            } else
+                block_cnt++;
+            last_blockcnt = blockcnt;
+        }
+    }
+    return 0;
+}
+
+int dump_finish (void)
 {
     if (block_no) {
 	blk_t tmp = 0;
@@ -363,108 +232,8 @@ static int dump_finish (void)
     return 1;
 }
 
-static int dump_ext2 (ino_t inode, char *filename)
-{
-    errcode_t retval;
-
-    retval = ext2fs_block_iterate (fs, inode, 0, 0,
-				   dump_block, 0);
-    if (retval) {
-        printf ("\n");
-    	ext2fs_error (retval);
-        printf ("\n");
-	return 0;
-    }
-    return dump_finish ();
-}
-
-static int ls_ext2_proc(struct ext2_dir_entry *dirent, int offset,
-			int blocksize, char *buf, void *private)
-{
-    struct silo_inode *sino = (struct silo_inode *)filebuffer;
-    struct ext2_inode ino;
-    unsigned char *p;
-    int name_len = dirent->name_len & 0xFF;
-    char *match = (char *)private;
-
-    if (match != NULL)
-	if (strlen(match) > name_len || strncmp(match, dirent->name, strlen(match)))
-	    return 0;
-
-    strncpy(sino->name, dirent->name, name_len);
-    sino->name[name_len] = 0;
-    if (ext2fs_read_inode(fs, dirent->inode, &ino))
-	strcpy (sino->name, "--- error ---");
-    sino->mtime = ino.i_mtime;
-    sino->size = ino.i_size;
-    sino->mode = ino.i_mode;
-    sino->uid = ino.i_uid;
-    sino->gid = ino.i_gid;
-    p = strchr (sino->name, 0) + 1;
-    if (LINUX_S_ISLNK (ino.i_mode)) {
-	if (ino.i_blocks) {
-	    if (io_channel_read_blk(fs->io, ino.i_block[0], 1, p))
-		ino.i_size = 0;
-	} else {
-	    strncpy (p, (char *)&(ino.i_block[0]),ino.i_size);
-	}
-	p[ino.i_size] = 0;
-	p += ino.i_size + 1;
-    }
-    if ((long)p & 3) p += 4 - ((long)p & 3);
-    sino->inolen = p - filebuffer;
-    filebuffer = p;
-    return 0;
-}
-
-static int ls_ext2 (ino_t inode, char *match)
-{
-    errcode_t retval;
-    struct silo_inode *sino;
-
-    retval = ext2fs_dir_iterate (fs, inode, DIRENT_FLAG_INCLUDE_EMPTY,
-				 0, ls_ext2_proc, match);
-
-    /* Only print an error if we aren't matching */
-    if (retval && match == NULL) {
-        printf ("\n");
-    	ext2fs_error (retval);
-        printf ("\n");
-	return 0;
-    }
-    sino = (struct silo_inode *)filebuffer;
-    sino->inolen = 0;
-    return 1;
-}
-
-static int dump_ufs (ino_t inode, char *filename)
-{
-    if (ufs_block_iterate (fs, inode, dump_block, 0)) {
-	printf ("Error while loading of %s", filename);
-	return 0;
-    }
-    return dump_finish ();
-}
-
-static int dump_romfs (ino_t inode, char *filename)
-{
-    if (romfs_block_iterate (fs, inode, dump_block, 0)) {
-	printf ("Error while loading of %s", filename);
-	return 0;
-    }
-    return dump_finish ();
-}
-
-static int dump_isofs (struct iso9660_inode *inode, char *filename)
-{
-    if (iso9660_block_iterate (fs, inode, dump_block, 0)) {
-	printf ("Error while loading of %s", filename);
-	return 0;
-    }
-    return dump_finish ();
-}
-
-int dump_device_range (char *filename, char *bogusdev, int *len, void (*lenfunc)(int, char **, char **))
+static int dump_device_range (char *filename, char *bogusdev, int *len,
+			      void (*lenfunc)(int, char **, char **))
 {
     /* Range of blocks on physical block device */
     int start = 0, end = -1;
@@ -499,7 +268,7 @@ int dump_device_range (char *filename, char *bogusdev, int *len, void (*lenfunc)
         (*lenfunc)((end - start) << 9, (char **)&filebuffer, (char **)&filelimit);
     fs = (ext2_filsys) malloc (sizeof (struct struct_ext2_filsys));
     if (fs) {
-	if (!linux_open (bogusdev, 0, &fs->io)) {
+	if (!((struct struct_io_manager *)(silo_io_manager))->open (bogusdev, 0, &fs->io)) {
 	    blk_t tmp;
 
 	    first_block = do_gunzip;
@@ -526,79 +295,25 @@ int dump_device_range (char *filename, char *bogusdev, int *len, void (*lenfunc)
     return 0;
 }
 
-static int get_len (ino_t inode)
+int load_file (char *device, int partno, char *filename, char *buffer,
+	       char *limit, int *len, int cmd,
+	       void (*lenfunc)(int, char **, char **))
 {
-    if (type == ext2) {
-	struct ext2_inode ei;
-	int retval;
-	    
-	if ((retval = ext2fs_read_inode (fs, inode, &ei))) {
-            printf ("\n");
-	    ext2fs_error (retval);
-            printf ("\n");
-	    return 0;
-	}
-	return ei.i_size;
-    } else if (type == ufs) {
-	struct ufs_inode ui;
-	    
-	if (ufs_read_inode (fs, inode, &ui))
-	    return 0;
-	/* Hope nobody is so stupid to load 4GB+ kernel into core :)))) */
-	return ufsi_size(&ui);
-    } else if (type == romfs) {
-    	struct romfs_inode ri;
-    	
-    	if (romfs_read_inode (fs, inode, &ri))
-    	    return 0;
-    	if ((ri.next & ROMFH_TYPE) != ROMFH_REG) {
-    	    printf("romfs: get_len on non-reg file?\n");
-    	    return 0;
-    	}
-    	return ri.size;
-    } else if (type == isofs) {
-    	/* XXX */
-    	return 0;
-    }
-    return 0;
-}
-
-static char *get_archstr(void)
-{
-	char *p = "sun4c";
-    	    	    
-	switch (get_architecture()) {
-	case sun4: p = "sun4"; break;
-	case sun4c: p = "sun4c"; break;
-	case sun4m: p = "sun4m"; break;
-	case sun4d: p = "sun4d"; break;
-	case sun4e: p = "sun4e"; break;
-	case sun4u: p = "sun4u"; break;
-	case sun4p: p = "sun4p"; break;
-	default: break;
-	}
-	return p;
-}
-
-int load_file (char *device, int partno, char *filename, char *buffer, char *limit, int *len, int cmd, void (*lenfunc)(int, char **, char **))
-{
-    ino_t inode = 0;
-    struct iso9660_inode iso_inode;
-    int retval;
-    int syspkg = 0;
+    struct silo_inode *sino;
+    int retval = 0, i;
     int size = -1;
     char bogusdev[] = "/dev/sdaX";
     char *bogdev;
     void *mmark;
-    char *match = NULL, *dir = NULL;
+    char *dir = NULL;
+    size_t fn_len;
 
     mark (&mmark);
     if (!device)
 	device = bootdevice;
-#if 0
-    printf ("Loading %s from %d\n", filename, partno);
-#endif
+
     bogdev = bogusdev;
+
     if (prom_vers == PROM_V0) {
     	if (device[0] == 'f' && device[1] == 'd') {
     	    device = "fd()";
@@ -607,177 +322,116 @@ int load_file (char *device, int partno, char *filename, char *buffer, char *lim
             bogusdev[8] = partno + '0';
     } else
         bogusdev[8] = partno + '0';
+
     if (setdisk (device) < 0)
-	return 0;
+	goto done_2;
+
     do_gunzip = cmd & LOADFILE_GZIP;
     filebuffer = buffer;
     filelimit = limit;
+
     if (*filename == '[') {
 	if (cmd & LOADFILE_LS) {
 	    if (!(cmd & LOADFILE_QUIET))
 		printf ("You cannot ls a device range\n");
-	    return 0;
+	    goto done_2;
 	}
     	solaris = 0;
 	retval = dump_device_range (filename, bogdev, len, lenfunc);
-	release (mmark);
-	return retval;
+	goto done_2;
     }
-    if (!open_ext2 (bogdev)) {
-        if (!open_romfs (bogdev)) {
-            if (!open_isofs (bogdev)) {
-		if (!open_ufs (bogdev)) {
-		    if (!(cmd & LOADFILE_QUIET))
-			fatal ("Unable to open filesystem");
-                    release (mmark);
-                    return 0;
-                } else type = ufs;
-            } else
-                type = isofs;
-        } else
-            type = romfs;
-    } else
-        type = ext2;
-    if (type != ufs)
-    	solaris = 0;
-    if (type == ext2) {
-	size_t fn_len = strlen(filename);
-	retval = 0;
-	if (cmd & LOADFILE_MATCH && fn_len > 1 && filename[fn_len - 1] != '/') {
-	    dir = strdup(filename);
-	    if ((match = strrchr(dir, '/')) != NULL && strlen(match) > 1) {
-		char *base = "/";
-		if (match != dir) base = dir;
-		*match = '\0';
-		match++;
-		retval = ext2fs_namei_follow (fs, root, root, base, &inode);
-	    }
-	} else
-	    retval = ext2fs_namei_follow (fs, root, root, filename, &inode);
 
-	if (retval) {
-	    if (!(cmd & LOADFILE_QUIET)) {
-		printf ("\nCannot find %s (", dir != NULL ? dir : filename);
-		ext2fs_error (retval);
-		printf (")\n");
-	    }
-	    if (dir) free(dir);
-	    ext2fs_close (fs);
-	    release (mmark);
-	    return 0;
-	}
-    } else if (type == romfs) {
-        if (romfs_namei (fs, root, root, filename, &inode)) {
-	    if (!(cmd & LOADFILE_QUIET))
-		printf ("\nCannot find %s\n", filename);
-	    release (mmark);
-	    return 0;
-        }
-    } else if (type == isofs) {
-	if (iso9660_namei (fs, filename, &iso_inode)) {
-	    if (!(cmd & LOADFILE_QUIET))
-		printf ("\nCannot find %s\n", filename);
-	    release (mmark);
-	    return 0;
-	}
-	inode = 1;
-    } else if (type == ufs) {
-    	cwd = root;
-    	if (solaris) {
-    	    if (!ufs_namei (fs, root, root, "/platform", &cwd)) {
-    	    	if (!ufs_namei (fs, root, cwd, get_syspackage(), &inode)) {
-    	    	    cwd = inode;
-    	    	    syspkg = 1;
-    	    	} else {
-    	    	    if (!ufs_namei (fs, root, cwd, get_archstr(), &inode))
-    	    	        cwd = inode;
-    	    	}
-    	    }
-    	    if (cwd != root && *filename == '/') filename++;
-    	}
-        if (ufs_namei (fs, root, cwd, filename, &inode)) {
-            if (syspkg) {
-            	syspkg = 0;
-            	ufs_namei (fs, root, root, "/platform", &cwd);
-            	if (!ufs_namei (fs, root, cwd, get_archstr(), &inode)) {
-            	    cwd = inode;
-            	    if (!ufs_namei (fs, root, cwd, filename, &inode))
-            	        syspkg = 1;
-            	}
-            }
-            if (!syspkg) {
-		if (!(cmd & LOADFILE_QUIET))
-		    printf ("\nCannot find %s.", filename);
-	        ufs_close (fs);
-	        release (mmark);
-	        return 0;
-	    }
-        }
-        if (solaris) {
-            ino_t sinode;
-            
-            if (ufs_namei (fs, root, cwd, "ufsboot", &sinode)) {
-		if (!(cmd & LOADFILE_QUIET))
-		    printf ("\nCannot find Solaris kernel bootloader `ufsboot'. Will try to load it,\n"
-			    "but it may fail\n");
-                solaris = 0;
-            } else
-            	inode = sinode;
-        }
+    solaris = 0; /* The UFS module will set this if needed */
+    for (i = 0; silo_fs_ops[i]; i++)
+	if (silo_fs_ops[i]->open(bogdev))
+	    break;
+
+    if (!silo_fs_ops[i]) {
+	if (!(cmd & LOADFILE_QUIET))
+	    fatal ("Unable to open filesystem");
+	goto done_2;
+    } else
+	cur_ops = silo_fs_ops[i];
+
+    if (cmd & LOADFILE_LS && cur_ops->ls == NULL) {
+	if (!(cmd & LOADFILE_MATCH))
+	    printf("\nls is not supported for `%s' filesystems\n", cur_ops->name);
+	goto done_1;
     }
+
+    fn_len = strlen(filename);
+
+    /* Find the inode for the filename. If we are matching, always parse
+     * basedir and basename.  */
+    if (cmd & LOADFILE_MATCH && fn_len > 1 && filename[fn_len - 1] != '/') {
+	dir = strdup(filename);
+	if ((match = strrchr(dir, '/')) != NULL && strlen(match) > 1) {
+	    char *base = "/";
+	    if (match != dir) base = dir;
+	    *match = '\0';
+	    match++;
+	    retval = cur_ops->namei_follow (base);
+	}
+    } else {
+	match = NULL;
+	retval = cur_ops->namei_follow (filename);
+    }
+
+    if (retval) {
+	if (!(cmd & LOADFILE_QUIET)) {
+	    printf ("\nCannot find %s (", dir != NULL ? dir : filename);
+	    cur_ops->print_error (retval);
+	    printf (")\n");
+	}
+	retval = 0;
+	goto done_1;
+    }
+
     if (lenfunc) {
         do_gunzip = 0;
-        if (type == isofs)
-	    size = iso_inode.size;
-	else
-	    size = get_len (inode);
+	size = cur_ops->ino_size();
         (*lenfunc)(size, (char **)&filebuffer, (char **)&filelimit);
         do_gunzip = cmd & LOADFILE_GZIP;
     }
+
     first_block = do_gunzip;
     last_blockcnt = 0;
     block_no = 0;
     block_cnt = 0;
     retval = 0;
-    if (inode) {
-	if (cmd & LOADFILE_LS)
-	    switch (type) {
-	    case ext2: retval = ls_ext2 (inode, match); if (dir) free(dir); break;
-	    default:
-		if (!(cmd & LOADFILE_QUIET))
-		    printf ("ls not supported outside of ext2\n");
+
+    if (cur_ops->have_inode) {
+	if (cmd & LOADFILE_LS) {
+	    if ((retval = cur_ops->ls())) {
+		if (!(cmd & LOADFILE_MATCH)) {
+		    printf("\nError: could not list (");
+		    cur_ops->print_error(retval);
+		    printf(").\n");
+		}
 		retval = 0;
- 		break;
-#if 0
-            case ufs: retval = ls_ufs (inode); break;
-            case romfs: retval = ls_romfs (inode); break;
-            case isofs: retval = ls_isofs (&iso_inode); break;
-#endif
+	    } else {
+		sino = (struct silo_inode *)filebuffer;
+		sino->inolen = 0;
+		retval = 1;
 	    }
-	else
-	    switch (type) {
-            case ext2: retval = dump_ext2 (inode, filename); break;
-            case ufs: retval = dump_ufs (inode, filename); break;
-            case romfs: retval = dump_romfs (inode, filename); break;
-            case isofs: retval = dump_isofs (&iso_inode, filename); break;
-	    }
-    }	    
+	} else
+	    retval = cur_ops->dump(filename);
+    }
+
     if (retval && len) {
 	if (size != -1)
 	    *len = size;
 	else if (do_gunzip)
 	    *len = gunzipped_len;
-	else if (type == isofs)
-	    *len = iso_inode.size;
 	else
-	    *len = get_len (inode);
+	    *len = cur_ops->ino_size();
     }
-    switch (type) {
-	case ext2: ext2fs_close (fs); break;
-	case ufs: ufs_close (fs); break;
-	case romfs: romfs_close (fs); break;
-	case isofs: iso9660_close (fs); break;
-    }
+
+done_1:
+    if (dir) free(dir);
+    cur_ops->close (fs);
+done_2:
     release (mmark);
+
     return retval;
 }

@@ -1,3 +1,34 @@
+Wed Jun  6 04:30:21 EDT 2001  Ben Collins <bcollins@debian.org>
+
+	* docs/README: Updated.
+
+	* second/9660.c: Removed.
+	* second/9660.h: Likewise.
+	* second/romfs.c: Likewise.
+	* second/romfs.h: Likewise.
+	* second/ufs.c: Likewise.
+	* second/ufs.h: Likewise.
+
+	* second/file.c: Stripped down, and rewrote to be more abstract. Now
+	supports easy addition of new filesystems.
+	* second/file.h: New file, describe interfaces for filesystem modules
+	with file.c.
+
+	* second/fs/iom.c: I/O Manager for file.c.
+	* second/fs/ext2.c: EXT2 Filesystem support rewritten for new
+	interface.
+	* second/fs/isofs.c: ISO-9660 Filesystem support rewritten for new
+	interface. This was almost a complete rewrite. It now supports
+	extended Rock Ridge information, but also supports ls and tab
+	completion.
+	* second/fs/rock.h: Rock Ridge definitions for isofs.c.
+
+	* second/Makefile: Build new fs/ subdir as libfs.a and tack it into
+	the second stage boot loader.
+
+	* Still need to update the romfs and ufs filesystems to the new
+	layout.
+
 Mon Jun  4 22:42:03 EDT 2001  Ben Collins <bcollins@debian.org>
 
 	* Rules.make: Update for 1.1.0 release.

@@ -214,7 +214,11 @@ jsflash flash.img
 	All the code is under GPL.
 
 3. TODO
-	
+
+	* Redo filesystem support so it is easier to plug in more
+	* Add ls and cat support for more filesystems
+	* Someway to cache the filesystems, so we don't have to
+	  open/read/close on every access to them.
 	* NetBoot
 	* More silo.conf keywords/commands
 	* Sun4 support

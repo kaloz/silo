@@ -4,6 +4,7 @@
 ##
 
 AS=as
+AR=ar
 NM=nm
 DD=dd
 AWK=awk
@@ -24,10 +25,10 @@ LDFLAGS_SMALL=-N -Ttext 0x280000
 LDFLAGS_LARGE=-N -Ttext 0x380000
 
 .c.o:
-	$(CC) $(CFLAGS) -c $*.c
+	$(CC) $(CFLAGS) -c $*.c -o $@
 
 .S.o:
-	$(CC) $(CFLAGS) -c $*.S
+	$(CC) $(CFLAGS) -c $*.S -o $@
 
 # The ordering here is very significant. Please add new object files to OBJS5 only.
 OBJS1 = crt0.o
@@ -39,10 +40,12 @@ OBJS3 = ../common/console.o ../common/printf.o malloc.o ../common/jmp.o \
 OBJS4 = main.o
 OBJS4N = mainnet.o
 OBJS5 = cmdline.o disk.o file.o misc.o cfg.o strtol.o ranges.o timer.o \
-	memory.o ufs.o romfs.o 9660.o divdi3.o mul.o rem.o sdiv.o umul.o \
+	memory.o fs/libfs.a divdi3.o mul.o rem.o sdiv.o umul.o \
 	../common/stringops2.o ls.o muldi3.o
 OBJS = $(OBJS1) $(OBJS2) $(OBJS3) bmark.o $(OBJS4) $(OBJS5)
 OBJSNET = $(OBJS1) $(OBJS2N) $(OBJS3) bmark.o $(OBJS4N) $(OBJS5)
+
+FS_OBJS = fs/iom.o fs/ext2.o fs/isofs.o
 
 ifeq (Linux,$(shell uname))
 ifeq (sparc,$(subst sparc64,sparc,$(shell uname -m)))
@@ -51,12 +54,16 @@ LIBINC=$(shell if [ ! -f /lib/ld-linux.so.2 -o ! -f /usr/lib/libext2fs.so ]; the
 all: second.b silotftp.b
 else
 all:
-	@$(ECHO) Second stage bootloader should be build under Linux/Sparc only
+	@$(ECHO) Second stage bootloader should be built under Linux/Sparc only
 endif
 else
 all:
 	@$(ECHO) Second stage bootloader should be build under Linux/Sparc only
 endif
+
+fs/libfs.a: $(FS_OBJS)
+	$(RM) $@
+	$(AR) rc $@ $(FS_OBJS)
 
 second: $(OBJS) mark.o
 	$(LD) $(LDFLAGS_SMALL) -Bstatic -o second $(OBJS) $(LIBINC) -lext2fs mark.o
@@ -71,8 +78,7 @@ silotftp: $(OBJSNET) mark.o
 second.l: second
 	( $(ECHO) 'disassemble 0x280000 '`$(GREP) '_etext' second.map | $(SED) 's/ .*$$//' | $(SED) 's/^00/0x/'`; $(ECHO) quit ) | $(GDB) second | $(SED) '1,/^(gdb)/d;/^End /,$$d' > second.l
 
-file.o:	       file.c ufs.h
-ufs.o:	       ufs.c ufs.h
+file.o:	       file.c
 
 decompnet.o:   decomp.c
 	$(CC) $(CFLAGS) -DTFTP -c -o decompnet.o decomp.c
@@ -86,7 +92,7 @@ util:	util.c
 	$(CC) -o util util.c
 
 clean:
-	$(RM) *.o second second2 second.b silotftp silotftp2 silotftp.b second.l *.map core *~ util second.b second.image.tmp *.s
+	$(RM) *.o fs/*.o *.s second* silotftp* *.map util fs/libfs.a
 
 crt0.o:	crt0.S
 	$(CC) $(CFLAGS) -c -Wa,-Av9 -DIMGVERSION='"SILO$(IMGVERSION)"' crt0.S
