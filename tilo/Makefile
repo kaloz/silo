@@ -62,4 +62,4 @@ crt0l.o: crt0.S
 	$(CC) $(CFLAGS) -c -Wa,-Av9 -DLARGETILO -o crt0l.o crt0.S
 
 clean:
-	$(RM) *.o boot b.out boot2 b2.out b.h b2.h maketilo
+	$(RM) *.o boot boot2 *.out b.h b2.h maketilo

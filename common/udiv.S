@@ -1,4 +1,4 @@
-/* $Id: udiv.S,v 1.1 2001/05/25 14:41:26 bencollins Exp $
+/* $Id: udiv.S,v 1.2 2001/06/06 17:04:50 bencollins Exp $
  * udiv.S:      This routine was taken from glibc-1.09 and is covered
  *              by the GNU Library General Public License Version 2.
  */
@@ -50,10 +50,11 @@
 	bne	1f
 	 mov	%o0, %o3
 
-                ! Divide by zero trap is not best solution for boot loader.
-                ! So return 0.
-                retl
-                 clr    %o0
+		! Divide by zero trap.  If it returns, return 0 (about as
+		! wrong as possible, but that is what SunOS does...).
+		! ta	ST_DIV0 -- Not for SILO
+		retl
+		 clr	%o0
 
 1:
 	cmp	%o3, %o5			! if %o1 exceeds %o0, done

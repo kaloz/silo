@@ -135,6 +135,5 @@ ieee32.b: ieee32.o
 	chmod 644 ieee32.b
 
 clean:
-	$(RM) *.o *~ first first.b first.map first.h ultra ultra.b ultra.s ultra.map ultra.h \
-	ieee32.b ieee32.map cd cd.b cd.s cd.map generic generic.b generic.s generic.map \
-	generic.h fd.h fd fd.b fd.s fd.map core
+	$(RM) *.o *.map *.b first first.h ultra ultra.h \
+	generic generic.h fd fd.h cd

@@ -1,3 +1,18 @@
+Wed Jun  6 13:02:34 EDT 2001  Ben Collins <bcollins@debian.org>
+
+	* common/Makefile: Clean up the "clean" target.
+	* first/Makefile: Likewise.
+	* second/Makefile: Likewise.
+	* silo/Makefile: Likewise.
+	* tilo/Makefile: Likewise.
+
+	* common/udiv.S: Updated from 2.4 kernel source.
+	* common/urem.S: Likewise.
+	* second/divdi3.S: Likewise.
+	* second/muldi3.S: Likewise.
+	* second/rem.S: Likewise.
+	* second/sdiv.S: Likewise.
+
 Wed Jun  6 04:30:21 EDT 2001  Ben Collins <bcollins@debian.org>
 
 	* docs/README: Updated.

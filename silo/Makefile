@@ -45,4 +45,4 @@ silo.o: silo.c floppy.h $(UFSDEPS)
 	$(CC) $(CFLAGS) -DVERSION='"$(VERSION)"' -DIMGVERSION='"$(IMGVERSION)"' -c silo.c
 
 clean:
-	$(RM) *.o *~ silo floppy.h ufs.h silocheck
+	$(RM) *.o silo floppy.h ufs.h silocheck

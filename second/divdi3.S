@@ -19,7 +19,7 @@ Boston, MA 02111-1307, USA.  */
 
 	.data
 	.align 8
-	.type	 __clz_tab,#object
+	.globl	__clz_tab
 __clz_tab:
 	.byte	0,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5
 	.byte	6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6
@@ -34,13 +34,9 @@ __clz_tab:
 
 	.text
 	.align 4
-	.global __divdi3
-	.type	 __divdi3,#function
-	.proc	05
+	.globl __divdi3
 __divdi3:
-	!#PROLOGUE# 0
 	save %sp,-104,%sp
-	!#PROLOGUE# 1
 	cmp %i0,0
 	bge .LL40
 	mov 0,%l4

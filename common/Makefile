@@ -19,4 +19,4 @@ prom.o: prom.c
 	$(CC) $(CFLAGS) -c -Wa,-Av9 -o prom.o prom.c
 
 clean:
-	$(RM) $(OBJS) $(PROGRAMS) *.o
+	$(RM) $(PROGRAMS) *.o

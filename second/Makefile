@@ -92,7 +92,7 @@ util:	util.c
 	$(CC) -o util util.c
 
 clean:
-	$(RM) *.o fs/*.o *.s second* silotftp* *.map util fs/libfs.a
+	$(RM) *.o fs/*.o second* silotftp* *.map util fs/libfs.a
 
 crt0.o:	crt0.S
 	$(CC) $(CFLAGS) -c -Wa,-Av9 -DIMGVERSION='"SILO$(IMGVERSION)"' crt0.S
