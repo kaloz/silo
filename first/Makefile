@@ -72,7 +72,6 @@ cd.o: cd.S
 
 cd: cd.o
 	$(LD) $(LDFLAGS) -o cd cd.o
-	$(NM) cd | grep -v '*ABS*' | sort > cd.map
 	$(STRIP) cd
 
 cd.b: cd
