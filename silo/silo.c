@@ -368,7 +368,7 @@ again:
     	if (p) p++; else p = name;
     	start = (long)st.st_ino + 16 + ((strlen(p) + 16) & ~15);
     	if (start & 511)
-    		fatal ("File %s on romfs not aligned on 512B boundary. Use genromfs -a -r to generate the image", name);
+    		fatal ("File %s on romfs not aligned on 512B boundary. Use genromfs -a to generate the image", name);
     	start = hwdev->doff + start / 512;
 	if (flash_image) start += 1024 / 512;	/* make room for ieee32 */
     	for (j = 0; j * 512 < size; j++)
@@ -383,7 +383,7 @@ again:
 	    break;
 	if (!block) {
 	    if ((j << 9) < size)
-	        fatal ("Filesystem holes are not yet supported for second stage loader. Mail jj@sunsite.mff.cuni.cz");
+	        fatal ("Filesystem holes are not yet supported for second stage loader. Mail silo-general@lists.sourceforge.net");
 	    else
 	        break;
 	}

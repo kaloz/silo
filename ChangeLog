@@ -1,3 +1,8 @@
+Mon Jun 18 12:14:58 EDT 2001  Ben Collins <bcollins@debian.org>
+
+	* silo/silo.c: Fix suggested options to genromfs, patch from Pieter
+	Krul. Also fix email address for error on filesystem holes.
+
 Sat Jun 16 13:38:56 EDT 2001  Ben Collins <bcollins@debian.org>
 
 	* Makefile: Cleanups.
