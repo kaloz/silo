@@ -1,3 +1,19 @@
+Sat Jun 16 13:38:56 EDT 2001  Ben Collins <bcollins@debian.org>
+
+	* Makefile: Cleanups.
+
+	* Rules.make: Up version.
+	* silo.spec: Likewise.
+	* docs/LSM: Likewise.
+
+	* second/util.c: Cleanups.
+	* silo/confcheck.c: Get enum arch from promlib.h.
+	* silo/silo.c: Grammar fixes.
+
+	* silo/silocheck.c: Fix include of ufs.c. This might not work anymore
+	on Solaris because this file changed so much. I really need to get
+	that crappy OS installed just to test this shit.
+
 Sat Jun 16 02:15:35 EDT 2001  Ben Collins <bcollins@debian.org>
 
 	* common/printf.c: Cleanups, and document correct allowed formats.

@@ -735,7 +735,7 @@ void install_first_stage (char *device, char *filename)
         *(unsigned int *)(ush + 62) = (-d/2);
 
         if (write (fd, &sdl, 512) != 512)
-            fatal ("Couldn't write to %s your new partition table", device);
+            fatal ("Couldn't write new partition table to %s", device);
     } else if (flash_image) {
 	/*
 	 * Make sure that both block table address and checksum fit.
@@ -753,7 +753,7 @@ void install_first_stage (char *device, char *filename)
     } else if (lseek (fd, 512, 0) != 512)
         fatal ("Couldn't seek on %s", device);
     if (write (fd, buff, rc) != rc)
-        fatal ("Couldn't write to %s your new silo bootblock", device);
+        fatal ("Couldn't write new silo bootblock to %s", device);
     close (fd);
     fclose (fp);
 }

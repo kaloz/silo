@@ -19,7 +19,7 @@
    USA.  */
 
 #ifdef __sun__
-#include "../second/ufs.c"
+#include "../second/fs/ufs.c"
 #endif
 
 #include <stdio.h>

@@ -49,8 +49,9 @@ release: ../silo-loaders-$(VERSION).tar.gz ../silo-$(VERSION).tar.gz ../silo-$(V
 		install -d -m755  boot; \
 		install -m644 first/*.b second/*.b boot/; \
 	fi
-	case "$*" in .gz) foo=z;; .bz2) foo=j;; *) foo="";; esac; \
-		tar $${foo}cf $@ boot
+	case "$*" in .gz) foo="gzip -c9";; .bz2) foo="bzip2 -c9";; *) foo=cat;; esac; \
+		tar cf - boot | $$foo > $@
+	rm -rf boot
 
 ../silo-$(VERSION).tar%: clean
 	if ! test -d ../silo-$(VERSION); then \
@@ -59,5 +60,5 @@ release: ../silo-loaders-$(VERSION).tar.gz ../silo-$(VERSION).tar.gz ../silo-$(V
 	fi
 	cd ../silo-$(VERSION) && find -name .\#\* -o -name CVS -o -name .cvsignore | \
 		xargs -r rm -rf
-	case "$*" in .gz) foo="gzip -c";; .bz2) foo="bzip2 -c";; *) foo=cat;; esac; \
+	case "$*" in .gz) foo="gzip -c9";; .bz2) foo="bzip2 -c9";; *) foo=cat;; esac; \
 		(cd ../ && tar cf - silo-$(VERSION)) | $$foo > $@

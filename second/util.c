@@ -39,60 +39,70 @@ void save(FILE *out, int len, int type)
     while (len > 0) {
         i = 2048;
         if (len < i) i = len;
-        if (fread (buffer, 1, i, f) != i) { fprintf(stderr, "read %d from arg3 type %d failed\n", i, type); exit(1); }
-        if (fread (buffer2, 1, i, e) != i) { fprintf(stderr, "read %d from arg4 type %d failed\n", i, type); exit(1); }
+        if (fread (buffer, 1, i, f) != i) {
+	    fprintf(stderr, "read %d from arg3 type %d failed\n", i, type);
+	    exit(1);
+	}
+        if (fread (buffer2, 1, i, e) != i) {
+	    fprintf(stderr, "read %d from arg4 type %d failed\n", i, type);
+	    exit(1);
+	}
         for (j = 0; j < i; j++) {
-        	if (buffer[j] != buffer2[j]) {
-        		if (buffer2[j] == buffer[j] + 4) {
-        			if (curoff + j > lastv[type] + 65535) {
-        				if (type || !prevlen || curoff + j >= prevoff + 65535)
-        					goto bad1;
-        				k = lastv[type] + 65535;
-        				if (k < prevoff - prevlen)
-        					goto bad1;
-        				if (k >= prevoff)
-        					k = prevoff - 1;
-        				diffs[type][ndiffs[type]] = k - lastv[type];
-	        			lastv[type] = k;
-        				ndiffs[type]++;
-        			}
-        			diffs[type][ndiffs[type]] = curoff + j - lastv[type]; 
-        			lastv[type] = curoff + j;
-        			ndiffs[type]++;
-        		} else if (buffer2[j] == buffer[j] + 16) {
-        			if (curoff + j > lastv[type+1] + 65535) {
-        				if (type || !prevlen || curoff + j >= prevoff + 65535)
-        					goto bad2;
-        				k = lastv[type+1] + 65535;
-        				if (k < prevoff - prevlen)
-        					goto bad2;
-        				if (k >= prevoff)
-        					k = prevoff - 1;
-        				diffs[type+1][ndiffs[type+1]] = k - lastv[type+1];
-	        			lastv[type+1] = k;
-        				ndiffs[type+1]++;
-        			}
-        			diffs[type+1][ndiffs[type+1]] = curoff + j - lastv[type+1]; 
-        			lastv[type+1] = curoff + j;
-        			ndiffs[type+1]++;
-        		} else {
-        			fprintf(stderr, "Strange, 2.5MB and 3.5MB images differ in something different to R_SPARC_32 and R_SPARC_HI22\n");
-        			exit(1);
-        		}
-        	}
+    	    if (buffer[j] != buffer2[j]) {
+		if (buffer2[j] == buffer[j] + 4) {
+		    if (curoff + j > lastv[type] + 65535) {
+			if (type || !prevlen || curoff + j >= prevoff + 65535)
+			    goto bad1;
+			k = lastv[type] + 65535;
+			if (k < prevoff - prevlen)
+			    goto bad1;
+			if (k >= prevoff)
+			    k = prevoff - 1;
+			diffs[type][ndiffs[type]] = k - lastv[type];
+			lastv[type] = k;
+			ndiffs[type]++;
+		    }
+		    diffs[type][ndiffs[type]] = curoff + j - lastv[type]; 
+		    lastv[type] = curoff + j;
+		    ndiffs[type]++;
+		} else if (buffer2[j] == buffer[j] + 16) {
+		    if (curoff + j > lastv[type+1] + 65535) {
+			if (type || !prevlen || curoff + j >= prevoff + 65535)
+			    goto bad2;
+			k = lastv[type+1] + 65535;
+			if (k < prevoff - prevlen)
+			    goto bad2;
+			if (k >= prevoff)
+			    k = prevoff - 1;
+			diffs[type+1][ndiffs[type+1]] = k - lastv[type+1];
+			lastv[type+1] = k;
+			ndiffs[type+1]++;
+		    }
+		    diffs[type+1][ndiffs[type+1]] = curoff + j - lastv[type+1]; 
+		    lastv[type+1] = curoff + j;
+		    ndiffs[type+1]++;
+		} else {
+		    fprintf(stderr, "Strange, 2.5MB and 3.5MB images differ in something"
+			    " different to R_SPARC_32 and R_SPARC_HI22\n");
+		    exit(1);
+		}
+	    }
         }
-	if (fwrite (buffer, 1, i, out) != i) { fprintf(stderr, "write %d failed\n", i); exit(1); }
+	if (fwrite (buffer, 1, i, out) != i) {
+	    fprintf(stderr, "write %d failed\n", i);
+	    exit(1);
+	}
         len -= i;
         curoff += i;
     }
     prevlen = curlen;
     prevoff = curoff;
     return;
-bad1:
-    fprintf(stderr, "Distance between two changes larger than 64K %d %d %d\n", type, curoff + j, lastv[type]);
-    exit(1);
 bad2:
-    fprintf(stderr, "Distance between two changes larger than 64K %d %d %d\n", type+1, curoff + j, lastv[type+1]);
+    type++;
+bad1:
+    fprintf(stderr, "Distance between two changes larger than 64K %d %d %d\n",
+	    type, curoff + j, lastv[type]);
     exit(1);
 }
 
@@ -100,7 +110,8 @@ int main(int argc, char **argv)
 {
     FILE *g, *h;
     int reloc = 0x280000;
-    int first_start, first_end, second_start, second_end, end, rodata_start, rodata_end;
+    int first_start, first_end, second_start, second_end;
+    int end, rodata_start, rodata_end;
     int net = 0;
     int format = 11, formatchecked = 0;
      

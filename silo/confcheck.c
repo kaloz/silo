@@ -29,9 +29,11 @@
 #include <sys/mman.h>
 #include <ctype.h>
 
-/* XXX: cfg.c needs these defined. Make sure they stay in sync with the
- * main set.  */
-enum arch { sun4, sun4c, sun4m, sun4d, sun4e, sun4u, sun4p, sununknown };
+/* Get decleration of enum arch */
+#include <promlib.h>
+/* And then make sure we get printf right */
+#define prom_printf printf
+
 enum arch architecture;
 
 /* Tells cfg.c not to #include anything of it's own, we are in control.  */
