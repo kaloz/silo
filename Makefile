@@ -2,7 +2,7 @@ include Rules.make
 
 # These only get built on Linux
 ifeq ($(OPSYS),Linux)
-  SUBDIRS  = common first second tilo
+  SUBDIRS  = common first second first-isofs tilo
   MANPAGES = maketilo.1 tilo.1
 endif
 
@@ -22,7 +22,7 @@ install:
 		install -m644 etc/silo.conf $(DESTDIR)/etc/
  ifeq ($(OPSYS),Linux)
 	install -d -m755 $(DESTDIR)/boot $(DESTDIR)/usr/bin
-	install -m644 first/*.b second/*.b $(DESTDIR)/boot/
+	install -m644 first/*.b second/*.b first-isofs/*.b $(DESTDIR)/boot/
 	install -m755 tilo/maketilo $(DESTDIR)/usr/bin/
 	install -m755 tilo/tilo.sh $(DESTDIR)/usr/bin/tilo
  endif
