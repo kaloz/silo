@@ -78,18 +78,11 @@ static int dump_block_ext2 (ext2_filsys fs, blk_t *blocknr,
     return dump_block(blocknr, blockcnt);
 }
 
-static int dump_ext2 (char *filename)
+static int dump_ext2 (void)
 {
-    errcode_t retval;
-
-    retval = ext2fs_block_iterate (fs, inode, 0, 0,
-				   dump_block_ext2, 0);
-    if (retval) {
-        printf ("\n");
-    	ext2fs_error (retval);
-        printf ("\n");
+    if (ext2fs_block_iterate (fs, inode, 0, 0, dump_block_ext2, 0))
 	return 0;
-    }
+
     return dump_finish ();
 }
 
@@ -154,7 +147,7 @@ static void print_error_ext2 (int error_val) {
     ext2fs_error (error_val);
 }
 
-void close_ext2 (ext2_filsys fs) {
+void close_ext2 (void) {
     ext2fs_close(fs);
 }
 

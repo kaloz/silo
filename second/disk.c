@@ -320,7 +320,8 @@ int read (char *buff, int size, unsigned long long offset)
 		    reopen();
 		    while (size) {
 			if (size < 32768) j = size; else j = 32768;
-			if (read (buff, j, offset) != j) return -1;
+			if (read (buff, j, offset) != j)
+			    return -1;
 			size -= j;
 			offset += j;
 			buff += j;

@@ -1,4 +1,4 @@
-/* File related stuff
+/* Filesystem interface abstraction.
    
    Copyright (C) 1996 Maurizio Plaza
    		 1996,1997,1999 Jakub Jelinek
@@ -45,7 +45,7 @@ static char *gunzip_inp;
 static char *gunzip_endbuf;
 static char *match;
 
-/* Externally provided filesystem operations */
+/* Externally provided filesystem interfaces */
 extern struct fs_ops ext2_fs_ops;
 extern struct fs_ops iso_fs_ops;
 extern struct fs_ops rom_fs_ops;
@@ -362,7 +362,7 @@ int load_file (char *device, int partno, char *filename, char *buffer,
 
     if (cmd & LOADFILE_LS && cur_ops->ls == NULL) {
 	if (!(cmd & LOADFILE_MATCH))
-	    printf("\nls is not supported for `%s' filesystems\n", cur_ops->name);
+	    printf("\nls is not supported for the `%s' filesystems\n", cur_ops->name);
 	goto done_1;
     }
 
@@ -394,16 +394,12 @@ int load_file (char *device, int partno, char *filename, char *buffer,
 	goto done_1;
     }
 
-    printf("\nImage found, getting ready to load (%s)\n", filename);
-
     if (lenfunc) {
         do_gunzip = 0;
 	size = cur_ops->ino_size();
         (*lenfunc)(size, (char **)&filebuffer, (char **)&filelimit);
         do_gunzip = cmd & LOADFILE_GZIP;
     }
-
-    printf("Image is being loaded via %s\n", do_gunzip ? "gunzip" : "disk");
 
     first_block = do_gunzip;
     last_blockcnt = 0;
@@ -412,9 +408,7 @@ int load_file (char *device, int partno, char *filename, char *buffer,
     retval = 0;
 
     if (cur_ops->have_inode) {
-	printf("Have an inode, caling ");
 	if (cmd & LOADFILE_LS) {
-	    printf("ls.\n");
 	    if ((retval = cur_ops->ls())) {
 		if (!(cmd & LOADFILE_MATCH)) {
 		    printf("\nError: could not list (");
@@ -428,12 +422,11 @@ int load_file (char *device, int partno, char *filename, char *buffer,
 		retval = 1;
 	    }
 	} else {
-	    printf("dump.\n");
-	    retval = cur_ops->dump(filename);
+	    retval = cur_ops->dump();
+	    if (!retval && !(cmd & LOADFILE_MATCH))
+		printf("\nError loading %s\n", filename);
 	}
     }
-
-    printf("Dump run (%d)\n", retval);
 
     if (retval && len) {
 	if (size != -1)
@@ -442,13 +435,11 @@ int load_file (char *device, int partno, char *filename, char *buffer,
 	    *len = gunzipped_len;
 	else
 	    *len = cur_ops->ino_size();
-
-	printf("Length = %d\n", *len);
     }
 
 done_1:
     if (dir) free(dir);
-    cur_ops->close (fs);
+    cur_ops->close();
 done_2:
     release (mmark);
 

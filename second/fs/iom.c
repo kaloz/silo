@@ -88,11 +88,12 @@ static errcode_t silo_set_blksize (io_channel channel, int blksize)
 
 static errcode_t silo_read_blk (io_channel channel, unsigned long block, int count, void *data)
 {
-    int size;
+    int size, got;
 
     size = (count < 0) ? -count : count * bs;
-    if (read (data, size, ((unsigned long long)block) * bs + doff) != size) {
-	printf ("\nRead error on block %d\n", block);
+    got = read (data, size, ((unsigned long long)block) * bs + doff);
+    if (got != size) {
+	printf ("\nRead error on block %d (tried %d, got %d)\n", block, size, got);
 	return EXT2_ET_SHORT_READ;
     }
     return 0;

@@ -103,7 +103,7 @@ void vprintf (char *fmt, va_list adx)
 
 /*
  * Scaled down version of C Library printf.
- * Only %c %s %u %d (==%u) %o %x %D %O are recognized.
+ * Only %c %s %u %d (==%u) %o %x %l %O are recognized.
  */
 
 void prom_printf (char *fmt,...)

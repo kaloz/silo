@@ -414,13 +414,13 @@ static int isofs_namei (const char *filename)
     return ret;
 }
 
-static void isofs_close(isofs_filsys fs)
+static void isofs_close(void)
 {
     free (fs->io);
     free (fs);
 }
 
-static int isofs_block_iterate(int (*func)(blk_t *, int))
+static int isofs_block_iterate(void)
 {
     int i;
     blk_t nr;
@@ -429,22 +429,13 @@ static int isofs_block_iterate(int (*func)(blk_t *, int))
     nr = inode.extent;
     size = (inode.size + 2047) / 2048;
     for (i = 0; i < size; i++, nr++) {
-        switch ((*func) (&nr, i)) {
+        switch (dump_block (&nr, i)) {
             case BLOCK_ABORT:
             case BLOCK_ERROR:
-            	return -1;
+            	return 0;
         }
     }
-    return 0;
-}
-
-static int dump_isofs (char *filename)
-{
-    if (isofs_block_iterate (dump_block)) {
-	printf ("Error while loading of %s", filename);
-	return 0;
-    }
-    return dump_finish ();
+    return dump_finish();
 }
 
 static void print_error_isofs (int error_val) {
@@ -455,7 +446,7 @@ struct fs_ops iso_fs_ops = {
     name:		"ISO-9660 CDROM",
     open:		open_isofs,
     ls:			ls_isofs,
-    dump:		dump_isofs,
+    dump:		isofs_block_iterate,
     close:		isofs_close,
     ino_size:		ino_size_isofs,
     print_error:        print_error_isofs,

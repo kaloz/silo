@@ -1,3 +1,14 @@
+Fri Jun  8 10:10:47 EDT 2001  Ben Collins <bcollins@debian.org>
+
+	* second/file.c (dump_block): Kill common args.
+	* second/file.h: Update decleration of dump_block.
+	* second/fs/ext2.c: Update dump_block Interface.
+	* second/fs/isofs.c: Likewise.
+	* second/fs/ufs.c: Likewise.
+	* second/fs/romfs.c: Likewise. Also fix cut and paste error.
+
+	* second/fs/romfs.c: Add ls support.
+
 Wed Jun  6 14:48:30 EDT 2001  Ben Collins <bcollins@debian.org>
 
 	* second/Makefile: Add fs/ufs.o and fs/romfs.o to libfs.a.

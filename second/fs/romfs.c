@@ -31,18 +31,27 @@
 typedef ext2_filsys romfs_filsys;
 
 static ino_t inode = 0;
+static int link_count = 0;
 
 #define SUPROMFS (struct romfs_super_block *)(fs->io->private_data)
+#define BLOCK_SIZE_BITS 9 /* 512 */
+#define BLOCK_SIZE (1<<BLOCK_SIZE_BITS)
+
+static int inline min(int a, int b)
+{
+	return a<b ? a : b;
+}
 
 static __s32
 romfs_checksum(void *data, int size)
 {
 	__s32 sum, *ptr;
+
 	sum = 0; ptr = data;
 	size>>=2;
 	while (size>0) {
 		sum += *ptr++;
-	size--;
+		size--;
         }
 	return sum;
 }
@@ -51,16 +60,23 @@ static struct romfs_super_block *romfs_read_super(romfs_filsys fs)
 {
     struct romfs_super_block *rsb;
 
-    rsb = (struct romfs_super_block *) malloc (2048+512);
-    if (!rsb) return 0;
+    /* The 2048 comes from the space needed to make room for the first
+     * stage loader. The image has to be created with "-A 2048,/.."
+     */
+    rsb = (struct romfs_super_block *) malloc (2048+ROMBSIZE);
+    if (!rsb) return NULL;
+
     if (io_channel_read_blk (fs->io, 0, 1, (char *)rsb))
-        return 0;
+        return NULL;
+
     if (strncmp((char *)rsb, "-rom1fs-", 8) || rsb->size < ROMFH_SIZE)
-        return 0;
-    if (romfs_checksum(rsb, 512)) {
-    	printf("Bad ROMFS initial checksum\n");
-    	return 0;
+        return NULL;
+
+    if (romfs_checksum(rsb, min(rsb->size,512))) {
+    	printf("ROMFS: Bad initial checksum.\n");
+    	return NULL;
     }
+
     rsb->checksum = strlen(rsb->name);
     if (rsb->checksum > ROMFS_MAXFN) rsb->checksum = ROMFS_MAXFN;
     rsb->checksum += (ROMFH_SIZE + 1 + ROMFH_PAD);
@@ -73,43 +89,37 @@ static struct romfs_super_block *romfs_read_super(romfs_filsys fs)
 
 static int romfs_copyfrom(romfs_filsys fs, void *dest, unsigned long offset, unsigned long count)
 {
-    int off;
     struct romfs_super_block *rsb = SUPROMFS;
+    unsigned long res;
+    char buffer[ROMBSIZE];
+    int maxsize;
 
-    for (;;) {
-	if (rsb->word0 != (__u32)-1 && offset >= rsb->word0 && offset < rsb->word0 + 1024) {
-	    int cnt = 1024 - (offset & 1023);
-	    if (count < cnt)
-		cnt = count;
-	    memcpy(dest, (char *)rsb + 512 + (offset & 1023), cnt);
-	    if (count == cnt) return 0;
-	    dest = (char *)dest + cnt;
-	    offset += cnt;
-	    count -= cnt;
-	}
-	if (rsb->word1 != (__u32)-1 && offset >= rsb->word1 && offset < rsb->word1 + 1024) {
-	    int cnt = 1024 - (offset & 1023);
-	    if (count < cnt)
-		cnt = count;
-	    memcpy(dest, (char *)rsb + 1536 + (offset & 1023), cnt);
-	    if (count == cnt) return 0;
-	    dest = (char *)dest + cnt;
-	    count -= cnt;
-	}
-	off = offset & ~1023;
-	if (io_channel_read_blk (fs->io, off / 512, 2, (char *)rsb + (rsb->name[0] ? 1536 : 512))) {
-	    if (rsb->name[0])
-		rsb->word1 = -1;
-	    else
-		rsb->word0 = -1;
+    if ((offset>>ROMBSBITS)<<ROMBSBITS >= rsb->size+ROMBSIZE || count > rsb->size ||
+	    offset+count>rsb->size+ROMBSIZE)
+	return -1;
+
+    maxsize = min(count, (ROMBSIZE - (offset & ROMBMASK)));
+    res = maxsize;
+
+    if (io_channel_read_blk (fs->io, offset>>ROMBSBITS, 1, buffer))
+	return -1;
+
+    memcpy(dest, buffer + (offset & ROMBMASK), maxsize);
+
+    while (res < count) {
+	offset += maxsize;
+
+	if (io_channel_read_blk (fs->io, offset>>ROMBSBITS, 1, buffer))
 	    return -1;
-	}
-	if (rsb->name[0])
-	    rsb->word1 = off;
-	else
-	    rsb->word0 = off;
-	rsb->name[0] ^= 1;
+
+	dest += maxsize;
+	maxsize = min(count-res, ROMBSIZE);
+
+	memcpy(dest, buffer, maxsize);
+
+	res += maxsize;
     }
+    return 0;
 }
 
 static int romfs_read_inode (romfs_filsys fs, ino_t inode, struct romfs_inode *ui)
@@ -120,37 +130,67 @@ static int romfs_read_inode (romfs_filsys fs, ino_t inode, struct romfs_inode *u
     if (inode < rsb->checksum || inode >= rsb->size)
 	return -1;
 
-    if (romfs_copyfrom (fs, &romfsip, inode, 16))
+    if (romfs_copyfrom (fs, &romfsip, inode, ROMFH_SIZE))
     	return -1;
+
     *ui = romfsip;
     return 0;
 }
 
-static int romfs_lookup (romfs_filsys fs, ino_t dir, struct romfs_inode *dirui,
+static mode_t romfs_modemap[] =
+{
+    0, LINUX_S_IFDIR+0555, LINUX_S_IFREG+0444, LINUX_S_IFLNK+0777,
+       LINUX_S_IFBLK+0600, LINUX_S_IFCHR+0600, LINUX_S_IFSOCK+0644,
+       LINUX_S_IFIFO+0644
+};
+
+static int romfs_lookup (romfs_filsys fs, struct romfs_inode *dirui,
 		       const char *name, int len, ino_t *result)
 {
     char buffer [8192];
     struct romfs_inode ui;
+    ino_t dir = dirui->spec & ROMFH_MASK;
+    struct romfs_super_block *rsb = SUPROMFS;
 
-    dir = dirui->spec & ROMFH_MASK;
-    while (dir) {
+    while (dir && dir < rsb->size) {
     	if (romfs_read_inode (fs, dir, &ui))
     	    return -1;
-        if (romfs_copyfrom (fs, buffer, dir + 16, ROMFS_MAXFN))
+
+        if (romfs_copyfrom (fs, buffer, dir + ROMFH_SIZE, ROMFS_MAXFN))
     	    return -1;
-    	if ((!len && buffer[0] == '.' && !buffer[1]) ||
+
+	if (result == NULL) {
+	    /* We aren't returning an inode, so we must be iterating */
+	    char symlink[1024] = {0};
+	    unsigned int mode = romfs_modemap[ui.next & ROMFH_TYPE];
+
+	    /* Check for symlinks */
+	    if ((ui.next & ROMFH_TYPE) == ROMFH_SYM) {
+		int offset = dir + ROMFH_SIZE + ((strlen(buffer) + ROMFH_SIZE) & ROMFH_MASK);
+		if (romfs_copyfrom (fs, symlink, offset, ROMFS_MAXFN))
+		    return -1;
+	    }
+
+	    if (buffer[0] == '.' && (!buffer[1] || (buffer[1] == '.' && !buffer[2])))
+		mode = LINUX_S_IFDIR+0555;
+
+	    register_silo_inode(0, ui.size, mode,
+				0, 0, buffer, symlink[0] ? symlink : NULL);
+
+	} else if ((!len && buffer[0] == '.' && !buffer[1]) ||
     	    (strlen(buffer) == len && !memcmp(buffer, name, len))) {
-    	    	if ((ui.next & ROMFH_TYPE) == ROMFH_HRD)
-    	    	    dir = ui.spec;
-    	    	*result = dir;
-    	    	return 0;
-    	    }
+	    if ((ui.next & ROMFH_TYPE) == ROMFH_HRD)
+		dir = ui.spec;
+	    *result = dir;
+	    return 0;
+    	}
     	dir = ui.next & ROMFH_MASK;
     }
+    if (result == NULL)
+	return 0;
+
     return -1;
 }
-
-static int link_count = 0;
 
 static int open_namei(romfs_filsys, const char *, ino_t *, ino_t);
 
@@ -165,12 +205,12 @@ static int romfs_follow_link(romfs_filsys fs, ino_t dir, ino_t inode,
 	return 0;
     }
     if (link_count > 5) {
-        printf ("Symlink loop\n");
+        printf ("ROMFS: Symlink loop.\n");
         return -1; /* Loop */
     }
-    if (romfs_copyfrom (fs, buffer, inode + 16, ROMFS_MAXFN))
+    if (romfs_copyfrom (fs, buffer, inode + ROMFH_SIZE, ROMFS_MAXFN))
     	return -1;
-    error = inode + 16 + ((strlen(buffer) + 16) & ~15);
+    error = inode + ROMFH_SIZE + ((strlen(buffer) + ROMFH_SIZE) & ROMFH_MASK);
     if (romfs_copyfrom (fs, buffer, error, ROMFS_MAXFN))
     	return -1;
     link_count++;
@@ -192,12 +232,13 @@ static int dir_namei(romfs_filsys fs, const char *pathname, int *namelen,
 	base = (ino_t)fs->private;
 	pathname++;
     }
+
     if (romfs_read_inode (fs, base, &ub)) return -1;
     while (1) {
 	thisname = pathname;
 	for(len=0;(c = *(pathname++))&&(c != '/');len++);
 	if (!c) break;
-	if (romfs_lookup (fs, base, &ub, thisname, len, &inode)) return -1;
+	if (romfs_lookup (fs, &ub, thisname, len, &inode)) return -1;
 	if (romfs_read_inode (fs, inode, &ub)) return -1;
 	if (romfs_follow_link (fs, base, inode, &ub, &base)) return -1;
 	if (base != inode && romfs_read_inode (fs, base, &ub)) return -1;
@@ -222,7 +263,7 @@ static int open_namei(romfs_filsys fs, const char *pathname,
 	return 0;
     }
     if (romfs_read_inode (fs, dir, &ub)) return -1;
-    if (romfs_lookup (fs, dir, &ub, basename, namelen, &inode)) return -1;
+    if (romfs_lookup (fs, &ub, basename, namelen, &inode)) return -1;
     if (romfs_read_inode (fs, inode, &ub)) return -1;
     if (romfs_follow_link (fs, dir, inode, &ub, &inode)) return -1;
     *res_inode = inode;
@@ -244,37 +285,37 @@ static int namei_follow_romfs (const char *filename)
     return ret;
 }
 
-static void romfs_close(romfs_filsys fs)
+static void romfs_close(void)
 {
     free (fs->io);
     free (fs);
 }
 
-static int romfs_block_iterate(int (*func)(blk_t *, int))
+static int romfs_block_iterate(void)
 {
     struct romfs_inode ub;
     int i;
     blk_t nr;
     int size;
     char buffer[ROMFS_MAXFN];
-    
-    if (romfs_read_inode (fs, inode, &ub)) return -1;
-    if (romfs_copyfrom (fs, buffer, inode + 16, ROMFS_MAXFN)) return -1;
-    nr = inode + 16 + ((strlen(buffer) + 16) & ~15);
-    if (nr & 511) {
-    	printf("romfs: File not aligned on a 512B boundary\n");
-    	return -1;
+
+    if (romfs_read_inode (fs, inode, &ub)) return 0;
+    if (romfs_copyfrom (fs, buffer, inode + ROMFH_SIZE, ROMFS_MAXFN)) return 0;
+    nr = inode + ROMFH_SIZE + ((strlen(buffer) + ROMFH_SIZE) & ROMFH_MASK);
+    if (nr & ROMBMASK) {
+    	printf("ROMFS: File not aligned on a %dB boundary.\n", ROMBSIZE);
+    	return 0;
     }
-    size = (ub.size + 511) / 512;
-    nr /= 512;
+    size = (ub.size + ROMBMASK) / ROMBSIZE;
+    nr /= ROMBSIZE;
     for (i = 0; i < size; i++, nr++) {
-        switch ((*func) (&nr, i)) {
+        switch (dump_block (&nr, i)) {
             case BLOCK_ABORT:
             case BLOCK_ERROR:
-            	return -1;
+            	return 0;
         }
     }
-    return 0;
+    return dump_finish();
 }
 
 static int open_romfs (char *device)
@@ -286,26 +327,16 @@ static int open_romfs (char *device)
     if (((struct struct_io_manager *)(silo_io_manager))->open (device, 0, &fs->io))
 	return 0;
 
-    io_channel_set_blksize (fs->io, 512);
+    io_channel_set_blksize (fs->io, ROMBSIZE);
 
     fs->io->private_data = romfs_read_super(fs);
     if (!fs->io->private_data)
 	return 0;
 
     root = ((struct romfs_super_block *)(fs->io->private_data))->checksum;
+    inode = 1;
 
     return 1;
-}
-
-static int dump_romfs (char *filename)
-{
-    printf(__FUNCTION__": called\n");
-    if (romfs_block_iterate (dump_block)) {
-	printf ("Error while loading of %s", filename);
-	return 0;
-    }
-    printf(__FUNCTION__": romfs_block_iterate done, calling dump_finish\n");
-    return dump_finish ();
 }
 
 static int ino_size_romfs (void)
@@ -314,22 +345,35 @@ static int ino_size_romfs (void)
 
     if (romfs_read_inode (fs, inode, &ri))
 	return 0;
-    if ((ri.next & ROMFH_TYPE) != ROMFH_REG) {
-	printf("romfs: get length on non-reg file?\n");
+
+    if ((ri.next & ROMFH_TYPE) != ROMFH_REG)
 	return 0;
-    }
+
     return ri.size;
 }
 
+static int ls_romfs (void)
+{
+    struct romfs_inode ub;
+    link_count = 0;
+
+    if (romfs_read_inode (fs, inode, &ub)) return -1;
+
+    if (romfs_lookup (fs, &ub, NULL, 0, NULL))
+	return -1;
+
+    return 0;
+}
+
 static void print_error_romfs (int error_val) {
-    printf("Unknown romfs error");
+    printf("Unknown ROMFS error");
 }
 
 struct fs_ops rom_fs_ops = {
     name:               "Linux ROMFS",
     open:               open_romfs,
-    ls:                 NULL/*ls_romfs*/,
-    dump:               dump_romfs,
+    ls:                 ls_romfs,
+    dump:               romfs_block_iterate,
     close:              romfs_close,
     ino_size:           ino_size_romfs,
     print_error:        print_error_romfs,

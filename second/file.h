@@ -40,10 +40,10 @@ struct fs_ops {
     char *name;
     int (*open)		(char *);
     int (*ls)		(void);
-    int (*dump)		(char *);
+    int (*dump)		(void);
     int (*ino_size)	(void);
     int (*namei_follow)	(const char *);
     void (*print_error)	(int);
-    void (*close)	(ext2_filsys);
+    void (*close)	(void);
     int have_inode;
 };

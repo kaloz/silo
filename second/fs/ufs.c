@@ -325,13 +325,13 @@ static int ufs_namei (ufs_filsys fs, ino_t root, ino_t cwd, const char *filename
     return open_namei (fs, filename, inode, cwd);
 }
 
-static void ufs_close(ufs_filsys fs)
+static void ufs_close(void)
 {
     free (fs->io);
     free (fs);
 }
 
-static int ufs_block_iterate(int (*func)(blk_t *, int))
+static int ufs_block_iterate(void)
 {
     struct ufs_inode ub;
     int i;
@@ -339,18 +339,18 @@ static int ufs_block_iterate(int (*func)(blk_t *, int))
     int frags;
     struct ufs_superblock *sb = SUPUFS;
     
-    if (ufs_read_inode (fs, inode, &ub)) return -1;
+    if (ufs_read_inode (fs, inode, &ub)) return 0;
     frags = (ufsi_size(&ub) + sb->fs_fsize - 1) / sb->fs_fsize;
     for (i = 0; i < frags; i++) {
         nr = ufs_bmap (fs, inode, &ub, i);
-        if (!nr) return -1;
-        switch ((*func) (&nr, i)) {
+        if (!nr) return 0;
+        switch (dump_block(&nr, i)) {
             case BLOCK_ABORT:
             case BLOCK_ERROR:
-            	return -1;
+            	return 0;
         }
     }
-    return 0;
+    return dump_finish();
 }
 
 struct fs_ops ufs_fs_ops;
@@ -419,15 +419,6 @@ static int open_ufs (char *device)
     return 1;
 }
 
-static int dump_ufs (char *filename)
-{
-    if (ufs_block_iterate (dump_block)) {
-	printf ("Error while loading of %s", filename);
-	return 0;
-    }
-    return dump_finish ();
-}
-
 static int ino_size_ufs (void)
 {
     struct ufs_inode ui;
@@ -448,7 +439,7 @@ struct fs_ops ufs_fs_ops = {
     name:               "SunOS UFS",
     open:               open_ufs,
     ls:                 NULL/*ls_ufs*/,
-    dump:               dump_ufs,
+    dump:               ufs_block_iterate,
     close:              ufs_close,
     ino_size:           ino_size_ufs,
     print_error:        print_error_ufs,
