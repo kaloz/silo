@@ -20,6 +20,7 @@
    USA.  */
 
 #include <silo.h>
+#include <stringops.h>
 
 char cbuff[CMD_LENG];
 char passwdbuff[CMD_LENG];
