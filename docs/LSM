@@ -1,7 +1,7 @@
 Begin3
 Title:		SILO          
-Version:	1.1.0
-Entered-date:	Mon Jun 4 2001
+Version:	1.2.0
+Entered-date:	Fri Jun 8 2001
 Description:	Sparc Improved Boot Loader
 Keywords:	Sparc, Linux/Sparc, SILO, bootblock, silo.conf, SparcLinux
 Author:		jakub@redhat.com (Jakub Jelinek)
@@ -17,7 +17,7 @@ Author:		jakub@redhat.com (Jakub Jelinek)
 		sparclinux@vger.rutgers.edu (the Sparc Linux team)
 Maintained-by:  bcollins@debian.org (Ben Collins)
 Primary-site:	download.sourceforge.net /pub/sourceforge/silo
-			170kB silo-1.1.0.tar.gz
+			180kB silo-1.2.0.tar.gz
 Original-site:  download.sourceforge.net /pub/sourceforge/silo
 Platform:       Sparc sun4c, sun4m, sun4d or sun4u
 Copying-policy: GPL
