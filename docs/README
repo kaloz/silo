@@ -177,7 +177,7 @@ you can use the dual sun4[cdm]/sun4u first stage bootblock.
 You need to use genromfs-0.3 and higher. It can be obtained from
 ftp://ftp.banki.hu/pub/linux/local/genromfs-0.3.tar.gz.
 Firstly, you should populate the tree for the floppy in some directory. Lets
-assume it is floppy/. Then copy the /boot/cd.b bootblock somewhere into the
+assume it is floppy/. Then copy the /boot/fd.b bootblock somewhere into the
 floppy/ tree, e.g. to floppy/boot/fd.b. Then make sure you have the right
 silo.conf in the tree as well, and do:
 
@@ -187,7 +187,7 @@ silo -r /mnt -F -i /boot/fd.b -b /boot/second.b -C /etc/silo.conf
 umount /mnt
 dd if=/dev/ram of=floppy.img bs=1440k count=1
 
-and you're done. -i defaults to /boot/cd.b for romfs floppies, -b defaults
+and you're done. -i defaults to /boot/fd.b for romfs floppies, -b defaults
 to /boot/second.b, -C to /etc/silo.conf. The -A 2048,/.. argument to romfs
 is required so that you have enough space for the first stage loader and -a
 512 is required because of the internal implementation of romfs in second

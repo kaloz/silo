@@ -23,7 +23,7 @@ LDFLAGS=-N -Ttext 0x4000
 .S.o:
 	$(CC) $(CFLAGS) -c $*.S
 
-all: first.b first.h ultra.b ultra.h cd.b generic.b generic.h fd.b ieee32.b
+all: first.b first.h ultra.b ultra.h generic.b generic.h fd.b ieee32.b
 
 first.h: first
 	sed -n 's/^\(000000000000\|0000\)4\([0-9a-f][0-9a-f][0-9a-f]\) .*digit_here.*$$/#define DIGIT_OFFSET_TMP 0x\2/p' < first.map > first.h
@@ -67,19 +67,6 @@ ultra.b: ultra
 	echo -n -e '\340' | $(DD) of=ultra.b bs=1 count=1 seek=7 conv=notrunc
 	$(DD) if=/dev/zero of=ultra.b bs=4 count=1 seek=127
 
-cd.o: cd.S
-	$(CC) $(CFLAGS) -c -Wa,-Av9a cd.S
-
-cd: cd.o
-	$(LD) $(LDFLAGS) -o cd cd.o
-	$(STRIP) cd
-
-cd.b: cd
-	$(ELFTOAOUT) -o cd.b cd
-	echo -n 'SILO'$(IMGVERSION) | $(DD) of=cd.b bs=8 conv=notrunc seek=3 count=1
-	echo -n -e '\340' | $(DD) of=cd.b bs=1 count=1 seek=7 conv=notrunc
-	$(DD) if=/dev/zero of=cd.b bs=4 count=1 seek=255
-
 generic.o: generic.S
 	$(CC) $(CFLAGS) -c -Wa,-Av9a generic.S
 
@@ -119,4 +106,4 @@ ieee32.b: ieee32.o
 
 clean:
 	$(RM) *.o *.map *.b first first.h ultra ultra.h \
-	generic generic.h fd fd.h cd
+	generic generic.h fd fd.h

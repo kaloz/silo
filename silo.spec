@@ -36,7 +36,7 @@ rm -rf $RPM_BUILD_ROOT
 /usr/bin/maketilo
 /boot/first.b
 /boot/ultra.b
-/boot/cd.b
+/boot/isofs.b
 /boot/fd.b
 /boot/ieee32.b
 /boot/silotftp.b

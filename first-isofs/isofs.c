@@ -110,7 +110,7 @@ static int cd_read_block(unsigned long long offset, int size, void *data)
 		return 0;
 
 	if (prom_vers == PROM_V0) {
-		/* ISOFS_BLOCK_SIZE / 512 */
+		/* ISOFS_BLOCK_SIZE / 512 == 4 */
 		size <<= 2;
 		offset <<= 2;
 
@@ -119,8 +119,8 @@ static int cd_read_block(unsigned long long offset, int size, void *data)
 	} else {
 		static unsigned long long seekp = 0xffffffffffffffffULL;
 
-		size *= ISOFS_BLOCK_SIZE;
-		offset *= ISOFS_BLOCK_SIZE;
+		size <<= ISOFS_BLOCK_BITS;
+		offset <<= ISOFS_BLOCK_BITS;
 
 		if (seekp != offset) {
 			if (prom_vers == PROM_P1275) {
