@@ -17,6 +17,9 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
+/* This file gets included by the confcheck (usespace), try to be nice */
+#ifndef SILOCONFCHECK
+
 #include "silo.h"
 #include "stringops.h"
 #include "setjmp.h"
@@ -24,6 +27,8 @@
 #define NULL (void *)0
 #endif
 #include "promlib.h"
+
+#endif /* !SILOCONFCHECK */
 
 typedef enum {
     cft_strg, cft_flag, cft_end
@@ -37,7 +42,9 @@ typedef struct {
 
 #define MAX_TOKEN 200
 #define MAX_VAR_NAME MAX_TOKEN
+#ifndef EOF
 #define EOF -1
+#endif
 
 CONFIG cf_options[] =
 {
@@ -115,7 +122,7 @@ void cfg_error (char *msg,...)
     longjmp (env, 1);
 }
 
-inline int getc ()
+inline int my_getc ()
 {
     if (currp == endp)
 	return EOF;
@@ -128,7 +135,7 @@ static int next (void)
     int ch;
 
     if (!back)
-	return getc ();
+	return my_getc ();
     ch = back;
     back = 0;
     return ch;
@@ -335,7 +342,6 @@ int cfg_parse (char *cfg_file, char *buff, int len)
     file_name = cfg_file;
     currp = buff;
     endp = currp + len;
-
     if (setjmp (env))
 	return -1;
     while (1) {

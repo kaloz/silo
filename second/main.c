@@ -395,7 +395,7 @@ int get_params (char **device, int *part, char **kname, char **proll, char **par
 	if (p) pause_message = p;
 	if (label) {
 	    if (**params && password)
-		check_password ("To specify image arguments you need to enter p");
+		check_password ("To specify image arguments you need to enter your p");
 	    from_siloconf = 1;
 	    defdevice = cfg_get_strg (label, "device");
 #ifndef TFTP
@@ -553,7 +553,7 @@ int get_params (char **device, int *part, char **kname, char **proll, char **par
     if (!strcmp (imagename, "halt"))
 	return 1;
     if (!label && password)
-    	check_password ("To boot a custom image you need to type here your p");
+    	check_password ("To boot a custom image you need to enter your p");
     if (!strcmp (imagename, "xxdebug"))
 	return 2;
     if (!strcmp (imagename, "help")) {

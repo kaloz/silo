@@ -13,6 +13,8 @@ RM=/bin/rm -f
 DD=dd
 ELFTOAOUT=/usr/bin/elftoaout
 
+include ../Rules.make
+
 # Linux
 CFLAGS = -Wall -fno-builtin -O2 -I../include -fomit-frame-pointer
 

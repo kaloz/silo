@@ -128,6 +128,13 @@ Assume the machine is not an UltraSPARC.
 .TP
 .B -v
 Print PROM version and exit.
+.TP
+.B -a
+Usually, when silo is run, it reads and checks the syntax of the silo.conf
+that will be used when the system boots. This is generally good, but
+sometimes you may wish to create a boot block when no silo.conf is
+available yet. The \fB-a\fP option will allow this check to fail. USE WITH
+CAUTION!
 .PP
 .SH "BOOT TIME OPERATION"
 When the PROM boots from a disk and partition on which SILO is installed, it

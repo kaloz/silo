@@ -1,3 +1,28 @@
+Tue May 22 12:14:55 EDT 2001  Ben Collins <bcollins@debian.org>
+
+	* Rules.make: New file. For now just includes the VERSION and
+	IMGVERSION.
+	* second/Makefile: Include Rules.make.
+	* first/Makefile: Likewise.
+	* silo/Makefile: Likewise.
+
+	* Makefile: Implement DESTDIR to make packaging easier.
+
+	* silo/confcheck.c: New file. Called by silo, and uses cfg_parse to
+	find errors in the silo.conf file, when silo is called.
+	* silo/silo.c: Use it. Also add a "-a" option to allow the check to
+	fail.
+	* man/silo.8: Document the new "-a" option.
+	* silo/Makefile: Add confcheck.c to the silo build. Also some other
+	minor build cleanups.
+	* second/cfg.c: This file now gets #include'd by confcheck.c. Needed
+	to make it a little friendlier for userspace headers.
+
+	* second/main.c: Fix some gramatical errors.
+
+	* silo/silocheck.c: Include ../second/ufs.h instead of ufs.h. Makes
+	the build a little cleaner.
+
 Tue May 22 00:51:33 EDT 2001  Ben Collins <bcollins@debian.org>
 
 	* Makefile: export VERSION and IMGVERSION for other files to use. Add

@@ -20,6 +20,8 @@ GREP=grep
 SED=sed
 CP=cp
 
+include ../Rules.make
+
 CFLAGS = -I../include -O2 -I. -Wall -fomit-frame-pointer
 
 # Relocate to 2.5MB. The Hitchhiker's Guide to Open Boot Rev 3 claims

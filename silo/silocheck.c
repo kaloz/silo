@@ -49,7 +49,7 @@
 #  include <sys/stat.h>
 #  include <non-linux/ext2_fs.h>
 #  include <ext2fs/ext2fs.h>
-#  include "ufs.h"
+#  include "../second/ufs.h"
 #  include <limits.h>
 #  include <sys/byteorder.h>
 #  ifdef _BIG_ENDIAN

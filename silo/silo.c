@@ -64,7 +64,7 @@
 #  include <sys/stat.h>
 #  include <non-linux/ext2_fs.h>
 #  include <ext2fs/ext2fs.h>
-#  include "ufs.h"
+#  include "../second/ufs.h"
 #  include <limits.h>
 struct hwdevice;
 static int ufs_blocks (struct hwdevice *, ino_t);
@@ -91,6 +91,10 @@ static int ufs_blocks (struct hwdevice *, ino_t);
 #define ULTRA_NUMBER_OFFSET (ULTRA_NUMBER_OFFSET_TMP + 0x223)
 #define FD_DIGIT_OFFSET (FD_DIGIT_OFFSET_TMP + 0x223)
 #define FD_LETTER_OFFSET (FD_LETTER_OFFSET_TMP + 0x223)
+
+/* Checks our config file for errors */
+int confcheck(char*);
+static int allow_confchk_fail = 0;
 
 /* This is just so that we don't have to fight with incompatible ufs_fs.h headers */
 #define SILO_UFS_MAGIC 0x00011954
@@ -624,6 +628,7 @@ void usage (char *s)
             " -F             make a romfs bootable floppy\n"
             " -J image       make a romfs bootable flash image\n"
             "                -J and -F are incompatible\n"
+	    " -a             Allow silo.conf syntax check to fail\n"
             ,s);
     exit (1);
 }
@@ -1147,6 +1152,9 @@ int main(int argc,char **argv)
 		flash_image = *argv++;
 		argc--;
 		break;
+	    case 'a':
+		allow_confchk_fail = 1;
+		break;
 	    default:
 		usage(name);
 	}
@@ -1171,6 +1179,7 @@ int main(int argc,char **argv)
     }
     if (argc) usage(name);
     if (floppy_image && flash_image) usage(name);
+
     if (flash_image) {
 	char *p, *q;
 	if (*flash_image == '/') {
@@ -1200,6 +1209,10 @@ int main(int argc,char **argv)
        chroot(new_root);
        chdir("/");
     }
+
+    /* This _must_ be done after chrooting */
+    if (!confcheck(config_file) && !allow_confchk_fail)
+	return 1;
 
     secondary = strdup (secondary);
     if (stat (secondary, &st1) < 0)
