@@ -46,8 +46,8 @@ static int parent_node;
 
 int prom_init (void)
 {
-    fd = open ("/dev/openprom", O_RDONLY);
-    if (fd < 0)
+    if ((fd = open ("/dev/openprom", O_RDONLY)) < 0 &&
+	(fd = open ("/dev/misc/openprom", O_RDONLY)) < 0)
         return -1;
     oi = (struct openpromio *)buffer;
     SETSIZE
