@@ -52,16 +52,107 @@ struct silo_info {
 static struct isofs_inode root_ino;
 static int link_count;
 static char silo_conf[] = SILO_CONF;
+static int fd;
 
 static int open_namei(const char *pathname, struct isofs_inode *res_inode,
 		      struct isofs_inode *base);
 
-int prom_read(void *data, int size, unsigned long long offset);
 
-#define cd_read_blk(block, data) \
-	prom_read(data, ISOFS_BLOCK_SIZE, (unsigned long long)block * ISOFS_BLOCK_SIZE)
-#define cd_read_blks(block, count, data) \
-	prom_read(data, count * ISOFS_BLOCK_SIZE, (unsigned long long)block * ISOFS_BLOCK_SIZE)
+static int cd_init (void)
+{
+	char bootdevice[1024];
+	char *s = bootdevice;
+
+	if (prom_vers == PROM_V0) {
+		struct linux_arguments_v0 *ap = *romvec->pv_v0bootargs;
+
+		*s++ = ap->boot_dev[0];
+		*s++ = ap->boot_dev[1];
+		*s++ = '(';
+		*s++ = (ap->boot_dev_ctrl & 07) + '0';
+		*s++ = ',';
+		// Hopefully it's never > 10
+		*s++ = ap->boot_dev_unit;
+		*s++ = ','; 
+		*s++ = '0';
+		*s++ = ')';
+		*s = 0;
+
+		fd = (*romvec->pv_v0devops.v0_devopen) (bootdevice);
+	} else {
+		if (prom_vers == PROM_P1275)
+			prom_getproperty (prom_chosen, "bootpath", bootdevice, sizeof(bootdevice));
+		else
+			memcpy(bootdevice, *romvec->pv_v2bootargs.bootpath,
+			       strlen(*romvec->pv_v2bootargs.bootpath));
+
+		for (; *s && *s != ':'; s++)
+			/* Do nothing */;
+
+		if (!*s) {
+			*s++ = ':'; *s++ = 'a'; *s = 0;
+		} else if (s[1] >= 'a' && s[1] <= 'z' && !s[2])
+			s[1] = 'a';
+
+		if (prom_vers == PROM_P1275)
+			fd = p1275_cmd ("open", 1, bootdevice);
+		else
+			fd = (*romvec->pv_v2devops.v2_dev_open) (bootdevice);
+	}
+
+	if (fd == 0 || fd == -1)
+		return 1;
+
+	return 0;
+}
+
+
+static int cd_read_block(unsigned long long offset, int size, void *data)
+{
+	int ret;
+
+	if (!size)
+		return 0;
+
+	if (prom_vers == PROM_V0) {
+		/* ISOFS_BLOCK_SIZE / 512 */
+		size <<= 4;
+		offset <<= 4;
+
+		ret = (*romvec->pv_v0devops.v0_rdblkdev)
+				(fd, size, (unsigned)offset, data);
+	} else {
+		static unsigned long long seekp = 0xffffffffffffffffULL;
+
+		size *= ISOFS_BLOCK_SIZE;
+		offset *= ISOFS_BLOCK_SIZE;
+
+		if (seekp != offset) {
+			if (prom_vers == PROM_P1275) {
+				if (p1275_cmd("seek", -3, (unsigned long long)
+					      (unsigned long)fd, 0LL, offset) == -1)
+					return -1;
+			} else {
+				if ((*romvec->pv_v2devops.v2_dev_seek)
+					(fd, (unsigned)(offset >> 32), (unsigned)offset) == -1)
+					return -1;
+			}
+			seekp = offset;
+		}
+
+		if (prom_vers == PROM_P1275)
+			ret = p1275_cmd ("read", 3, fd, data, size);
+		else
+			ret = (*romvec->pv_v2devops.v2_dev_read) (fd, data, size);
+
+		seekp += ret;
+	}
+
+	if (ret != size)
+		ret = -1;
+
+	return ret;
+}
 
 static int isonum_733 (char * p)
 {
@@ -74,7 +165,7 @@ static int isofs_read_super(void)
 {
 	struct iso_primary_descriptor iso;
 
-	if (cd_read_blk(16, &iso) < 0)
+	if (cd_read_block(16, 1, &iso) < 0)
 		return -1;
 
 	if (memcmp(iso.id, ISO_STANDARD_ID, sizeof (iso.id)))
@@ -177,7 +268,7 @@ static void parse_rr (unsigned char *chr, unsigned char *end,
 		if (chr >= end && cont_extent) {
 			char sect_buf[ISOFS_BLOCK_SIZE];
 
-			if (cd_read_blk(cont_extent, sect_buf) < 0)
+			if (cd_read_block(cont_extent, 1, sect_buf) < 0)
 				return;
 			parse_rr(&sect_buf[cont_offset], &sect_buf[cont_offset +
 				 cont_size - 3], name, symlink);
@@ -205,7 +296,7 @@ static int isofs_lookup (struct isofs_inode *dir, const char *name,
 	while (size > 0) {
 		int i;
 
-		if (cd_read_blk(block, buffer) < 0)
+		if (cd_read_block(block, 1, buffer) < 0)
 			return -1;
 
 		size -= ISOFS_BLOCK_SIZE;
@@ -331,7 +422,7 @@ char *cd_main (struct linux_romvec *promvec, void *cifh, void *cifs)
 
 	prom_putchar('S');
 
-	if (diskinit())
+	if (cd_init())
 		prom_halt();
 
 	if (isofs_read_super())
@@ -344,7 +435,7 @@ char *cd_main (struct linux_romvec *promvec, void *cifh, void *cifs)
 
 	prom_putchar('I');
 
-	if (cd_read_blks(inode.extent, (inode.size + (ISOFS_BLOCK_SIZE - 1)) /
+	if (cd_read_block(inode.extent, (inode.size + (ISOFS_BLOCK_SIZE - 1)) /
 	    ISOFS_BLOCK_SIZE, dest) < 0)
 		prom_halt();
 

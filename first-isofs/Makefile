@@ -17,7 +17,7 @@ all: $(NAME).b
 	$(CC) $(CFLAGS) -c $*.S
 
 OBJS_COMMON = ../common/prom.o ../common/console.o ../common/tree.o
-OBJS = crt0.o $(NAME).o disk.o $(OBJS_COMMON)
+OBJS = crt0.o $(NAME).o $(OBJS_COMMON)
 
 $(NAME): $(OBJS)
 	$(LD) $(LDFLAGS) -Bstatic -o $@ $(OBJS)
