@@ -249,9 +249,11 @@ int kernel_number;
 	printf ("Can't find HdrS tag in kernel\n");
  	prom_halt ();
     	}
-    	
-    q[2] &= 0xffff0000;				/* reset root flags */
-    q[3] = 0x02000000;				/* set root device and flags */
+
+    /* reset root flags */
+    q[2] &= 0xffff0000;
+    /* Set root device and flags. Basically read-write. 0x0100 is ramdisk */
+    q[3] = 0x01000000;
     q[4] = image_table[kernel_number].root_start;
     q[5] = image_table[ROOT_IMAGE].packed_len;
  
