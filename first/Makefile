@@ -2,7 +2,6 @@
 ## Linux Loader for SPARC
 ##
 #
-VERSION=0.99
 
 CC=gcc
 LD=ld
@@ -68,9 +67,8 @@ first: first.o
 
 first.b: first
 	$(ELFTOAOUT) -o first.b first
-	echo -n 'SILO'$(VERSION) | $(DD) of=first.b bs=8 conv=notrunc seek=3 count=1
+	echo -n 'SILO'$(IMGVERSION) | $(DD) of=first.b bs=8 conv=notrunc seek=3 count=1
 	$(DD) if=/dev/zero of=first.b bs=4 count=1 seek=127
-	ln -f first.b ../boot/first.b
 
 ultra.o: ultra.S
 	$(CC) $(CFLAGS) -c -Wa,-Av9a ultra.S
@@ -82,10 +80,9 @@ ultra: ultra.o
 
 ultra.b: ultra
 	$(ELFTOAOUT) -o ultra.b ultra
-	echo -n 'SILO'$(VERSION) | $(DD) of=ultra.b bs=8 conv=notrunc seek=3 count=1
+	echo -n 'SILO'$(IMGVERSION) | $(DD) of=ultra.b bs=8 conv=notrunc seek=3 count=1
 	echo -n -e '\340' | $(DD) of=ultra.b bs=1 count=1 seek=7 conv=notrunc
 	$(DD) if=/dev/zero of=ultra.b bs=4 count=1 seek=127
-	ln -f ultra.b ../boot/ultra.b
 
 cd.o: cd.S
 	$(CC) $(CFLAGS) -c -Wa,-Av9a cd.S
@@ -97,10 +94,9 @@ cd: cd.o
 
 cd.b: cd
 	$(ELFTOAOUT) -o cd.b cd
-	echo -n 'SILO'$(VERSION) | $(DD) of=cd.b bs=8 conv=notrunc seek=3 count=1
+	echo -n 'SILO'$(IMGVERSION) | $(DD) of=cd.b bs=8 conv=notrunc seek=3 count=1
 	echo -n -e '\340' | $(DD) of=cd.b bs=1 count=1 seek=7 conv=notrunc
 	$(DD) if=/dev/zero of=cd.b bs=4 count=1 seek=255
-	ln -f cd.b ../boot/cd.b
 
 generic.o: generic.S
 	$(CC) $(CFLAGS) -c -Wa,-Av9a generic.S
@@ -112,10 +108,9 @@ generic: generic.o
 
 generic.b: generic
 	$(ELFTOAOUT) -o generic.b generic
-	echo -n 'SILO'$(VERSION) | $(DD) of=generic.b bs=8 conv=notrunc seek=3 count=1
+	echo -n 'SILO'$(IMGVERSION) | $(DD) of=generic.b bs=8 conv=notrunc seek=3 count=1
 	echo -n -e '\340' | $(DD) of=generic.b bs=1 count=1 seek=7 conv=notrunc
 	$(DD) if=/dev/zero of=generic.b bs=4 count=1 seek=255
-	#ln -f generic.b ../boot/generic.b
 
 fd.o: fd.S
 	$(CC) $(CFLAGS) -c -Wa,-Av9a fd.S
@@ -127,20 +122,18 @@ fd: fd.o
 
 fd.b: fd
 	$(ELFTOAOUT) -o fd.b fd
-	echo -n 'SILO'$(VERSION) | $(DD) of=fd.b bs=8 conv=notrunc seek=3 count=1
+	echo -n 'SILO'$(IMGVERSION) | $(DD) of=fd.b bs=8 conv=notrunc seek=3 count=1
 	echo -n -e '\340' | $(DD) of=fd.b bs=1 count=1 seek=7 conv=notrunc
 	$(DD) if=/dev/zero of=fd.b bs=4 count=1 seek=255
-	ln -f fd.b ../boot/fd.b
 
 ieee32.o: ieee32.S ieee32.h
-	$(CC) $(CFLAGS) -DVERSION='"SILO$(VERSION)"' -c ieee32.S
+	$(CC) $(CFLAGS) -DVERSION='"SILO$(IMGVERSION)"' -c ieee32.S
 
 ieee32.b: ieee32.o
 	$(LD) $(LDFLAGS) -o ieee32.b ieee32.o
 	$(NM) ieee32.b | grep -v '*ABS*' | sort > ieee32.map
 	$(STRIP) ieee32.b
 	chmod 644 ieee32.b
-	ln -f ieee32.b ../boot/ieee32.b
 
 clean:
 	$(RM) *.o *~ first first.b first.map first.h ultra ultra.b ultra.s ultra.map ultra.h \

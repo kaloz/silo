@@ -17,8 +17,9 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-#define VERSION "0.9.9"
-#define IMGVERSION "0.99"
+#if !defined(VERSION) || !defined(IMGVERSION)
+#error VERSION and IMGVERSION must be defined
+#endif
 #define DFL_CONFIG "/etc/silo.conf"
 #define DFL_BACKUP "/boot/old.b"
 #define DFL_PRIMARY "/boot/first.b"

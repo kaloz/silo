@@ -1,3 +1,12 @@
+Tue May 22 00:51:33 EDT 2001  Ben Collins <bcollins@debian.org>
+
+	* Makefile: export VERSION and IMGVERSION for other files to use. Add
+	DESTDIR as a prefix for install directories.
+	* first/Makefile: Remove VERSION, and use IMGVERSION.
+	* second/Makefile: Likewise.
+	* silo/Makefile: Add defines for VERSION and IMGVERSION for silo.c
+	* silo/silo.c: Use them.
+
 Tue May 22 00:06:50 EDT 2001 Ben Collins <bcollins@debian.org>
 
 	* Makefile: do not execute silo/solarissilo on the install target.
@@ -30,7 +39,7 @@ Tue May 22 00:06:50 EDT 2001 Ben Collins <bcollins@debian.org>
 	* silo/silocheck.c: General cleanup. Removed unused vars and
 	initialized others.
 
-Mon May 21 20:00:19 EDT 2001 Ben Collins <bcollins@debian.org>
+Mon May 21 20:00:19 EDT 2001  Ben Collins <bcollins@debian.org>
 
 	* Updated URL's and emails to point to the sourceforge site and
 	mailing list

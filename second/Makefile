@@ -3,7 +3,6 @@
 ##
 ##
 
-VERSION=0.99
 CC=gcc 
 LD=ld
 AS=as
@@ -113,7 +112,7 @@ clean:
 	$(RM) $(OBJS) *.o second second2 second.b silotftp silotftp2 silotftp.b second.l *.map core *~ util second.b second.image.tmp *.s
 
 crt0.o:	crt0.S
-	$(CC) $(CFLAGS) -c -Wa,-Av9 -DVERSION='"SILO$(VERSION)"' crt0.S
+	$(CC) $(CFLAGS) -c -Wa,-Av9 -DVERSION='"SILO$(IMGVERSION)"' crt0.S
 
 prom.o: prom.c
 	$(CC) $(CFLAGS) -c -Wa,-Av9 prom.c
@@ -136,7 +135,6 @@ second.b: second util
 	$(DD) if=/dev/zero bs=1 count=`$(LS) -l second.b | $(AWK) '{len=$$5%512;if(len!=0)len=512-len;print len}'` >> second.b
 	$(LS) -l second.b | $(AWK) '{printf "%c%c%c%c",0,$$5/65536,($$5%65536)/256,0}' | $(DD) of=second.b bs=4 count=1 seek=581 conv=notrunc
 	$(RM) second.tmp second.image.tmp second2.tmp second2.image.tmp second.b2
-	ln -f second.b ../boot/second.b
 
 silotftp.b: silotftp util
 	$(CP) silotftp silotftp.tmp
@@ -148,5 +146,4 @@ silotftp.b: silotftp util
 	./util -a silotftp.map silotftp.image.tmp silotftp2.image.tmp silotftp.b silotftp.b2
 	$(GZIP) -9cfn silotftp.b2 >> silotftp.b
 	$(RM) silotftp.tmp silotftp.image.tmp silotftp2.tmp silotftp2.image.tmp silotftp.b2
-	ln -f silotftp.b ../boot/silotftp.b
 

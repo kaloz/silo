@@ -1,24 +1,26 @@
-DIRS=first second silo
+SUBDIRS=first second silo
 
-all dep depend:
-	@for I in $(DIRS); do cd $$I; make $@ || exit 1; cd ..; done
+VERSION=0.9.9
+IMGVERSION=0.99
+export VERSION IMGVERSION
 
-clean:
-	@for I in $(DIRS); do cd $$I; make $@ || exit 1; cd ..; done
-	rm -f boot/*.b sbin/silo misc/silocheck
+all dep depend clean:
+	@for I in $(SUBDIRS); do cd $$I; $(MAKE) $@ || exit 1; cd ..; done
 
 ifeq (Linux,$(shell uname))
 install:
-	if [ \! -d /boot ]; then mkdir /boot; fi
-	cp -f -b boot/*.b /boot
-	if [ \! -f /etc/silo.conf ]; then cp etc/silo.conf /etc; fi
-	cp -f -b sbin/silo /sbin
+	if [ \! -d $(DESTDIR)/boot ]; then mkdir $(DESTDIR)/boot; fi
+	cp -f -b first/*.b second/*.b $(DESTDIR)/boot
+	if [ \! -f $(DESTDIR)/etc/silo.conf ]; then cp etc/silo.conf $(DESTDIR)/etc; fi
+	mkdir -p $(DESTDIR)/sbin $(DESTDIR)/usr/bin
+	cp -f -b silo/silo $(DESTDIR)/sbin
+	cp -f -b silo/silocheck $(DESTDIR)/usr/bin
 else
 ifeq (SunOS,$(shell uname -s))
 ifeq (5.,$(findstring 5.,$(shell uname -r)))
 install:
 	if [ \! -d /boot ]; then mkdir /boot; fi
-	cp -f -b boot/*.b /boot
+	cp -f -b first/*.b second/*.b /boot
 	if [ \! -f /etc/silo.conf ]; then cp etc/silo.conf /etc; fi
 else
 install:

@@ -23,20 +23,17 @@ CFLAGS=-Wall -g -O2 -I../include
 CC=gcc
 
 silo: silo.c floppy.h prom.c prom.h headers
-	$(CC) $(CFLAGS) -I/usr/src/linux/include -o silo silo.c prom.c
-	ln -f silo ../sbin
+	$(CC) $(CFLAGS) -I/usr/src/linux/include -DVERSION='"$(VERSION)"' \
+		-DIMGVERSION='"$(IMGVERSION)"' -o silo silo.c prom.c
 
 silocheck: silocheck.c
 	$(CC) $(CFLAGS) -I/usr/src/linux/include -o silocheck silocheck.c
-	ln -f silocheck ../misc
 
 solarissilo: silo.c ufs.c ufs.h floppy.h prom.c prom.h headers
 	$(CC) $(CFLAGS) -D__solaris__ -o solarissilo silo.c ufs.c prom.c
-	ln -f solarissilo ../misc
 
 solarissilocheck: silocheck.c ufs.c ufs.h
 	$(CC) $(CFLAGS) -D__solaris__ -o solarissilocheck silocheck.c ufs.c
-	ln -f solarissilocheck ../misc
 
 floppy.h: floppy.label util
 	./util floppy.label | sed 's/cdrom/floppy/' > floppy.h
