@@ -5,17 +5,18 @@ all dep depend clean:
 
 ifeq (Linux,$(shell uname))
 install:
-	[ -d $(DESTDIR)/boot ] || install -d -m755 $(DESTDIR)/boot
+	install -d -m755 $(DESTDIR)/boot $(DESTDIR)/etc $(DESTDIR)/sbin \
+		$(DESTDIR)/usr/sbin
 	install -m644 first/*.b second/*.b $(DESTDIR)/boot/
-	[ -f $(DESTDIR)/etc/silo.conf ] || install -m644 etc/silo.conf $(DESTDIR)/etc/
-	install -d -m755 $(DESTDIR)/sbin $(DESTDIR)/usr/sbin
 	install -m755 silo/silo $(DESTDIR)/sbin
 	install -m755 silo/silocheck $(DESTDIR)/usr/sbin
+	[ -f $(DESTDIR)/etc/silo.conf ] || \
+		install -m644 etc/silo.conf $(DESTDIR)/etc/
 else
 ifeq (SunOS,$(shell uname -s))
 ifeq (5.,$(findstring 5.,$(shell uname -r)))
 install:
-	[ -d $(DESTDIR)/boot ] || install -d -m755 $(DESTDIR)/boot
+	install -d -m755 $(DESTDIR)/boot
 	install -m644 first/*.b second/*.b $(DESTDIR)/boot/
 	[ -f $(DESTDIR)/etc/silo.conf ] || install -m644 etc/silo.conf $(DESTDIR)/etc/
 else
