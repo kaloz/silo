@@ -26,7 +26,7 @@
 #include <silo.h>
 #include <file.h>
 #include <stringops.h>
-#include <fs/rock.h>
+#include <rock.h>
 
 /* Reuse and abuse */
 typedef ext2_filsys isofs_filsys;
@@ -36,10 +36,8 @@ struct isofs_inode {
         unsigned int size;
 };
 
-#define SUPISO ((struct iso_primary_descriptor *)fs->io->private_data)
-#define ROOTDIR ((struct isofs_inode *)SUPISO->unused2)
 
-static struct isofs_inode inode;
+static struct isofs_inode inode, root_inode;
 static int link_count = 0;
 
 void *alloca(size_t);
@@ -69,26 +67,27 @@ static int isonum_731 (char * p)
 
 #define isonum_733(p) isonum_731(p)
 
-static struct iso_primary_descriptor *isofs_read_super(isofs_filsys fs)
+static int isofs_read_super(struct struct_io_manager *io)
 {
     int i;
-    struct iso_primary_descriptor *iso = (struct iso_primary_descriptor *) malloc (2048);
-    struct isofs_inode *root;
+    struct iso_primary_descriptor iso;
     
     for (i = 16; i < 100; i++) {
-        if (io_channel_read_blk (fs->io, i, -2048, (char *)iso))
-            return 0;
-        if (!strncmp (iso->id, ISO_STANDARD_ID, sizeof (iso->id)))
+        if (io_channel_read_blk (io, i, -2048, (char *)&iso))
+            return -1;
+        if (!strncmp (iso.id, ISO_STANDARD_ID, sizeof (iso.id)))
             break;
     }
     
-    if (i == 100) return 0;
+    if (i == 100)
+	    return -1;
 
-    root = (struct isofs_inode *)iso->unused2;
-    root->extent = isonum_733 (((struct iso_directory_record *)(iso->root_directory_record))->extent);
-    root->size = isonum_733 (((struct iso_directory_record *)(iso->root_directory_record))->size);
+    root_inode.extent = isonum_733 (((struct iso_directory_record *)
+			    (iso.root_directory_record))->extent);
+    root_inode.size = isonum_733 (((struct iso_directory_record *)
+			    (iso.root_directory_record))->size);
 
-    return iso;
+    return 0;
 }
 
 static int open_isofs (char *device)
@@ -102,7 +101,7 @@ static int open_isofs (char *device)
 
     io_channel_set_blksize (fs->io, 2048);
 
-    if (!(fs->io->private_data = isofs_read_super(fs)))
+    if (isofs_read_super(fs->io))
 	return 0;
 
     return 1;
@@ -148,12 +147,6 @@ static int iso_date(char * p, int flag)
     return crtime;
 }
 
-#define SIG(A,B) ((A << 8) | B)
-
-#define CHECK_CE					\
-      {cont_extent = isonum_733(rr->u.CE.extent);	\
-      cont_offset = isonum_733(rr->u.CE.offset);	\
-      cont_size = isonum_733(rr->u.CE.size);}
 
 static void parse_rr (isofs_filsys fs, unsigned char *chr, unsigned char *end,
 		      char *name, char *symlink, struct silo_inode *sino)
@@ -162,7 +155,6 @@ static void parse_rr (isofs_filsys fs, unsigned char *chr, unsigned char *end,
     struct rock_ridge *rr;
     int cnt, sig;
     int truncate = 0;
-    int retnamlen = 0;
     int symlink_len = 0;
     int rootflag;
 
@@ -192,7 +184,6 @@ static void parse_rr (isofs_filsys fs, unsigned char *chr, unsigned char *end,
 		    break;
 		}
 		strncat(name, rr->u.NM.name, rr->len - 5);
-		retnamlen += rr->len - 5;
 		break;
 	    case SIG('S','L'):
 		{
@@ -367,7 +358,7 @@ static int dir_namei(isofs_filsys fs, const char *pathname, int *namelen,
     struct isofs_inode inode;
 
     if ((c = *pathname) == '/') {
-	base = ROOTDIR;
+	base = &root_inode;
 	pathname++;
     }
     while (1) {
@@ -408,7 +399,7 @@ static int isofs_namei (const char *filename)
     int ret;
     link_count = 0;
 
-    ret = open_namei (fs, filename, &inode, ROOTDIR);
+    ret = open_namei (fs, filename, &inode, &root_inode);
     iso_fs_ops.have_inode = (ret) ? 0 : 1;
 
     return ret;
