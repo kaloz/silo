@@ -38,7 +38,7 @@ raid_dsk_number:
 	.align 4
 silo_conf:
 	.skip  256
-	.ascii	VERSION
+	.ascii	IMGVERSION
 imglen:	.word	0
 silo_conf_parts:
 	.skip	32

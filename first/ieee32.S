@@ -34,7 +34,7 @@
 _start:
 	ba	1f
 	 sethi	%hi(0x4000), buffer
-	.ascii	VERSION
+	.ascii	IMGVERSION
 1:	sethi	%hi(0x10000), dest
 	mov	%o3, promvec
 

@@ -127,7 +127,7 @@ fd.b: fd
 	$(DD) if=/dev/zero of=fd.b bs=4 count=1 seek=255
 
 ieee32.o: ieee32.S ieee32.h
-	$(CC) $(CFLAGS) -DVERSION='"SILO$(IMGVERSION)"' -c ieee32.S
+	$(CC) $(CFLAGS) -DIMGVERSION='"SILO$(IMGVERSION)"' -c ieee32.S
 
 ieee32.b: ieee32.o
 	$(LD) $(LDFLAGS) -o ieee32.b ieee32.o

@@ -112,7 +112,7 @@ clean:
 	$(RM) $(OBJS) *.o second second2 second.b silotftp silotftp2 silotftp.b second.l *.map core *~ util second.b second.image.tmp *.s
 
 crt0.o:	crt0.S
-	$(CC) $(CFLAGS) -c -Wa,-Av9 -DVERSION='"SILO$(IMGVERSION)"' crt0.S
+	$(CC) $(CFLAGS) -c -Wa,-Av9 -DIMGVERSION='"SILO$(IMGVERSION)"' crt0.S
 
 prom.o: prom.c
 	$(CC) $(CFLAGS) -c -Wa,-Av9 prom.c
