@@ -1,3 +1,8 @@
+Thu Oct 25 20:04:46 EDT 2001  Ben Collins <bcollins@debian.org>
+
+	* second/util.c: Fix parsing of 16digit addresses, when the first line
+	was a blank address. Using sscanf now. Reported by Alex Buell.
+
 Thu Aug 23 12:56:50 CEST 2001  Thorsten Kukuk <kukuk@suse.de>
 
 	* common/ffs.c: Add ffs() function from kernel header files,
