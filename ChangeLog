@@ -1,3 +1,9 @@
+Fri May 25 20:28:01 EDT 2001  Ben Collins <bcollins@debian.org>
+
+	* Rules.make: Final cleanups.
+	* common/inflate.c: Add rotate() here so silo and tilo get it.
+	* second/file.c: Remove rotate() from here.
+
 Fri May 25 18:35:21 EDT 2001  Ben Collins <bcollins@debian.org>
 
 	* Makefile: Add install of man pages. Reorder SUBDIRS so tilo gets

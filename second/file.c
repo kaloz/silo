@@ -220,24 +220,12 @@ static int open_isofs (char *device)
     return !iso9660_open (device, linux_io_manager, &fs);
 }
 
-static void rotate (int freq)
-{
-    static int i = 0;
-    static char rot[] = "\\|/-";
-
-    if (!(i % freq))
-	printf ("%c\b", rot[(i / freq) % 4]);
-    i++;
-}
-
 static int dump_block (ext2_filsys fs, blk_t * blocknr, int blockcnt,
 		       void *private)
 {
     if (blockcnt < 0)
 	return 0;
 
-    if (!first_block)
-	rotate (5);
     if (!first_block && do_gunzip) {
     	if (blockcnt != last_blockcnt + 1) {
             int i;
@@ -325,14 +313,12 @@ static unsigned char get_gzip_input (void)
 	    	count++;
 	    	cur_gzipped_block++;
 	    }
-	    rotate (1);
 	    memset (gunzip_buffer, 0, count * bs);
 	} else {
 	    while (*cur_gzipped_block == first + count && count < 16) {
 	        count++;
 	        cur_gzipped_block++;
 	    }
-	    rotate (1);
 	    if (io_channel_read_blk (fs->io, first, count, gunzip_buffer)) {
 	        printf ("\nRead error\n");
 	        longjmp (gunzip_env, 1);
