@@ -223,7 +223,7 @@
 +   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.   */
 +
 +
-+static char rcsid[] ="$Id: cdrtools-1.11a06-silo.patch,v 1.1 2001/11/19 17:07:00 bencollins Exp $";
++static char rcsid[] ="$Id: cdrtools-1.11a06-silo.patch,v 1.2 2003/04/14 03:32:43 bencollins Exp $";
 +
 +#include <mconfig.h>
 +#include <stdio.h>
@@ -449,7 +449,7 @@
 +    silo_info.id = 'L';
 +    silo_info.conf_part = 1;
 +    strncpy (silo_info.conf_file, silo_conf_file, 256);
-+    silo_info.conf_file[259] = '\0';
++    silo_info.conf_file[256] = '\0';
 +
 +    last_extent_written += 16;
 +    
