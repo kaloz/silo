@@ -27,7 +27,7 @@ install:
 	install -m755 tilo/tilo.sh $(DESTDIR)/usr/bin/tilo
  endif
 	for manpage in $(MANPAGES); do \
-		sect=`echo $$manpage | sed 's/.*\([1-8]\)$/\1/'`; \
+		sect=`echo $$manpage | sed 's/.*\([1-8]\)$$/\1/'`; \
 		install -d -m755 $(DESTDIR)/usr/share/man/man$$sect; \
 		install -m644 man/$$manpage $(DESTDIR)/usr/share/man/man$$sect/; \
 	done
