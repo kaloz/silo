@@ -1,3 +1,7 @@
+Fri Jun 15 14:23:20 EDT 2001  Ben Collins <bcollins@debian.org>
+
+	* Updates for makefiles, including revup
+
 Fri Jun 15 12:36:26 EDT 2001  Ben Collins <bcollins@debian.org>
 
 	* common/printf.c: Check for null pointer for %s format.

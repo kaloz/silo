@@ -1,11 +1,15 @@
-VERSION=1.2.0
+VERSION=1.2.1
 IMGVERSION=0.99
 RM=rm -f
 CC=gcc
 LD=ld
 ELFTOAOUT=elftoaout
 BIN2H=../common/bin2h
-CFLAGS=-O2 -Wall -I. -I../include -fomit-frame-pointer
+CFLAGS=-O2 -Wall -I. -I../include -fomit-frame-pointer -Werror
+
+OPSYS=$(shell uname)
+OSREV=$(shell uname -r)
+MACHINE=$(subst sparc64,sparc,$(shell uname -m))
 
 ../common/%:
 	$(MAKE) -C ../common $*

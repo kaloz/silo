@@ -4,14 +4,14 @@ MESSAGE="SILO is now only supported on SPARC Linux and Solaris."
 PROGRAMS=
 UFSDEPS=
 
-ifeq (Linux,$(shell uname))
-  ifeq (sparc,$(subst sparc64,sparc,$(shell uname -m)))
+ifeq ($(OPSYS),Linux)
+  ifeq (sparc,$(MACHINE))
     PROGRAMS=silo silocheck
     MESSAGE="SILO build for SPARC/Linux completed."
   endif
 else
-  ifeq (SunOS,$(shell uname -s))
-    ifeq (5.,$(findstring 5.,$(shell uname -r)))
+  ifeq ($(OPSYS),SunOS)
+    ifeq (5.,$(findstring 5.,$(OSREV)))
       PROGRAMS=silo silocheck
       MESSAGE="SILO build for SPARC/Solaris completed."
       UFSDEPS=../second/ufs.c ufs.h
