@@ -79,8 +79,7 @@ static int cd_init (void)
 		if (prom_vers == PROM_P1275)
 			prom_getproperty (prom_chosen, "bootpath", bootdevice, sizeof(bootdevice));
 		else
-			memcpy(bootdevice, *romvec->pv_v2bootargs.bootpath,
-			       strlen(*romvec->pv_v2bootargs.bootpath));
+			strcpy(bootdevice, *romvec->pv_v2bootargs.bootpath);
 
 		for (; *s && *s != ':'; s++)
 			/* Do nothing */;
@@ -513,4 +512,11 @@ void *memset(void *s,int c,size_t count)
 	while (count--)
 		*xs++ = c;
 	return s;
+}
+
+char *strcpy(char *dest, const char *src)
+{
+	char *tmp = dest;
+	while ((*dest++ = *src++) != '\0');
+	return tmp;
 }
