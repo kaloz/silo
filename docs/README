@@ -94,9 +94,9 @@ are not implemented).  To the boot: prompt, you can:
 6) press TAB to list the label names and aliases in silo.conf
 7) type the full path of the image to load
 
-where the "default" is the image marked as default=image, or the first one.
-The last option is the only one if you have no silo.conf, and gives you much
-more freedom at the expense of more typing.
+where the "default" is the image marked as default=image, or the first
+one.  The last option is the only one if you have no silo.conf, and gives
+you much more freedom at the expense of more typing.
 
 
 The full image path name depend on the prom version, pre 2.0 being "old",
