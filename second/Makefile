@@ -36,7 +36,7 @@ OBJS2 = decomp.o
 OBJS2N = decompnet.o
 OBJS3 = ../common/console.o ../common/printf.o malloc.o ../common/jmp.o \
 	../common/prom.o ../common/tree.o ../common/urem.o ../common/udiv.o \
-	../common/stringops1.o
+	../common/stringops1.o ../common/ffs.o
 OBJS4 = main.o
 OBJS4N = mainnet.o
 OBJS5 = cmdline.o disk.o file.o misc.o cfg.o strtol.o ranges.o timer.o \

@@ -10,7 +10,7 @@ include ../Rules.make
 .S.o:
 	$(CC) $(CFLAGS) -c $*.S
 
-OBJS = udiv.o urem.o jmp.o printf.o console.o prom.o tree.o stringops2.o stringops1.o
+OBJS = udiv.o urem.o jmp.o printf.o console.o prom.o tree.o stringops2.o stringops1.o ffs.o
 PROGRAMS = bin2h
 
 all: $(OBJS) $(PROGRAMS)

@@ -251,7 +251,7 @@ int kernel_number;
     	}
     	
     q[2] &= 0xffff0000;				/* reset root flags */
-    q[3] = 0x01000000;				/* set root device and flags */
+    q[3] = 0x02000000;				/* set root device and flags */
     q[4] = image_table[kernel_number].root_start;
     q[5] = image_table[ROOT_IMAGE].packed_len;
  
