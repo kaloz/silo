@@ -444,7 +444,7 @@ char *cd_main (struct linux_romvec *promvec, void *cifh, void *cifs)
 	memset(sinfo, 0, sizeof(*sinfo));
 	sinfo->id = 'L';
 	sinfo->conf_part = 1;
-	memcpy(sinfo->conf_file, silo_conf, sizeof(silo_conf));
+	strcpy(sinfo->conf_file, silo_conf);
 
 	prom_putchar(sinfo->id);
 
