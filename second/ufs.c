@@ -23,7 +23,7 @@
 #  include <sys/types.h>
 #  include <sys/time.h>
 #  include <errno.h>
-#  include "silo.h"
+#  include <silo.h>
 typedef int FILE;
 #  include <linux/ext2_fs.h>
 
@@ -43,7 +43,7 @@ typedef int FILE;
 #include <sys/stat.h>
 #endif
 
-#include "stringops.h"
+#include <stringops.h>
 
 #define SUPUFS (struct ufs_superblock *)(fs->io->private_data)
 #define cgstart(cg) ((sb->fs_fpg * (cg)) + sb->fs_cgoffset * ((cg) & ~(sb->fs_cgmask)))

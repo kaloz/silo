@@ -4,7 +4,7 @@
    	Copyright (C) 1991, 1992  Linus Torvalds
  */
  
-#include "stringops.h"
+#include <stringops.h>
 
 char * strncpy(char *dest, const char *src, int count)
 {
@@ -142,4 +142,10 @@ unsigned long time(void)
 void *realloc(void *p, int size)
 {
 	return 0; /* We do not support this */
+}
+
+int sprintf (char *buf, char *fmt,...)
+{
+	strcpy (buf, fmt);
+	return 0;
 }

@@ -18,10 +18,10 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-#include "silo.h"
+#include <silo.h>
 #include <asm/idprom.h>
 #include <asm/machines.h>
-#include "stringops.h"
+#include <stringops.h>
 
 void fatal (const char *msg)
 {

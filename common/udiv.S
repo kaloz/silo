@@ -1,7 +1,8 @@
-/* $Id: urem.S,v 1.1 2001/04/27 21:55:53 bencollins Exp $
- * urem.S:      This routine was taken from glibc-1.09 and is covered
+/* $Id: udiv.S,v 1.1 2001/05/25 14:41:26 bencollins Exp $
+ * udiv.S:      This routine was taken from glibc-1.09 and is covered
  *              by the GNU Library General Public License Version 2.
  */
+
 
 /* This file is generated from divrem.m4; DO NOT EDIT! */
 /*
@@ -13,8 +14,8 @@
  * Input: dividend and divisor in %o0 and %o1 respectively.
  *
  * m4 parameters:
- *  .urem	name of function to generate
- *  rem		rem=div => %o0 / %o1; rem=rem => %o0 % %o1
+ *  .udiv	name of function to generate
+ *  div		div=div => %o0 / %o1; div=rem => %o0 % %o1
  *  false		false=true => signed; false=false => unsigned
  *
  * Algorithm parameters:
@@ -40,8 +41,9 @@
  *  one bit at a time.
  */
 
-	.globl .urem
-.urem:
+
+	.globl .udiv
+.udiv:
 
 	! Ready to divide.  Compute size of quotient; scale comparand.
 	orcc	%o1, %g0, %o5
@@ -237,7 +239,7 @@ L.3.17:
 	subcc	%o3,%o5,%o3
 	b	9f
 	 add	%o2, (1*2+1), %o2
-	
+
 L.4.17:
 	! remainder is negative
 	addcc	%o3,%o5,%o3
@@ -303,7 +305,7 @@ L.2.15:
 	subcc	%o3,%o5,%o3
 	b	9f
 	 add	%o2, (-5*2+1), %o2
-	
+
 L.4.11:
 	! remainder is negative
 	addcc	%o3,%o5,%o3
@@ -335,20 +337,18 @@ Lend_regular_divide:
 
 	bl,a	Lgot_result
 	! non-restoring fixup here (one instruction only!)
-	add	%o3, %o1, %o3
+	sub	%o2, 1, %o2
 
 Lgot_result:
 
 	retl
-	 mov %o3, %o0
+	 mov %o2, %o0
 
-	.globl	.urem_patch
-.urem_patch:
+	.globl	.udiv_patch
+.udiv_patch:
 	wr	%g0, 0x0, %y
 	nop
 	nop
-	nop
-	udiv	%o0, %o1, %o2
-	umul	%o2, %o1, %o2
 	retl
-	 sub	%o0, %o2, %o0
+	 udiv	%o0, %o1, %o0
+	nop

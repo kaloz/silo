@@ -20,13 +20,13 @@
 /* This file gets included by the confcheck (usespace), try to be nice */
 #ifndef SILOCONFCHECK
 
-#include "silo.h"
-#include "stringops.h"
-#include "setjmp.h"
+#include <silo.h>
+#include <stringops.h>
+#include <setjmp.h>
 #ifndef NULL
 #define NULL (void *)0
 #endif
-#include "promlib.h"
+#include <promlib.h>
 
 #endif /* !SILOCONFCHECK */
 

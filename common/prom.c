@@ -1,4 +1,4 @@
-/* $Id: prom.c,v 1.1 2001/04/27 21:55:44 bencollins Exp $
+/* $Id: prom.c,v 1.1 2001/05/25 14:41:26 bencollins Exp $
  * init.c:  Initialize internal variables used by the PROM
  *          library functions.
  *
@@ -6,7 +6,7 @@
  * Copyright (C) 1997 Jakub Jelinek (jj@sunsite.mff.cuni.cz)
  */
 
-#include "promlib.h"
+#include <promlib.h>
 
 struct linux_romvec *romvec;
 enum prom_major_version prom_vers;

@@ -17,8 +17,8 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-#include "silo.h"
-#include "stringops.h"
+#include <silo.h>
+#include <stringops.h>
 
 static int net = 0;
 static int floppy = 0;

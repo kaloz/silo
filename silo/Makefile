@@ -24,7 +24,6 @@ all: $(PROGRAMS)
 
 CFLAGS=-Wall -g -O2 -I../include -I/usr/src/linux/include -Werror
 LDFLAGS=
-CC=gcc
 HEADERS=../first/first.h ../first/ultra.h ../first/fd.h
 SILO_OBJS=confcheck.o prom.o silo.o
 SILOCHK_OBJS=silocheck.o
@@ -35,14 +34,11 @@ silo: $(HEADERS) $(SILO_OBJS)
 silocheck: $(SILOCHK_OBJS) $(UFSDEPS)
 	$(CC) $(LDFLAGS) -o $@ $(SILOCHK_OBJS)
 
-floppy.h: floppy.label util
-	./util floppy_label floppy.label > floppy.h
+floppy.h: floppy.label ../common/bin2h
+	../common/bin2h floppy_label floppy.label > floppy.h
 
 ufs.h: ../second/ufs.h
 	ln -f ../second/ufs.h ufs.h
-
-util: util.c
-	$(CC) $(CFLAGS) -o util util.c
 
 $(HEADERS):
 	$(MAKE) -C ../first first.h ultra.h fd.h
@@ -51,4 +47,4 @@ silo.o: silo.c floppy.h $(UFSDEPS)
 	$(CC) $(CFLAGS) -DVERSION='"$(VERSION)"' -DIMGVERSION='"$(IMGVERSION)"' -c silo.c
 
 clean:
-	rm -f *.o *~ silo floppy.h ufs.h util silocheck
+	$(RM) *.o *~ silo floppy.h ufs.h silocheck

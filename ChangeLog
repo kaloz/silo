@@ -1,3 +1,61 @@
+Fri May 25 10:16:39 EDT 2001  Ben Collins <bcollins@debian.org>
+
+	* second/console.c: Move to common/
+	* second/udiv.S: Likewise.
+	* second/inflate.c: Likewise.
+	* second/jmp.S: Likewise.
+	* second/malloc.c: Likewise.
+	* second/printf.c: Likewise.
+	* second/prom.c: Likewise.
+	* second/stringops1.c: Likewise.
+	* second/stringops2.c: Likewise.
+	* second/tree.c: Likewise.
+	* second/urem.S: Likewise.
+	* second/bin2h.c: Likewise.
+
+	* second/stringops.h: Move to include/
+	* second/promlib.h: Likewise.
+	* second/silo.h: Likewise.
+
+	* common/Makefile: New file. Build common objects.
+	* docs/README.tilo: New file. README from original TILO.
+	* man/maketilo.1: New file. Maketilo manpage.
+	* man/tilo.1: New file. Tilo script man page.
+
+	* tilo/Makefile: New file. Welcome TILO
+	* tilo/crt0.S: Likewise.
+	* tilo/maketilo.c: Likewise.
+	* tilo/tilo.c: Likewise.
+	* tilo/tilo.sh: Likewise.
+
+	* second/setjmp.h: Removed.
+	* silo/util.c: Removed in favor of bin2h.
+
+	* common/bin2h.c: Modified so it takes a -l option which can be the
+	name of a define for the length of the file being converted.
+	* second/Makefile: Modify for new location of objects and the new
+	command line for bin2h.
+	* silo/Makefile: Likewise.
+	* Makefile: Add the common and tilo subdirectories.
+	* Rules.make: Add rules for ../common/% and move some common values
+	here (LD, CC, ELFTOAOUT, ...)
+
+	* first/Makefile: Modify for new header and object locations.
+	* second/9660.c: Likewise.
+	* second/cfg.c: Likewise.
+	* second/cmdline.c: Likewise.
+	* second/decomp.c: Likewise.
+	* second/disk.c: Likewise.
+	* second/file.c: Likewise.
+	* second/ls.c: Likewise.
+	* second/main.c: Likewise.
+	* second/memory.c: Likewise.
+	* second/misc.c: Likewise.
+	* second/ranges.c: Likewise.
+	* second/romfs.c: Likewise.
+	* second/timer.c: Likewise.
+	* second/ufs.c: Likewise.
+
 Tue May 22 20:16:48 EDT 2001  Ben Collins <bcollins@debian.org>
 
 	* silo/Makefile: Rewrite logic for checking arch/OS. Make it cleaner.

@@ -3,15 +3,11 @@
 ##
 ##
 
-CC=gcc 
-LD=ld
 AS=as
-RM=/bin/rm -f
 NM=nm
 DD=dd
 AWK=awk
 LS=ls
-ELFTOAOUT=elftoaout
 STRIP=strip
 GZIP=gzip
 GDB=gdb
@@ -39,11 +35,11 @@ LDFLAGS2=-N -Ttext 0x380000
 OBJS1 = crt0.o
 OBJS2 = decomp.o
 OBJS2N = decompnet.o
-OBJS3 = console.o printf.o malloc.o jmp.o prom.o tree.o urem.o udiv.o stringops1.o
+OBJS3 = ../common/console.o ../common/printf.o malloc.o ../common/jmp.o ../common/prom.o ../common/tree.o ../common/urem.o ../common/udiv.o ../common/stringops1.o
 OBJS4 = main.o
 OBJS4N = mainnet.o
 OBJS5 = cmdline.o disk.o file.o misc.o cfg.o strtol.o ranges.o timer.o memory.o ufs.o romfs.o 9660.o divdi3.o \
-	mul.o rem.o sdiv.o umul.o stringops2.o ls.o muldi3.o
+	mul.o rem.o sdiv.o umul.o ../common/stringops2.o ls.o muldi3.o
 OBJS = $(OBJS1) $(OBJS2) $(OBJS3) bmark.o $(OBJS4) $(OBJS5)
 OBJSNET = $(OBJS1) $(OBJS2N) $(OBJS3) bmark.o $(OBJS4N) $(OBJS5)
 
@@ -74,50 +70,25 @@ silotftp: $(OBJSNET) mark.o
 second.l: second
 	( $(ECHO) 'disassemble 0x280000 '`$(GREP) '_etext' second.map | $(SED) 's/ .*$$//' | $(SED) 's/^00/0x/'`; $(ECHO) quit ) | $(GDB) second | $(SED) '1,/^(gdb)/d;/^End /,$$d' > second.l
 
-main.o:        main.c silo.h
-ls.o:          ls.c silo.h
-malloc.o:      malloc.c silo.h
-printf.o:      printf.c silo.h
-cmdline.o:     cmdline.c silo.h
-console.o:     console.c silo.h
-misc.o:	       misc.c silo.h
-disk.o:	       disk.c silo.h
-file.o:	       file.c silo.h ufs.h
-cfg.o:	       cfg.c silo.h
-ranges.o:      ranges.c silo.h
-tree.o:	       tree.c silo.h
-timer.o:       timer.c silo.h
-decomp.o:      decomp.c inflate.c silo.h
-mark.o:	       mark.S
-bmark.o:       bmark.S
-mul.o:         mul.S
-umul.o:        umul.S
-sdiv.o:        sdiv.S
-udiv.o:        udiv.S
-rem.o:         rem.S
-urem.o:        urem.S
-ufs.o:	       ufs.c silo.h ufs.h
-romfs.o:       romfs.c silo.h
-memory.o:      memory.c silo.h
-jmp.o:	       jmp.S
-divdi3.o:      divdi3.S
-prom.o:	       prom.c promlib.h
-decompnet.o:   decomp.c inflate.c silo.h
+file.o:	       file.c ufs.h
+ufs.o:	       ufs.c ufs.h
+
+decompnet.o:   decomp.c
 	$(CC) $(CFLAGS) -DTFTP -c -o decompnet.o decomp.c
-mainnet.o:   main.c silo.h
+mainnet.o:   main.c
 	$(CC) $(CFLAGS) -DTFTP -c -o mainnet.o main.c
+
+malloc.o: ../common/malloc.c
+	$(CC) $(CFLAGS) -c -o malloc.o ../common/malloc.c
 
 util:	util.c
 	$(CC) -o util util.c
 
 clean:
-	$(RM) $(OBJS) *.o second second2 second.b silotftp silotftp2 silotftp.b second.l *.map core *~ util second.b second.image.tmp *.s
+	$(RM) *.o second second2 second.b silotftp silotftp2 silotftp.b second.l *.map core *~ util second.b second.image.tmp *.s
 
 crt0.o:	crt0.S
 	$(CC) $(CFLAGS) -c -Wa,-Av9 -DIMGVERSION='"SILO$(IMGVERSION)"' crt0.S
-
-prom.o: prom.c
-	$(CC) $(CFLAGS) -c -Wa,-Av9 prom.c
 
 memory.o: memory.c
 	$(CC) $(CFLAGS) -c -Wa,-Av9 memory.c

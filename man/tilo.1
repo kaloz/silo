@@ -1,0 +1,59 @@
+.\" -*- nroff -*-
+.\" 
+.\" This file was written by Eric Delaunay <delaunay@debian.org>.
+.\" It is just a transcript of the README file from tilo-0.2.
+.\" 
+.TH TILO 1 "1998" "tilo"
+.SH NAME
+tilo \- Trivial Image LOader
+.SH SYNOPSIS
+.B tilo
+.I <Sun4c/m/d kernel>
+.I <Sun4u kernel>
+.I <root image>
+.I <TILO image>
+.SH DESCRIPTION
+.BI tilo
+is a tool for building a simple TFTP boot loader
+which embodies several kernel images for different Sun
+architectures and a ramdisk root image. To minimize
+memory usage, the images are gzipped. After starting
+the boot loader, the architecture is detected, 
+the appropriate kernel is unpacked and then the
+booting procedure is launched.
+.PP
+.SH OPTIONS
+.TP
+.I <Sun4c/m/d kernel>
+the kernel for Sun4c/m/d architecture (in ELF format)
+.TP
+.I <Sun4u kernel>
+the kernel for Sun4u (ultrasparc) architecture (in ELF format)
+.TP
+.I <root image>
+the initial ramdisk image to append to the kernel image.  It could be
+compressed as well
+.TP
+.I <TILO image>
+TFTP boot image name as result of
+.B tilo
+command.
+.PP
+A boot image will be created which contains everything
+necessary to boot on each architecture.
+.SH NOTE
+.B maketilo
+is an internal command used by the
+.B tilo
+script.  There is no need to use it directly.
+.SH AUTHOR
+.B tilo
+has been written by Jan Vondrak <jvon4518@barbora.mff.cuni.cz>.
+.SH AVAILABILITY
+.B tilo
+is available for anonymous ftp from sunsite.mff.cuni.cz in
+/OS/Linux/Non-x86/Sparc/local/ultrapenguin-1.1.9/sparc/misc/src/trees/tilo-0.2.
+.SH SEE ALSO
+.BR piggyback (1),
+.BR piggyback64 (1),
+.BR elftoaout (1)

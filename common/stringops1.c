@@ -5,7 +5,7 @@
    	Copyright (C) 1991, 1992  Linus Torvalds
  */
  
-#include "stringops.h"
+#include <stringops.h>
 
 char *strcpy(char *dest, const char *src)
 {
@@ -41,5 +41,23 @@ void *memcpy(void *dest,const void *src,size_t count)
 	char *tmp = (char *) dest, *s = (char *) src;
 	while (count--)
 		*tmp++ = *s++;
+	return dest;
+}
+
+void *memmove(void *dest,const void *src,size_t count)
+{
+	char *d, *s;
+
+	if (dest <= src) {
+		d = (char *) dest;
+		s = (char *) src;
+		while (count--)
+			*d++ = *s++;
+	} else {
+		d = (char *) dest + count;
+		s = (char *) src + count;
+		while (count--)
+			*--d = *--s;
+	}
 	return dest;
 }

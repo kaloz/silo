@@ -1,6 +1,7 @@
-/* a simple utility to dump binary into a header file
+/* Dump memory allocation routines
    
-   Copyright (C) 1996 Jakub Jelinek
+   Copyright (C) 1996 Maurizio Plaza
+   		 1996 Jakub Jelinek
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -16,32 +17,38 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-#include <stdio.h>
+#ifndef MALLOC_BASE
+extern unsigned long _start;
+static char *malloc_ptr = ((char *)&_start) + 0x30000;
+#else
+static char *malloc_ptr = (char *) MALLOC_BASE;
+#endif
 
-int main (int argc, char **argv)
+static char *last_alloc = 0;
+
+void *malloc (int size)
 {
-    FILE *f;
-    char buffer[512];
-    int i, j;
-    
-    if (argc != 3) {
-	fprintf(stderr, "Usage: %s <array name> <file>\n", argv[0]);
-	exit (1);
-    }
+    char *caddr;
 
-    if ((f = fopen(argv[2], "r")) == NULL) {
-	perror("fopen");
-	exit (1);
-    }
+    caddr = malloc_ptr;
+    malloc_ptr += size;
+    last_alloc = caddr;
+    malloc_ptr = (char *) ((((unsigned long) malloc_ptr) + 7) & (~7));
+    return caddr;
+}
 
-    fread (buffer, 1, sizeof(buffer), f);
-    fclose (f);
-    printf ("char %s[] = {\n", argv[1]);
-    for (i = 0; i < 32; i++) {
-        for (j = 0; j < 16; j++)
-            printf ("0x%02X, ", (unsigned char)buffer[16 * i + j]);
-        printf ("\n");
-    }
-    printf ("};\n");
-    exit (0);
+void free (void *m)
+{
+    if (m == last_alloc)
+	malloc_ptr = last_alloc;
+}
+
+void mark (void **ptr)
+{
+    *ptr = (void *) malloc_ptr;
+}
+
+void release (void *ptr)
+{
+    malloc_ptr = (char *) ptr;
 }

@@ -95,7 +95,7 @@
    the two sets of lengths.
  */
 
-#include "stringops.h"
+#include <stringops.h>
 
 #define slide window
 

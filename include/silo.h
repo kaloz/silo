@@ -1,7 +1,7 @@
 #ifndef SILO_H
 #define SILO_H
 
-#include "promlib.h"
+#include <promlib.h>
 
 #define CMD_LENG 512
 

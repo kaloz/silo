@@ -23,7 +23,7 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <errno.h>
-#include "silo.h"
+#include <silo.h>
 typedef int FILE;
 #include <linux/ext2_fs.h>
 #include <ext2fs/ext2fs.h>
@@ -36,7 +36,7 @@ static struct {
 #include <ext2fs/ext2_err.et>
 }
 };
-#include "stringops.h"
+#include <stringops.h>
 #include "ufs.h"
 #include "romfs.h"
 #include "9660.h"
@@ -103,12 +103,6 @@ static int read_sun_partition (int partno)
 	printf ("\nWarning: Your disklabel has wrong checksum. Use fdisk to correct it.");
     doff = (((unsigned long long)sdl.ntrks) * sdl.nsect * sdl.partitions[partno - 1].start_cylinder) << 9;
     return 1;
-}
-
-int sprintf (char *buf, char *fmt,...)
-{
-    strcpy (buf, fmt);
-    return 0;
 }
 
 void com_err (const char *a, long i, const char *fmt,...)

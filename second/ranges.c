@@ -16,7 +16,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-#include "silo.h"
+#include <silo.h>
 
 struct linux_prom_ranges promlib_obio_ranges[PROMREG_MAX];
 int num_obio_ranges;

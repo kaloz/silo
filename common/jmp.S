@@ -24,9 +24,10 @@
 	_RV; _RV; _RV; _RV; _RV; _RV; _RV;
 
 	/* Save our return PC and SP.  */
-	.global __setjmp, setjmp
+	.global _setjmp, setjmp, __sigsetjmp
 setjmp:
-__setjmp:
+_setjmp:
+__sigsetjmp:
 	st %o7, [%o0]
 	st %sp, [%o0 + 4]
 	retl

@@ -17,8 +17,8 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-#include "silo.h"
-#include "setjmp.h"
+#include <silo.h>
+#include <setjmp.h>
 #ifndef NULL
 #define NULL (void *)0
 #endif
@@ -75,7 +75,7 @@ jmp_buf gunzip_env;
 #define get_byte() (*get_input_fun)()
 #define unget_byte() (*unget_input_fun)()
 
-#include "inflate.c"
+#include "../common/inflate.c"
 
 static void error (char *m)
 {

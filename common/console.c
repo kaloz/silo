@@ -1,4 +1,4 @@
-/* $Id: console.c,v 1.1 2001/04/27 21:55:24 bencollins Exp $
+/* $Id: console.c,v 1.1 2001/05/25 14:41:26 bencollins Exp $
  * console.c: Routines that deal with sending and receiving IO
  *            to/from the current console device using the PROM.
  *
@@ -6,7 +6,7 @@
  * Copyright (C) 1997 Jakub Jelinek (jj@sunsite.mff.cuni.cz)
  */
 
-#include "promlib.h"
+#include <promlib.h>
 
 /* Non blocking get character from console input device, returns -1
  * if no input was taken.  This can be used for polling.

@@ -15,6 +15,7 @@ int strcmp(const char *, const char *);
 void *memset(void *, int, size_t);
 void __bzero(void *, size_t);
 void *memcpy(void *, const void *, size_t);
+void *memmove(void *, const void *, size_t);
 
 /* stringops2.c */
 char *strncpy(char *, const char *, int);
@@ -31,5 +32,6 @@ char *strstr(const char *, const char *);
 unsigned long time(void);
 void *realloc(void *, int);
 int memcmp(const void *, const void *, size_t);
+int sprintf (char *, char *, ...);
 
 #endif /* __STRINGOPS_H */

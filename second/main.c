@@ -22,10 +22,10 @@
 
 /* TODO: This file is a good candidate for rewrite from scratch */
 
-#include "silo.h"
+#include <silo.h>
 #include <asm/page.h>
 #include <linux/elf.h>
-#include "stringops.h"
+#include <stringops.h>
 
 #ifndef NULL
 #define NULL (void *)0

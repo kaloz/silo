@@ -22,7 +22,7 @@
 #  include <ctype.h>
 #  include <sys/types.h>
 #  include <errno.h>
-#  include "silo.h"
+#  include <silo.h>
 typedef int FILE;
 #  include <linux/ext2_fs.h>
 
@@ -36,7 +36,7 @@ typedef int FILE;
 
 #endif
 
-#include "stringops.h"
+#include <stringops.h>
 #include "romfs.h"
 
 #define SUPROMFS (struct romfs_super_block *)(fs->io->private_data)

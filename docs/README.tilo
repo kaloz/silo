@@ -1,0 +1,40 @@
+		       T I L O
+		(Trivial Image LOader)
+		----------------------
+		 Jan Vondrak (C) 1998
+
+This is a tool for building a simple TFTP boot loader
+which embodies several kernel images for different Sun
+architectures and a ramdisk root image. To minimize
+memory usage, the images are gzipped. After starting
+the boot loader, the architecture is detected, 
+the appropriate kernel is unpacked and then the
+booting procedure is launched.
+
+How to build the boot image:
+
+1. Prepare a kernel image for each supported architecture
+   (in the ELF format). Currently, TILO expects two kernels
+   - for Sun4c/m/d and Sun4u. However, it will be possible
+   to add Sun4 support in the future as well.
+
+2. Prepare a root image for the initial ramdisk.
+
+3. Run the "tilo" script with the following parameters:
+
+tilo [ -o output ] <kernel images> <root image>
+
+A boot image will be created which contains everything
+necessary to boot on each architecture.
+
+This code can be used and distributed freely
+under the General Public Licence (see COPYING).
+
+Please address any comments or bug reports to:
+
+	jvon4518@barbora.mff.cuni.cz
+
+
+		Enjoy !
+		
+				Jan Vondrak					

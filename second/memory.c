@@ -18,7 +18,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-#include "silo.h"
+#include <silo.h>
 
 struct linux_prom_registers prom_reg_memlist[64];
 struct linux_mlist_v0 prom_phys_avail[64];
@@ -303,20 +303,20 @@ char *memory_find (int len)
         }
 	sun4u_memory_base = base & ~0x3fffffULL;
 	sun4u_initrd_pa = base - phys_base;
-        __asm __volatile("
-            sethi %%hi(0xe0000000), %%g1
-            ldx [%3], %%g2
-            sllx %%g1, 32, %%g1
-            or %%g2, 0x77, %%g2
-            or %%g2, %%g1, %%g2
-            rdpr %%pil, %%g1
-            wrpr 15, %%pil
-            stxa %0, [%1] %2
-            stxa %%g2, [%4] %5
-            membar #Sync
-            flush %0
-            membar #Sync
-            wrpr %%g1, %%pil
+        __asm __volatile("\n\
+            sethi %%hi(0xe0000000), %%g1\n\
+            ldx [%3], %%g2\n\
+            sllx %%g1, 32, %%g1\n\
+            or %%g2, 0x77, %%g2\n\
+            or %%g2, %%g1, %%g2\n\
+            rdpr %%pil, %%g1\n\
+            wrpr 15, %%pil\n\
+            stxa %0, [%1] %2\n\
+            stxa %%g2, [%4] %5\n\
+            membar #Sync\n\
+            flush %0\n\
+            membar #Sync\n\
+            wrpr %%g1, %%pil\n\
         " : : "r" (0x40000000), "r" (TLB_TAG_ACCESS), "i" (ASI_DMMU),
               "r" (&sun4u_memory_base), "r" (63 << 3), "i" (ASI_DTLB_DATA_ACCESS) : "g1", "g2");
         return (char *)0x40000000 + ((long)base & 0x3fffffUL);
@@ -328,15 +328,15 @@ not_found:
 void memory_release(void)
 {
     if (sun4u_initrd_pa) {
-        __asm __volatile("
-            rdpr %%pil, %%g1
-            wrpr 16, %%pil
-            stxa %%g0, [%0] %1
-            stxa %%g0, [%2] %3
-            membar #Sync
-            flush %4
-            membar #Sync
-            wrpr %%g1, %%pil
+        __asm __volatile("\n\
+            rdpr %%pil, %%g1\n\
+            wrpr 16, %%pil\n\
+            stxa %%g0, [%0] %1\n\
+            stxa %%g0, [%2] %3\n\
+            membar #Sync\n\
+            flush %4\n\
+            membar #Sync\n\
+            wrpr %%g1, %%pil\n\
         " : : "r" (TLB_TAG_ACCESS), "i" (ASI_DMMU),
               "r" (63 << 3), "i" (ASI_DTLB_DATA_ACCESS),
               "r" (memory_release) : "g1");

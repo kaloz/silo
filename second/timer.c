@@ -17,7 +17,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-#include "silo.h"
+#include <silo.h>
 #include <asm/mostek.h>
 
 struct sun4m_timer_regs {
