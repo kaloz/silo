@@ -1,3 +1,14 @@
+Tue May 22 20:16:48 EDT 2001  Ben Collins <bcollins@debian.org>
+
+	* silo/Makefile: Rewrite logic for checking arch/OS. Make it cleaner.
+	Remove need for seperate names of programs on Solaris.
+	* silo/silo.c: Rename __solaris__ to __sun__ so cpp handles this for
+	us. The Makefile will weed out unsupported builds. Also, include ufs.c
+	on Solaris builds.
+	* silo/silocheck.c: Likewise.
+	* silo/util.c: Take array name on the command line, and add some error
+	checking.
+
 Tue May 22 12:14:55 EDT 2001  Ben Collins <bcollins@debian.org>
 
 	* Rules.make: New file. For now just includes the VERSION and

@@ -20,13 +20,23 @@
 
 int main (int argc, char **argv)
 {
-    FILE *f = fopen (argv[1], "r");
+    FILE *f;
     char buffer[512];
     int i, j;
     
-    fread (buffer, 1, 512, f);
+    if (argc != 3) {
+	fprintf(stderr, "Usage: %s <array name> <file>\n", argv[0]);
+	exit (1);
+    }
+
+    if ((f = fopen(argv[2], "r")) == NULL) {
+	perror("fopen");
+	exit (1);
+    }
+
+    fread (buffer, 1, sizeof(buffer), f);
     fclose (f);
-    printf ("char cdrom_label[] = {\n");
+    printf ("char %s[] = {\n", argv[1]);
     for (i = 0; i < 32; i++) {
         for (j = 0; j < 16; j++)
             printf ("0x%02X, ", (unsigned char)buffer[16 * i + j]);

@@ -26,6 +26,10 @@
 #define DFL_PRIMARY_U "/boot/ultra.b"
 #define DFL_SECONDARY "/boot/second.b"
 
+#ifdef __sun__
+#include "../second/ufs.c"
+#endif
+
 #include <errno.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -59,12 +63,12 @@
 #    define mmakedev(major, minor) (((major) << 8) | (minor))
 #  endif
 #  include <md-int.h>
-#elif defined (__solaris__)
+#elif defined (__sun__)
 #  include <sys/types.h>
 #  include <sys/stat.h>
 #  include <non-linux/ext2_fs.h>
 #  include <ext2fs/ext2fs.h>
-#  include "../second/ufs.h"
+#  include "ufs.h"
 #  include <limits.h>
 struct hwdevice;
 static int ufs_blocks (struct hwdevice *, ino_t);
@@ -439,7 +443,7 @@ again:
     	}
     	gpb_cleanup(filename, movecount - 1);
     }
-#elif defined(__solaris__)
+#elif defined(__sun__)
     ufs_blocks (hwdev, st.st_ino);
 #endif
     close (fd);
@@ -788,7 +792,7 @@ int get_prom_ver(int use_prom)
     	}
     }
     return ver;
-#elif defined(__solaris__)
+#elif defined(__sun__)
     int ver = -1;
     
     if (use_prom)
@@ -1021,7 +1025,7 @@ struct hwdevice *get_device(int majno, int minno)
 		if (!p) fatal ("Couldn't find out what device is second stage on");
 		strcpy (dev, p);
 		strcpy (wholedev, p);
-#ifdef __solaris__
+#ifdef __sun__
 		if (strlen (p) == strlen ("/dev/dsk/c0t0d0s0")) {
 		    p = strchr (p, 0) - 2;
 		    if (*p == 's' && p[1] >= '0' && p[1] <= '7') {
@@ -1062,7 +1066,7 @@ int main(int argc,char **argv)
     int use_prom = 0;
     int print_prom_version = 0;
 
-#ifdef __solaris__
+#ifdef __sun__
     if (prom_init () >= 0)
         use_prom = 1;
 #endif
@@ -1260,7 +1264,7 @@ int main(int argc,char **argv)
 #ifdef __linux__
         else if ((hwdevs->type == TYPE_SCSI && (mmajor(st2.st_dev) != mmajor(st1.st_dev) || (mminor(st2.st_dev) & (~0xf)) != (mminor(st1.st_dev) & (~0xf)))) ||
             (hwdevs->type == TYPE_IDE && (mmajor(st2.st_dev) != mmajor(st1.st_dev) || (mminor(st2.st_dev) & (~0x3f)) != (mminor(st1.st_dev) & (~0x3f)))))
-#elif defined(__solaris__)
+#elif defined(__sun__)
 	else if (hwdevs->type == TYPE_SCSI && (st2.st_dev & (~0x7)) != (st1.st_dev & (~0x7)))
 #else
 #  error "Unknown system"
@@ -1326,7 +1330,7 @@ int main(int argc,char **argv)
 	else if (hwdevs->type == TYPE_SCSI)
 #ifdef __linux__	
             config_file_partno = (mminor(st2.st_dev) & 0x0f);
-#elif defined(__solaris__)
+#elif defined(__sun__)
 	    config_file_partno = (st2.st_dev & 7) + 1;
 #else
 #  error "Unknown system"
@@ -1372,7 +1376,7 @@ int main(int argc,char **argv)
     exit(0);
 }
 
-#ifdef __solaris__
+#ifdef __sun__
 
 static errcode_t std_open (const char *name, int flags, io_channel * channel);
 static errcode_t std_close (io_channel channel);

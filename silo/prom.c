@@ -22,7 +22,7 @@
 #include <sys/ioctl.h>
 #ifdef __linux__
 #  include <asm/openpromio.h>
-#elif defined (__solaris__)
+#elif defined (__sun__)
 #  include <sys/types.h>
 #  include <sys/stat.h>
 #  include <sys/openpromio.h>
@@ -150,7 +150,7 @@ char *prom_getopt (char *name)
     return 0;
 }
 
-#ifdef __solaris__
+#ifdef __sun__
 int prom_getversion()
 {
     int i;

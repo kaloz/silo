@@ -17,6 +17,10 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
+#ifdef __sun__
+#include "../second/ufs.c"
+#endif
+
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
@@ -44,12 +48,12 @@
 #    define mminor(x) (int)((x) & 0xff)
 #    define mmakedev(major, minor) (((major) << 8) | (minor))
 #  endif
-#elif defined (__solaris__)
+#elif defined (__sun__)
 #  include <sys/types.h>
 #  include <sys/stat.h>
 #  include <non-linux/ext2_fs.h>
 #  include <ext2fs/ext2fs.h>
-#  include "../second/ufs.h"
+#  include "ufs.h"
 #  include <limits.h>
 #  include <sys/byteorder.h>
 #  ifdef _BIG_ENDIAN
@@ -179,7 +183,7 @@ void read_sb (char *device, char *bootdev)
     doff = 0;
 #ifdef __linux__    
     partno = (int) (*(device + strlen (device) - 1) - '0') - 1;
-#elif defined(__solaris__)
+#elif defined(__sun__)
     partno = (int) (*(device + strlen (device) - 1) - '0');
 #endif
     sdl = (struct sun_disklabel *) &buff;
@@ -221,7 +225,7 @@ int get_partition_blocks (char *device, char *filename)
     }
     blocks[j] = 0;
     nblocks = j;
-#elif defined(__solaris__)
+#elif defined(__sun__)
     ufs_blocks (device, st.st_ino);
 #endif
     close (fd);
@@ -305,7 +309,7 @@ int main(int argc,char **argv)
 	if (!p) fatal ("Couldn't find out what device is %s on", filename);
 	strcpy (bootdev, p);
 	strcpy (bootdev2, p);
-#ifdef __solaris__
+#ifdef __sun__
 	if (strlen (p) == strlen ("/dev/dsk/c0t0d0s0")) {
 	    p = strchr (p, 0) - 2;
 	    if (*p == 's' && p[1] >= '0' && p[1] <= '7') {
@@ -348,7 +352,7 @@ int main(int argc,char **argv)
     exit(0);
 }
 
-#ifdef __solaris__
+#ifdef __sun__
 
 static errcode_t std_open (const char *name, int flags, io_channel * channel);
 static errcode_t std_close (io_channel channel);
