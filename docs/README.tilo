@@ -1,22 +1,21 @@
-		       T I L O
-		(Trivial Image LOader)
-		----------------------
-		 Jan Vondrak (C) 1998
+				T I L O
+			(Trivial Image LOader)
+			----------------------
+			 Jan Vondrak (C) 1998
+			 Ben Collins (C) 2001
 
-This is a tool for building a simple TFTP boot loader
-which embodies several kernel images for different Sun
-architectures and a ramdisk root image. To minimize
-memory usage, the images are gzipped. After starting
-the boot loader, the architecture is detected, 
-the appropriate kernel is unpacked and then the
-booting procedure is launched.
+This is a tool for building a simple TFTP boot loader which embodies several
+kernel images for different Sun architectures and a ramdisk root image. To
+minimize memory usage, the images are gzipped. After starting the boot
+loader, the architecture is detected,  the appropriate kernel is unpacked
+and then the booting procedure is launched.
 
 How to build the boot image:
 
-1. Prepare a kernel image for each supported architecture
-   (in the ELF format). Currently, TILO expects two kernels
-   - for Sun4c/m/d and Sun4u. However, it will be possible
-   to add Sun4 support in the future as well.
+1. Prepare a kernel image for each supported architecture (in the ELF
+   format, uncompressed). Currently TILO expects atleast one sun4u or
+   sun4cdm kernel. You can only supply one of each kind. It will be
+   possible to add Sun4 support in the future as well.
 
 2. Prepare a root image for the initial ramdisk.
 
@@ -24,17 +23,14 @@ How to build the boot image:
 
 tilo [ -o output ] <kernel images> <root image>
 
-A boot image will be created which contains everything
-necessary to boot on each architecture.
+A boot image will be created which contains everything necessary to boot on
+each architecture.
 
-This code can be used and distributed freely
-under the General Public Licence (see COPYING).
+This code can be used and distributed freely under the General Public
+Licence (see COPYING).
 
 Please address any comments or bug reports to:
 
-	jvon4518@barbora.mff.cuni.cz
+	silo-general@lists.sourceforge.net
 
-
-		Enjoy !
-		
-				Jan Vondrak					
+Enjoy!
