@@ -189,6 +189,16 @@ flush_icache:
 	cmp	%l0, %l1
 	be	0f			/* quit if it is Ultra-III */
 	 nop
+	sethi	%hi(0x40003), %l1
+	or	%l1, %lo(0x40003), %l1
+	cmp	%l0, %l1
+	be	0f			/* quit if HAL SPARC64-III */
+	 nop
+	sethi	%hi(0x40004), %l1
+	or	%l1, %lo(0x40004), %l1
+	cmp	%l0, %l1
+	be	0f			/* quit if HAL SPARC64-IV */
+	 nop
 	clr	%l0
 	sethi	%hi(16384), %l1
 	stxa	%g0, [%l0] 0x67		/* ASI_IC_TAG */

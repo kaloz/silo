@@ -1,3 +1,9 @@
+Thu May 31 13:21:27 EDT 2001  Ben Collins <bcollins@debian.org>
+
+	* second/crt0.S: Recognize SPARC64-III and SPARC64-IV, patch from 
+	Ralf Liesegang <Ralf.Liesegang@fujitsu-siemens.com>
+	* tilo/crt0.S: Likewise.
+
 Mon May 28 09:28:01 EDT 2001  Ben Collins <bcollins@debian.org>
 
 	* common/stringops2.c: Update comment about time(), which is only a
