@@ -1,3 +1,12 @@
+Mon May 28 09:28:01 EDT 2001  Ben Collins <bcollins@debian.org>
+
+	* common/stringops2.c: Update comment about time(), which is only a
+	stub for libext2fs.a.
+	* second/file.c: Remove include for sys/time.h. It doesn't appear to
+	be needed.
+	* include/stringops.h: Remove decleration of time().
+	* silo.spec: Updated for new manpages and URL, from Pieter Krul.
+
 Fri May 25 20:28:01 EDT 2001  Ben Collins <bcollins@debian.org>
 
 	* Rules.make: Final cleanups.

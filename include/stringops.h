@@ -31,7 +31,6 @@ char *strdup(const char *);
 int strcasecmp(const char *, const char *);
 int strncasecmp(const char *, const char *, size_t);
 char *strstr(const char *, const char *);
-unsigned long time(void);
 void *realloc(void *, int);
 int memcmp(const void *, const void *, size_t);
 int sprintf (char *, char *, ...);

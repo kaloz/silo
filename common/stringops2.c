@@ -134,6 +134,7 @@ char * strstr(const char * s1,const char * s2)
 
 /* These two are not exactly stringops... */
 
+/* This one is needed for libext2fs.a. It's only a stub */
 unsigned long time(void)
 {
 	return 0; /* I think this is never actually used */

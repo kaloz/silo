@@ -21,7 +21,6 @@
 
 #include <ctype.h>
 #include <sys/types.h>
-#include <sys/time.h>
 #include <errno.h>
 #include <silo.h>
 typedef int FILE;

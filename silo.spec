@@ -1,11 +1,11 @@
 Summary: The SILO boot loader for SPARCs.
 Name: silo
-Version: 0.9.9.5
+Version: 1.0
 Release: 1
 Copyright: GPL
 ExclusiveArch: sparc
 Group: System Environment/Base
-Source: ftp://sunsite.mff.cuni.cz/pub/silo/silo-%{version}.tgz
+Source: ftp://download.sourceforge.net/pub/sourceforge/silo/silo-%{version}.tar.gz
 
 BuildRoot: /var/tmp/%{name}-root
 
@@ -32,6 +32,8 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root)
 %doc docs COPYING ChangeLog
 /sbin/silo
+/usr/bin/tilo
+/usr/bin/maketilo
 /boot/first.b
 /boot/ultra.b
 /boot/cd.b
@@ -40,10 +42,15 @@ rm -rf $RPM_BUILD_ROOT
 /boot/silotftp.b
 /boot/second.b
 /usr/sbin/silocheck
-/usr/man/man5/silo.conf.5*
-/usr/man/man8/silo.8*
+/usr/share/man/man1/tilo.1*
+/usr/share/man/man1/maketilo.1*
+/usr/share/man/man5/silo.conf.5*
+/usr/share/man/man8/silo.8*
  
 %changelog
+* Mon May 28 2001 Pieter Krul <pkrul@auxio.org>
+- Updated manpath and added tilo
+
 * Tue May 22 2001 Ben Collins <bcollins@debian.org>
 - Updated for new build
 
