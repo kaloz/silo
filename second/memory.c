@@ -292,6 +292,9 @@ char *memory_find (int len)
         n /= sizeof(*p);
         len += 8192;
         for (i = 0; i < n; i++) {
+	    /* if we've got more ram than god, pretend it's 32M */
+	    if (p[i].len >= 0x100000000ULL)
+		p[i].len = 0x020000000ULL;
             if (p[i].pa + p[i].len <= b &&
                 p[i].pa >= base &&
                 p[i].len >= len)
