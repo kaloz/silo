@@ -136,14 +136,14 @@ static void unget_input(void)
     gzminp--;
 }
 
-extern char start, main_text_start, main_text_end, main_data_start, main_data_end, main_rodata_start, main_rodata_end, __bss_start;
+extern char main_text_start, main_text_end, main_data_start, main_data_end, main_rodata_start, main_rodata_end, __bss_start;
 
 /* This has to be in data section, so that it does not get cleared. See crt0.S for details. */
 char *gzminpi = (char *)0xdeadbeef;
 
 extern int bootmain(void);
 
-unsigned gunzipmain(struct linux_romvec *promvec, void *cifh, void *cifs)
+unsigned my_main(struct linux_romvec *promvec, void *cifh, void *cifs)
 {
     prom_init(promvec, cifh, cifs);
 
@@ -162,7 +162,7 @@ unsigned gunzipmain(struct linux_romvec *promvec, void *cifh, void *cifs)
     	gzminpi = (char *)pt;
     }
     gzminp = gzminpi;
-    if (decompress ((char *)0x200000, (char *)&start, get_input, unget_input) == -1) {
+    if (decompress ((char *)0x200000, (char *)&_start, get_input, unget_input) == -1) {
         printf ("\nInternal error\n");
         prom_halt();
     }

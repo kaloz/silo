@@ -165,7 +165,7 @@ extern struct ImageInfo image_table[4];	/* Sun4 kernel, Sun4c/d/m kernel, Sun4u 
 
 #define HDRS_TAG	(('H'<<24) | ('d'<<16) | ('r'<<8) | 'S')
 
-char *tilo_main (struct linux_romvec *promvec, void *cifh, void *cifs)
+char *my_main (struct linux_romvec *promvec, void *cifh, void *cifs)
 {
 char *orig_code,*moved_code,*moved_ramdisk,*moved_kernel,*kernel_base;
 unsigned *p,*q = NULL;
@@ -258,7 +258,7 @@ int kernel_number;
     memmove ((void*)(image_table[kernel_number].root_start & 0x3fffff),
     	moved_ramdisk, image_table[ROOT_IMAGE].packed_len);
 #ifdef TILO_DEBUG
-    printf("Returning from tilo_main() with address %x\n", kernel_base);
+    printf("Returning from my_main() with address %x\n", kernel_base);
 #endif
     return kernel_base;			/* return address to jump into kernel */
 }

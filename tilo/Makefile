@@ -5,8 +5,6 @@
 
 include ../Rules.make
 
-CFLAGS = -O2 -Wall -fno-builtin -I../include #-DTILO_DEBUG
-
 # Relocate to 3.75MB
 # Hopefully, 4MB are guaranteed to be mapped.
 LDFLAGS_SMALL=-N -Ttext 0x3c0000
@@ -23,17 +21,21 @@ all: $(PROGRAMS)
 .S.o:
 	$(CC) $(CFLAGS) -c $*.S
 
-OBJS = crt0.o tilo.o ../common/printf.o ../common/jmp.o ../common/prom.o ../common/console.o malloc.o ../common/stringops1.o ../common/urem.o ../common/stringops2.o ../common/tree.o ../common/udiv.o
-OBJS2 = crt0l.o tilol.o ../common/printf.o ../common/jmp.o ../common/prom.o ../common/console.o mallocl.o ../common/stringops1.o ../common/urem.o ../common/stringops2.o ../common/tree.o ../common/udiv.o
+OBJS = crt0.o tilo.o ../common/printf.o ../common/jmp.o ../common/prom.o \
+	../common/tree.o ../common/console.o malloc.o ../common/stringops1.o \
+	../common/urem.o ../common/stringops2.o ../common/udiv.o
+OBJS2 = crt0l.o tilol.o ../common/printf.o ../common/jmp.o ../common/prom.o \
+	../common/tree.o ../common/console.o mallocl.o ../common/stringops1.o \
+	../common/urem.o ../common/stringops2.o ../common/udiv.o
 
 maketilo: maketilo.c b.h b2.h
 	$(CC) $(CFLAGS) maketilo.c -o maketilo
 
-b.h : b.out ../common/bin2h
-	../common/bin2h -l BOOT_LEN boot_loader b.out > $@ || ($(RM) $@; exit 1)
+b.h : b.out $(BIN2H)
+	$(BIN2H) -l BOOT_LEN boot_loader b.out > $@ || ($(RM) $@; exit 1)
 
-b2.h : b2.out ../common/bin2h
-	../common/bin2h -l LARGE_BOOT_LEN large_boot_loader b2.out > $@ || ($(RM) $@; exit 1)
+b2.h : b2.out $(BIN2H)
+	$(BIN2H) -l LARGE_BOOT_LEN large_boot_loader b2.out > $@ || ($(RM) $@; exit 1)
 
 b.out: $(OBJS)
 	$(LD) $(LDFLAGS_SMALL) -Bstatic -o boot $(OBJS)

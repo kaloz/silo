@@ -1,4 +1,4 @@
-/* $Id: prom.c,v 1.1 2001/05/25 14:41:26 bencollins Exp $
+/* $Id: prom.c,v 1.2 2001/05/25 22:51:28 bencollins Exp $
  * init.c:  Initialize internal variables used by the PROM
  *          library functions.
  *
@@ -65,18 +65,18 @@ int p1275_cmd (char *service, int args, ...)
 		for (i = 0; i < args; i++)
 			p1275_args[i + 3] = (unsigned long long)(unsigned long) va_arg (list, char *);
 	va_end (list);
-	__asm__ __volatile__ ("
-		mov	%1, %%g1
-		mov	%2, %%g2
-		save	%0, -0xc0, %%sp
-		rdpr	%%pstate, %%l1
-		andn	%%l1, 8, %%l1
-		wrpr	%%l1, 0, %%pstate
-		call	%%g1
-		 mov	%%g2, %%o0
-		wrpr	%%l1, 8, %%pstate
-		restore
-	" : : "r" (prom_cif_stack), "r" (prom_cif_handler), "r" (p1275_args) :
+	__asm__ __volatile__ ("\t"
+		"mov	%1, %%g1\n\t"
+		"mov	%2, %%g2\n\t"
+		"save	%0, -0xc0, %%sp\n\t"
+		"rdpr	%%pstate, %%l1\n\t"
+		"andn	%%l1, 8, %%l1\n\t"
+		"wrpr	%%l1, 0, %%pstate\n\t"
+		"call	%%g1\n\t"
+		" mov	%%g2, %%o0\n\t"
+		"wrpr	%%l1, 8, %%pstate\n\t"
+		"restore\n"
+	: : "r" (prom_cif_stack), "r" (prom_cif_handler), "r" (p1275_args) :
 	"o0", "o1", "o2", "o3", "o4", "o5", "o7", "g1", "g2", "g3", "g4",
 	"g5", "g6", "g7");
 	return (int) p1275_args [3 + args];

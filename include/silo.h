@@ -129,10 +129,7 @@ char *strdup (const char *);
 char *strstr (const char *, const char *);
 int sprintf (char *buf, char *fmt,...);
 int strcmp (const char *, const char *);
-int strncmp (const char *, const char *, int);
 char *strcat (char *, const char *);
-char *strncat (char *, const char *, int);
-char *strncpy (char *, const char *, int);
 #undef tolower
 int tolower (int);
 int strcasecmp (const char *, const char *);

@@ -1,4 +1,4 @@
-SUBDIRS=common first second silo tilo
+SUBDIRS=common first second tilo silo
 
 all dep depend clean:
 	@for I in $(SUBDIRS); do cd $$I; $(MAKE) $@ || exit 1; cd ..; done
@@ -14,6 +14,10 @@ install:
 		install -m644 etc/silo.conf $(DESTDIR)/etc/
 	install -m755 tilo/maketilo $(DESTDIR)/usr/bin
 	install -m755 tilo/tilo.sh $(DESTDIR)/usr/bin/tilo
+	for sect in 1 5 8; do \
+		install -d -m755 $(DESTDIR)/usr/share/man/man$$sect; \
+		install -m644 man/*.$$sect $(DESTDIR)/usr/share/man/man$$sect; \
+	done
 else
 ifeq (SunOS,$(shell uname -s))
 ifeq (5.,$(findstring 5.,$(shell uname -r)))

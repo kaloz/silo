@@ -1,3 +1,37 @@
+Fri May 25 18:35:21 EDT 2001  Ben Collins <bcollins@debian.org>
+
+	* Makefile: Add install of man pages. Reorder SUBDIRS so tilo gets
+	built before silo.
+	* Rules.make: Move CFLAGS definition to here.
+	* common/Makefile: Remove from here.
+	* tilo/Makefile: Likewise.
+	* first/Makefile: Likewise.
+	* second/Makefile: Likewise. Also fixup LDFLAGS so that don't trump
+	over other declerations.
+	* silo/Makefile: Likewise.
+	* common/bin2h.c: Add some includes to make it compile without
+	warnings.
+	* common/prom.c: Fix some multi-line strings.
+	* common/stringops2.c: Fix strn* declerations to use size_t and not
+	int for size.
+	* include/md-int.h: Fix trailing text after last #endif.
+	* include/silo.h: Remove strn* prototypes from here.
+	* include/stringops.h: Fix strn* prototypes.
+	* second/9660.c: Prototype alloca().
+	* second/bmark.S: Add newline to end of file.
+	* second/crt0.S: Cleanups to make it match tilo/crt0.S.
+	* second/decomp.c: Cleanups to match crt0.S.
+	* second/main.c: Likewise.
+	* second/timer.c: Fix some multi-line strings.
+	* tilo/crt0.S: Cleanups to make it match second/crt0.S.
+	* tilo/tilo.c: Match crt0.S
+	* tilo/maketilo.c: Fix some multi-line strings.
+
+	* Rules.make: Define BIN2H, initially as the one in common/
+	* silo/Makefile: Use that define.
+	* tilo/Makefile: Likewise.
+	* second/Makefile: Likewise.
+
 Fri May 25 10:16:39 EDT 2001  Ben Collins <bcollins@debian.org>
 
 	* second/console.c: Move to common/

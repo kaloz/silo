@@ -36,7 +36,7 @@
 extern unsigned char silo_conf[256];
 extern unsigned char silo_conf_part, silo_conf_parts[32], raid_dsk_number;
 
-extern int start;
+//extern int _start;
 
 int useconf = 0;
 enum {
@@ -958,7 +958,7 @@ int bootmain (void)
     if (*silo_conf && silo_conf_partition >= 1 && silo_conf_partition <= 8) {
 	int len;
 	solaris = 0;
-	fileok = load_file (0, silo_conf_partition, silo_conf, (unsigned char *) 0x4000, (unsigned char *) &start, &len, 1, 0);
+	fileok = load_file (0, silo_conf_partition, silo_conf, (unsigned char *) 0x4000, (unsigned char *) &_start, &len, 1, 0);
 	if (!fileok || (unsigned) len >= 65535)
 	    printf ("\nCouldn't load %s\n", silo_conf);
 	else {
@@ -980,7 +980,7 @@ int bootmain (void)
 			if (!device)
 			    device = cfg_get_strg (0, "device");
 			solaris = 0;
-			if (load_file (device, part, kname, (unsigned char *) 0x4000, (unsigned char *) &start, &len, 1, 0)) {
+			if (load_file (device, part, kname, (unsigned char *) 0x4000, (unsigned char *) &_start, &len, 1, 0)) {
 			    *(unsigned char *) (0x4000 + len) = 0;
 			    printf ("\n");
 			    print_message ((char *) 0x4000);
@@ -1049,7 +1049,7 @@ int bootmain (void)
 
 	    image_base = (char *) 0x40000;
 	    if (!load_file (device, part, kname, image_base,
-			(unsigned char *) &start, &image_len, 1, 0)) {
+			(unsigned char *) &_start, &image_len, 1, 0)) {
 	        printf ("\nImage not found.... try again\n");
 		continue;
 	    }
@@ -1061,7 +1061,7 @@ int bootmain (void)
 	} else {
 	    image_base = (unsigned char *) 0x4000;
 	    if (!load_file (device, part, kname, image_base,
-			(unsigned char *) &start, &image_len,
+			(unsigned char *) &_start, &image_len,
 			load_cmd == CMD_LS ? 2 : 1, 0)) {
 		printf ("\nImage not found.... try again\n");
         	continue;

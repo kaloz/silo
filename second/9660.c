@@ -42,6 +42,8 @@ typedef int FILE;
 #include "ext2fs/ext2fs.h"
 #include "9660.h"
 
+void *alloca(size_t size);
+
 #define SUPISO ((struct iso_primary_descriptor *)fs->io->private_data)
 #define ROOTDIR ((struct iso9660_inode *)SUPISO->unused2)
 

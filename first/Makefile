@@ -15,9 +15,6 @@ ELFTOAOUT=/usr/bin/elftoaout
 
 include ../Rules.make
 
-# Linux
-CFLAGS = -Wall -fno-builtin -O2 -I../include -fomit-frame-pointer
-
 # Relocate to 2.5MB. The Hitchhiker's Guide to Open Boot Rev 3 claims
 # that 3MB are guaranteed to be mapped.
 # Changing this value will require changing a bunch of other constants throughout the code

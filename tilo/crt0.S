@@ -1,8 +1,11 @@
-/* Trivial lInux LOader bootstrap
-   
-   Copyright (C) 1996,1997 Jakub Jelinek
+/* Linux SPARC/UltraSPARC Loader Bootstrap
+
+   Copyright (C) 1996,1997,1998,2000 Jakub Jelinek
 		 1998 Jan Vondrak
-   
+		 1996 Pete A. Zaitcev
+		 1996 Miguel de Icaza
+		 2001 Ben Collins
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -26,24 +29,15 @@
 #endif
 
 	.text
-	.global _start, image_table
+	.global _start
+	.global image_table
 	.align	16
 _start:
 	call	1f
 	 mov	%o7, %l0
 
 image_table:
-	.skip   64
-		
-		/*
-		struct	{
-			int packed_start;
-			int packed_len;
-			int unpacked_len;
-			int root_start;
-			}
-			image_table[4];
-		*/
+	.skip   64		/* struct ImageInfo image_table[4] */
 
 1:
 	/* Move ourselves up */			! %l0 = original start
@@ -57,9 +51,13 @@ image_table:
 	sethi	%hi(_end), %l0
 	jmpl	%i0 + (jumphere - _start), %g0
 	 or	%l0, %lo(_end), %l0		! %l0 = _end
+
+	.align	32
 jumphere:
 	/* Clear BSS */
-5:	andcc	%i1, 4, %g0
+5:	add	%l0, %i3, %l0
+	add	%i1, %i3, %i1
+	andcc	%i1, 4, %g0
 	sub	%l0, %i1, %i2			! %i2 = BSS length
 	be	1f
 	 mov	%g0, %g1
@@ -89,16 +87,16 @@ setup_stack:
 	set	STACK_BASE, %l1
 	save	%l1, -64, %sp
 
-	! Call tilo_main() to start the whole thingie up
+	! Call my_main() to start the whole thingie up
 
-	call	flush_icache
+0:	call	flush_icache
 	 mov	%i6, %o2			! Cif sp on sun4u
 	mov	%i4, %o1			! Cif handler on sun4u
-	call	tilo_main
+	call	my_main
 	 mov	%i0, %o0			! Prom vector or cifh on sun4m
 	call	flush_icache
 	 nop
-	jmpl	%o0 + %g0, %g0			! Jump to return address from tilo_main()
+	jmpl	%o0 + %g0, %g0			! Jump to return address from my_main()
 	 restore
 
 /* l0 from, l1 to, l2 len, l7 ret. Returns from + len in l0 */
@@ -141,3 +139,6 @@ flush_icache:
 0:
 	retl
 	 nop
+
+	.section	".rodata"
+	.word	_start

@@ -6,7 +6,7 @@
  
 #include <stringops.h>
 
-char * strncpy(char *dest, const char *src, int count)
+char * strncpy(char *dest, const char *src, size_t count)
 {
 	char *tmp = dest;
 
@@ -24,7 +24,7 @@ char *strcat(char *dest, const char *src)
 	return tmp;
 }
 
-char *strncat(char *dest, const char *src, int n)
+char *strncat(char *dest, const char *src, size_t n)
 {
 	char *tmp = dest;
 	while (*dest) dest++;
@@ -33,7 +33,7 @@ char *strncat(char *dest, const char *src, int n)
 	return tmp;
 }
 
-int strncmp(const char *cs,const char *ct,int count)
+int strncmp(const char *cs, const char *ct, size_t count)
 {
 	register signed char __res = 0;
 	while (count) {

@@ -4,8 +4,6 @@
 
 include ../Rules.make
 
-CFLAGS = -O2 -Wall -fomit-frame-pointer -I../include
-
 .c.o:
 	$(CC) $(CFLAGS) -c $*.c
 

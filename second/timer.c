@@ -157,12 +157,12 @@ static inline int sun4u_init_timer ()
         clock_frequency = prom_getint(prom_root_node, "clock-frequency") / 100;
     if (notimer) {
         sun4u_notimer = 1;
-        __asm__ __volatile__ ("
-        	rd	%%tick_cmpr, %%g1
-        	stx	%%g1, [%0]
-        	mov	1, %%g1
-        	sllx    %%g1, 63, %%g1
-        	wr      %%g1, 0, %%tick_cmpr"
+        __asm__ __volatile__ ("\t"
+        	"rd	%%tick_cmpr, %%g1\n\t"
+        	"stx	%%g1, [%0]\n\t"
+        	"mov	1, %%g1\n\t"
+        	"sllx    %%g1, 63, %%g1\n\t"
+        	"wr      %%g1, 0, %%tick_cmpr"
         	: : "r" (&sun4u_tickcmpr) : "g1");
     }
     return 0;
@@ -206,10 +206,10 @@ int init_timer ()
 void close_timer ()
 {
     if (sun4u_notimer) {
-        __asm__ __volatile__("
-        	ldx	[%0], %%g1
-        	wrpr	%%g0, 0, %%tick
-        	wr	%%g1, 0, %%tick_cmpr"
+        __asm__ __volatile__("\t"
+        	"ldx	[%0], %%g1\n\t"
+        	"wrpr	%%g0, 0, %%tick\n\t"
+        	"wr	%%g1, 0, %%tick_cmpr"
         	: : "r" (&sun4u_tickcmpr) : "g1");
     }
     if (addr_to_free) {
@@ -227,10 +227,10 @@ void reset_ticks (void)
 {
     ticks = 0;
     if (architecture == sun4u) {
-        __asm__ __volatile__ ("
-        	rd	%%tick, %%g1
-        	stx	%%g1, [%0]
-        	" : : "r" (&ticks) : "g1");
+        __asm__ __volatile__ ("\t"
+        	"rd	%%tick, %%g1\n\t"
+        	"stx	%%g1, [%0]\n\t"
+        	: : "r" (&ticks) : "g1");
     }
 }
 
@@ -282,12 +282,12 @@ int get_ticks (void)
 		    if (i <= lasti) return 0;
 		    return i - lasti;
         case sun4u: 
-        	__asm__ __volatile__ ("
-        		ldx	[%2], %%g2
-        		rd	%%tick, %%g1
-        		sub	%%g1, %%g2, %%g1
-        		udivx	%%g1, %1, %0
-        	" : "=r" (i) : "r" (clock_frequency), "r" (&ticks) : "g1", "g2");
+        	__asm__ __volatile__ ("\t"
+        		"ldx	[%2], %%g2\n\t"
+        		"rd	%%tick, %%g1\n\t"
+        		"sub	%%g1, %%g2, %%g1\n\t"
+        		"udivx	%%g1, %1, %0\n\t"
+		: "=r" (i) : "r" (clock_frequency), "r" (&ticks) : "g1", "g2");
         	return i;
         default: return 0;
     }

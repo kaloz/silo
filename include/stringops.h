@@ -1,6 +1,8 @@
 #ifndef __STRINGOPS_H
 #define __STRINGOPS_H
 
+#include <silo.h>
+
 /* common */
 #ifndef __SIZE_TYPE__
 #define __SIZE_TYPE__ long unsigned int
@@ -18,10 +20,10 @@ void *memcpy(void *, const void *, size_t);
 void *memmove(void *, const void *, size_t);
 
 /* stringops2.c */
-char *strncpy(char *, const char *, int);
 char *strcat(char *, const char *);
-char *strncat(char *, const char *, int);
-int strncmp(const char *, const char *, int);
+char *strncat(char *, const char *, size_t);
+int strncmp(const char *, const char *, size_t);
+char *strncpy(char *, const char *, size_t);
 char *strchr(const char *, int);
 char *strrchr(const char *, int);
 int strlen(const char *);

@@ -1,9 +1,11 @@
-/* Second stage boot loader bootstrap
-   
-   Copyright (C) 1996 Pete A. Zaitcev
+/* Linux SPARC/UltraSPARC Loader Bootstrap
+
+   Copyright (C) 1996,1997,1998,2000 Jakub Jelinek
+		 1998 Jan Vondrak
+		 1996 Pete A. Zaitcev
 		 1996 Miguel de Icaza
-		 1996,1997,1998,2000 Jakub Jelinek
-   
+		 2001 Ben Collins
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -18,13 +20,13 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-#define COPY	jmpl	%o7 + (copy - start), %l7
+#define COPY	jmpl	%o7 + (copy - _start), %l7
 
 	.text
-	.global _start, start, silo_conf, silo_conf_part, boot_part
+	.global _start
+	.global silo_conf, silo_conf_part, boot_part
 	.global raid_dsk_number, silo_conf_parts, boot_parts
 _start:
-start:
 	call	1f
 	 mov	%o7, %l0
 
@@ -52,7 +54,7 @@ boot_parts:
 	bne,a	1f
 	 sethi	%hi(0x100000), %i3
 1:	set	main_text_start, %l3
-	set	start, %l4
+	set	_start, %l4
 	add	%l4, %i3, %i0
 	mov	%i0, %l1
 	COPY
@@ -80,32 +82,19 @@ boot_parts:
 	sethi	%hi(gzminpi), %l1
 	add	%l1, %i3, %l1
 	st	%l0, [%l1 + %lo(gzminpi)]
-#if 0
-	add	%i0, (jumphere - start), %l0
-	andn	%l0, 0xfff, %l0
-	sethi	%hi(_etext), %l1
-	or	%l1, %lo(_etext), %l1
-	add	%l1, %i3, %l1
-	sethi	%hi(0x1000), %l2
-1:
-	flush	%l0
-	cmp	%l0, %l1
-	blu	1b
-	 add	%l0, %l2, %l0
-#endif
 
 	/* Jump to relocated code */
 	sethi	%hi(_end), %l0
-	jmpl	%i0 + (jumphere - start), %g0
-	 or	%l0, %lo(_end), %l0
+	jmpl	%i0 + (jumphere - _start), %g0
+	 or	%l0, %lo(_end), %l0		! %l0 = _end
 
 	.align	32
 jumphere:
 	/* Clear BSS */
-	add	%l0, %i3, %l0
+5:	add	%l0, %i3, %l0
 	add	%i1, %i3, %i1
 	andcc	%i1, 4, %g0
-	sub	%l0, %i1, %i2			! length
+	sub	%l0, %i1, %i2			! %i2 = BSS length
 	be	1f
 	 mov	%g0, %g1
 
@@ -120,16 +109,13 @@ jumphere:
 	bgu	1b
 	 add	%i1, 32, %i1
 
-	tst	%o4
-	be	1f
+	tst	%o4				! if not Ultra,
+	be	1f				! skip %pstate modification
 	 nop
-#if 1
+
 	rdpr	%pstate, %l1
 	or	%l1, 8, %l1
 	wrpr	%l1, 0, %pstate
-#else
-	nop; nop; nop
-#endif
 1:
 
 	! Set up a stack
@@ -162,16 +148,16 @@ setup_stack:
 	 stb	%l3, [%l2]
 4:	st	%l1, [%l0 + %lo(gzminpi)]
 
-	! Call gunzipmain() to start the whole thingie up
+	! Call my_main() to start the whole thingie up
 
 0:	call	flush_icache
 	 mov	%i6, %o2			! Cif sp on sun4u
 	mov	%i4, %o1			! Cif handler on sun4u
-	call	gunzipmain
+	call	my_main
 	 mov	%i0, %o0			! Prom vector or cifh on sun4m
 	call	flush_icache
 	 nop
-	jmpl	%o0 + %g0, %g0			! Jump to return address from gunzipmain
+	jmpl	%o0 + %g0, %g0			! Jump to return address from my_main()
 	 restore
 
 /* l0 from, l1 to, l2 len, l7 ret. Returns from + len in l0 */
@@ -193,16 +179,24 @@ copy:
 	 nop
 
 flush_icache:
-	tst	%i4
+	tst	%i4			/* quit unless it's Sun4u */
 	be	0f
-	 clr	%l0
+	 nop
+	rdpr	%ver, %l0
+	sethi	%hi(0x003e0014), %l1
+	srlx	%l0, 32, %l0
+	or	%l1, %lo(0x003e0014), %l1
+	cmp	%l0, %l1
+	be	0f			/* quit if it is Ultra-III */
+	 nop
+	clr	%l0
 	sethi	%hi(16384), %l1
-	stxa	%g0, [%l0] 0x67
+	stxa	%g0, [%l0] 0x67		/* ASI_IC_TAG */
 1:
 	add	%l0, 32, %l0
 	cmp	%l0, %l1
 	blu,a,pt %xcc, 1b
-	 stxa	%g0, [%l0] 0x67
+	 stxa	%g0, [%l0] 0x67		/* ASI_IC_TAG */
 0:
 	retl
 	 nop

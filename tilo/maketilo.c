@@ -75,12 +75,12 @@ int main (int argc, char **argv)
 	char *output_file = 0;
 
 	if (argc < 4) {
-		fprintf (stderr, "Usage: maketilo
-		sun4=<sun4 gzipped kernel> size4=<sun4 orig size> root4=<sun4 root address>
-		sun4c=<sun4c gzipped size> size4c=<sun4c orig size> root4c=<sun4c root address>
-		sun4u=<sun4u gzipped kernel> size4u=<sun4u orig size> root4u=<sun4u root address>
-		root=<root image>
-		out=<output file>\n");
+		fprintf (stderr, "Usage: maketilo\n"
+		"\tsun4=<sun4 gzipped kernel> size4=<sun4 orig size> root4=<sun4 root address>\n"
+		"\tsun4c=<sun4c gzipped size> size4c=<sun4c orig size> root4c=<sun4c root address>\n"
+		"\tsun4u=<sun4u gzipped kernel> size4u=<sun4u orig size> root4u=<sun4u root address>\n"
+		"\troot=<root image>\n"
+		"\tout=<output file>\n");
 		return -1;
 	}
 

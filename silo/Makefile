@@ -22,20 +22,18 @@ endif
 all: $(PROGRAMS)
 	@echo $(MESSAGE)
 
-CFLAGS=-Wall -g -O2 -I../include -I/usr/src/linux/include -Werror
-LDFLAGS=
 HEADERS=../first/first.h ../first/ultra.h ../first/fd.h
 SILO_OBJS=confcheck.o prom.o silo.o
 SILOCHK_OBJS=silocheck.o
 
 silo: $(HEADERS) $(SILO_OBJS)
-	$(CC) $(LDFLAGS) -o $@ $(SILO_OBJS)
+	$(CC) -O2 -o $@ $(SILO_OBJS)
 
 silocheck: $(SILOCHK_OBJS) $(UFSDEPS)
-	$(CC) $(LDFLAGS) -o $@ $(SILOCHK_OBJS)
+	$(CC) -O2 -o $@ $(SILOCHK_OBJS)
 
-floppy.h: floppy.label ../common/bin2h
-	../common/bin2h floppy_label floppy.label > floppy.h
+floppy.h: floppy.label $(BIN2H)
+	$(BIN2H) floppy_label floppy.label > floppy.h
 
 ufs.h: ../second/ufs.h
 	ln -f ../second/ufs.h ufs.h

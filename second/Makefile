@@ -18,12 +18,10 @@ CP=cp
 
 include ../Rules.make
 
-CFLAGS = -I../include -O2 -I. -Wall -fomit-frame-pointer
-
 # Relocate to 2.5MB. The Hitchhiker's Guide to Open Boot Rev 3 claims
 # that 3MB are guaranteed to be mapped.
-LDFLAGS=-N -Ttext 0x280000
-LDFLAGS2=-N -Ttext 0x380000
+LDFLAGS_SMALL=-N -Ttext 0x280000
+LDFLAGS_LARGE=-N -Ttext 0x380000
 
 .c.o:
 	$(CC) $(CFLAGS) -c $*.c
@@ -35,11 +33,14 @@ LDFLAGS2=-N -Ttext 0x380000
 OBJS1 = crt0.o
 OBJS2 = decomp.o
 OBJS2N = decompnet.o
-OBJS3 = ../common/console.o ../common/printf.o malloc.o ../common/jmp.o ../common/prom.o ../common/tree.o ../common/urem.o ../common/udiv.o ../common/stringops1.o
+OBJS3 = ../common/console.o ../common/printf.o malloc.o ../common/jmp.o \
+	../common/prom.o ../common/tree.o ../common/urem.o ../common/udiv.o \
+	../common/stringops1.o
 OBJS4 = main.o
 OBJS4N = mainnet.o
-OBJS5 = cmdline.o disk.o file.o misc.o cfg.o strtol.o ranges.o timer.o memory.o ufs.o romfs.o 9660.o divdi3.o \
-	mul.o rem.o sdiv.o umul.o ../common/stringops2.o ls.o muldi3.o
+OBJS5 = cmdline.o disk.o file.o misc.o cfg.o strtol.o ranges.o timer.o \
+	memory.o ufs.o romfs.o 9660.o divdi3.o mul.o rem.o sdiv.o umul.o \
+	../common/stringops2.o ls.o muldi3.o
 OBJS = $(OBJS1) $(OBJS2) $(OBJS3) bmark.o $(OBJS4) $(OBJS5)
 OBJSNET = $(OBJS1) $(OBJS2N) $(OBJS3) bmark.o $(OBJS4N) $(OBJS5)
 
@@ -58,13 +59,13 @@ all:
 endif
 
 second: $(OBJS) mark.o
-	$(LD) $(LDFLAGS) -Bstatic -o second $(OBJS) $(LIBINC) -lext2fs mark.o
-	$(LD) $(LDFLAGS2) -Bstatic -o second2 $(OBJS) $(LIBINC) -lext2fs mark.o
+	$(LD) $(LDFLAGS_SMALL) -Bstatic -o second $(OBJS) $(LIBINC) -lext2fs mark.o
+	$(LD) $(LDFLAGS_LARGE) -Bstatic -o second2 $(OBJS) $(LIBINC) -lext2fs mark.o
 	$(NM) second | grep -v '*ABS*' | sort > second.map
 
 silotftp: $(OBJSNET) mark.o
-	$(LD) $(LDFLAGS) -Bstatic -o silotftp $(OBJSNET) $(LIBINC) -lext2fs mark.o
-	$(LD) $(LDFLAGS2) -Bstatic -o silotftp2 $(OBJSNET) $(LIBINC) -lext2fs mark.o
+	$(LD) $(LDFLAGS_SMALL) -Bstatic -o silotftp $(OBJSNET) $(LIBINC) -lext2fs mark.o
+	$(LD) $(LDFLAGS_LARGE) -Bstatic -o silotftp2 $(OBJSNET) $(LIBINC) -lext2fs mark.o
 	$(NM) silotftp | grep -v '*ABS*' | sort > silotftp.map
 
 second.l: second
