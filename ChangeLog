@@ -1,3 +1,9 @@
+Thu Aug 29 06:22:08 EDT 2002  Ben Collins <bcollins@debian.org>
+
+	* second/crt0.S: Another patch from Dave to support III and all
+	derivatives. Keeps us from having to support each one seperately.
+	* tilo/crt0.S: Likewise.
+
 Wed Aug 14 21:35:06 EDT 2002  Ben Collins <bcollins@debian.org>
 
 	* second/crt0.S: Patch for III+ from Dave.

@@ -123,17 +123,17 @@ flush_icache:
 	be	0f
 	 nop
 	rdpr	%ver, %l0
-	sethi	%hi(0x003e0014), %l1
+	srlx	%l0, (32 + 16), %l1
+	cmp	%l1, 0x3e
+	bne,pt	%xcc, 99f
+	 sllx	%l0, 16, %l0
+	srlx	%l0, (32 + 16), %l1
+	cmp	%l1, 0x14
+	bgeu,pt	%xcc, 0f		/* quit if Ultra-III or derivative */
+	 nop
+99:
+	rdpr	%ver, %l0
 	srlx	%l0, 32, %l0
-	or	%l1, %lo(0x003e0014), %l1
-	cmp	%l0, %l1
-	be	0f			/* quit if it is Ultra-III */
-	 nop
-	sethi	%hi(0x003e0015), %l1
-	or	%l1, %lo(0x003e0015), %l1
-	cmp	%l0, %l1
-	be	0f			/* quit if it is Ultra-III+ */
-	 nop
 	sethi	%hi(0x40003), %l1
 	or	%l1, %lo(0x40003), %l1
 	cmp	%l0, %l1
