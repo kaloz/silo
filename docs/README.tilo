@@ -17,7 +17,8 @@ How to build the boot image:
    sun4cdm kernel. You can only supply one of each kind. It will be
    possible to add Sun4 support in the future as well.
 
-2. Prepare a root image for the initial ramdisk.
+2. Prepare a root image for the initial ramdisk. It can be compressed, or
+   raw. Tilo will compress it if needed.
 
 3. Run the "tilo" script with the following parameters:
 
@@ -26,8 +27,8 @@ tilo [ -o output ] <kernel images> <root image>
 A boot image will be created which contains everything necessary to boot on
 each architecture.
 
-This code can be used and distributed freely under the General Public
-Licence (see COPYING).
+This code can be used and distributed freely under the GNU General Public
+License (see COPYING).
 
 Please address any comments or bug reports to:
 
