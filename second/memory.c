@@ -328,7 +328,7 @@ not_found:
 
 void memory_release(void)
 {
-    if (sun4u_initrd_pa) {
+    if (architecture == sun4u) {
         __asm __volatile("\n\
             rdpr %%pil, %%g1\n\
             wrpr 16, %%pil\n\
