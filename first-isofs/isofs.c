@@ -111,8 +111,8 @@ static int cd_read_block(unsigned long long offset, int size, void *data)
 
 	if (prom_vers == PROM_V0) {
 		/* ISOFS_BLOCK_SIZE / 512 */
-		size <<= 4;
-		offset <<= 4;
+		size <<= 2;
+		offset <<= 2;
 
 		ret = (*romvec->pv_v0devops.v0_rdblkdev)
 				(fd, size, (unsigned)offset, data);
