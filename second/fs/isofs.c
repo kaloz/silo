@@ -67,7 +67,7 @@ static int isonum_731 (char * p)
 
 #define isonum_733(p) isonum_731(p)
 
-static int isofs_read_super(struct struct_io_manager *io)
+static int isofs_read_super(io_channel io)
 {
     int i;
     struct iso_primary_descriptor iso;
