@@ -1,0 +1,241 @@
+.TH SILO 8 "11 February 2000" "Linux"
+.SH NAME
+\fBSILO\fP \- Sparc Improved boot LOader
+.SH SYNOPSIS
+
+\fB/sbin/silo\fP [-r root_path] [-b secondary] [-i primary] [-C config-file]
+[-S backup-file] [-s backup-file] [-J flash-image ]
+[-p {0|2}] [-fFtuUvV]
+
+.SH DESCRIPTION
+
+\fBSILO\fP can be used to boot Linux, SunOS, and/or Solaris. It is a program 
+that runs from the PROM on your SPARC machine and allows for loading of
+operating systems. It also has extended features like the ability to load
+Linux kernels arbitrarily from an \fIext2\fP, \fIufs\fP, \fIromfs\fP or
+\fIiso9660\fP filesystem.
+
+The PROM in the SPARC at boot time loads a bootblock from a boot
+device. This bootblock is quite short, so a full featured boot loader does
+not fit into it, especially since filesystems like \fIext2\fP reserve only 1024
+bytes for it and the partition table itself takes 512 bytes.
+That's why SILO consists of a collection of first stage loaders which are
+just able to load a second stage loader which already understands all
+supported filesystems and handles the config file, input line editing and
+actual loading of operating systems.
+
+The program \fB/sbin/silo\fP is used to install the first stage loader by
+copying the right first stage loader into the bootblock (unless the correct
+first stage is already installed and the \fI-f\fP option is not used to
+force it), writes the block number of the first block of the second stage
+loader (usually \fB/boot/second.b\fP) into it and into the second stage
+loader it records all the block numbers of \fBsecond.b\fP and the name and
+location of the configuration file. The configuration file itself is parsed
+by the boot loader at boot time. See \fBsilo.conf(5)\fP for details.
+
+This means that the \fB/sbin/silo\fP program must be run only if you install
+a new version of \fISILO\fP or if you move the second stage loader on the
+disk. Unlike the \fILILO\fP bootloader on the Intel platform, you don't have
+to rerun it every time you make a change into \fB/etc/silo.conf\fP or when
+you install new kernels.
+
+\fB/sbin/silo\fP used to assist in creating SPARC bootable CDs, but this
+feature has been moved into the \fBmkisofs(8)\fP program and you only need
+to put \fBSILO\fP first and second stage loaders and the configuration on
+the CD before running it.
+.PP
+.SH "COMMAND\-LINE OPTIONS"
+.TP
+.BI "-r " root_path
+This does a chroot into \fIroot_path\fP before performing any actions.
+.TP
+.BI "-b " secondary
+This tells SILO to use \fIsecondary\fP as the second stage loader instead
+of \fB/boot/second.b\fP
+.TP
+.BI "-i " primary
+Install \fIprimary\fP as the first stage loader instead of the default one
+(depending on other command line options and architecture of the machine
+\fB/sbin/silo\fP is being run on it is either \fB/boot/first.b\fP,
+\fB/boot/ultra.b\fP or \fB/boot/fd.b\fP).
+.TP
+.BI "-C " config
+specify alternate config file instead of \fB/etc/silo.conf\fP.  The config
+file must reside on the same physical disk (though it can be on 
+different partitions) as the secondary loader (usually \fB/boot/second.b\fP).
+.TP
+.BI "-S " backup-file
+This forces saving your old bootblock into file \fIbackup-file\fP.
+.TP
+.BI "-s " backup-file
+This forces saving your old bootblock into file \fIbackup-file\fP
+if and only if \fIbackup-file\fP does not exist yet.
+.TP
+.BI "-p " {0|2}
+force PROM version to be 0 or 2 (default is autodetection).
+.TP
+.B -f
+force overwriting of bootblock.
+.TP
+.B -t
+store bootblock into the same partition as second stage loader.
+By default SILO on SCSI/IDE disks writes bootblock into masterboot
+(bootblock of partition starting at cylinder 0), with 
+.B -t
+you change this behaviour.
+.TP
+.B -V
+show version.
+.TP
+.B -F
+Generate the bootblock for booting from the \fIromfs\fP filesystem.
+To create a bootable \fIromfs\fP filesystem, usually floppy, prepare the
+tree for that filesystem and run \fBgenromfs(8)\fP and make sure you pass it
+the \fB-a 512 -A 2048,/..\fP options. Then mount it and run \fB/sbin/silo\fP
+on it with the \fB-F\fP option. The procedure usually goes like this:
+
+  \fBgenromfs -d \fP\fIdirectory\fP\fB/ -f \fP\fIdevice\fP\fB -a 512 -A 2048,/..\fP
+  \fBmount -t romfs \fP\fIdevice mountpoint\fP
+  \fBsilo -r \fP\fImountpoint\fP\fB -i /boot/fd.b -F\fP
+  \fBumount \fP\fImountpoint\fP
+.TP
+.BI "-J " flash-image
+Generate the bootblock for booting JavaStation off an flash image.
+To create it, prepare the tree for that filesystem and run \fBgenromfs(8)\fP
+and make sure you pass it the \fB-a512\fP option. You have to keep 1KB of
+space before the filesystem for the ELF bootblock. THe procedure usually
+goes like this:
+
+  \fBdd if=/dev/zero of=\fP\fIflash.img\fP\fB bs=1k count=1\fP
+  \fBgenromfs -a 512 -f \fP\fIromfs.img\fP\fB -d \fP\fIflash/\fP
+  \fBcat \fP\fIromfs.img\fP\fB >> \fP\fIflash.img\fP
+  \fBrm -f \fP\fIromfs.img\fP
+  \fBlosetup \fP\fI/dev/loop0\fP\fB -o 1024 \fP\fIflash.img\fP
+  \fBmount -t romfs -o ro \fP\fI/dev/loop0\fP\fB \fP\fI/mnt\fP
+  \fBsilo -J \fP\fIflash.img\fP\fB -i /boot/ieee32.b -r \fP\fI/mnt\fP
+  \fBumount \fP\fI/mnt\fP
+  \fBlosetup -d \fP\fI/dev/loop0\fP
+  \fBjsflash \fP\fIflash.img\fP
+.TP
+.B -u
+Assume the machine is an UltraSPARC (the default is obviously the machine
+\fB/sbin/silo\fP is running on). This can be useful e.g. if you plan to move
+a disk from a 32bit box to a 64bit box, you run \fB/sbin/silo -f -u\fP and
+then after the shutdown move the disk.
+.TP
+.B -U
+Assume the machine is not an UltraSPARC.
+.TP
+.B -v
+Print PROM version and exit.
+.PP
+.SH "BOOT TIME OPERATION"
+When the PROM boots from a disk and partition on which SILO is installed, it
+will print the string \fBSILO\fP to the screen (if the second stage loader
+is moved away or is crippled it might actually print less letters from that
+string and die). If \fItimeout\fP is specified in \fBsilo.conf(5)\fP, it
+will wait like that until the user presses some key or until the timeout
+expires. If the timeout expires, the default image is booted, otherwise SILO
+continues normal operation, ie. prints the string \fBboot:\fP and waits for
+user input.
+
+At the prompt, you can enter the \fIlabel\fP or
+\fIalias\fP of some image present in the config file, plus additional
+arguments you want to give it and \fBSILO\fP will boot such image, give it
+all the arguments specified in the config and all the arguments you gave on
+the command line. Entering an empty line will cause the default image to be
+loaded. Examples:
+
+  boot: \fBlinux\fP
+
+  boot: \fBlinux.old init=/bin/sh\fP
+
+The arguments you pass on the line after the name of the image to be loaded
+are basically kernel arguments which are normally specified in the
+\fIappend\fP variable in \fBsilo.conf(5)\fP. In addition to that, several
+special arguments are handled by \fBSILO\fP internally and are not passed to
+the kernel. These include \fIinitrd\fP, \fIinitrd-size=\fPnumber,
+\fIinitrd-prompt\fP, \fIpause-after\fP and \fIshow-arguments\fP.
+\fIshow-arguments\fP causes the arguments which will be passed to the kernel
+to be printed on the screen before the kernel is loaded, the other options
+ressemble flags and string variables of the same names from
+\fBsilo.conf(5)\fP.
+
+You can also enter one of the special keywords, \fBhalt\fP or \fBhelp\fP.
+\fBhalt\fP causes \fBSILO\fP to return PROM, \fBhelp\fP prints some short
+incomplete help message.
+
+If you want to load some image or other operating system not mentioned in
+the config file (or if the config file could not be loaded because it has
+not been found or had syntax errors in it - \fBSILO\fP will print a message
+about this in such a case), you can load arbitrary image from any local
+\fIext2\fP, \fIufs\fP, \fIromfs\fP or \fIiso9660\fP filesystem and give it
+arbitrary arguments. \fBSILO\fP will handle transparent decompression of
+gzipped images. You type in the fully qualified \fBSILO\fP file name or
+partition name and arguments. For the syntax of the fully qualified
+\fBSILO\fP file names and partition names see \fBsilo.conf(5)\fP.
+Examples:
+
+  boot: \fB/pci@1f,4000/ide/ata@0,0/cmdk@0,0;4/boot/vmlinux.new root=/dev/hda4\fP
+
+  boot: \fB2/boot/vmlinux initrd=/boot/initrd.img\fP
+
+  boot: \fBsd(0,2,0)2/boot/vmlinux.gz root=/dev/sdc2 init=/bin/sh ro\fP
+
+If there are \fIsingle-key\fP images in the config file, then they will be
+loaded as soon as you press that key at the beginning of the input line.
+If you want to give them arguments or load a different image which starts
+with that letter, you can type a space at the beginning of the input line so
+that the image is not autostarted.
+
+You can also view short files and see directory listings.
+Details are listed in \fBsilo.conf(5)\fP, here just a few examples:
+
+  boot: \fBcat /etc/silo.conf\fP
+
+  boot: \fBcat /sbus/espdma@1,280000/esp/sd@2,0;5/etc/inittab\fP
+
+  boot: \fBls -lt /lib/modules/\fP
+
+  boot: \fBls /pci@1f,4000/ide/ata@0,0/cmdk@0,0;2/lib/\fP
+
+\fBSILO\fP operation can be password protected in two different ways (in
+addition to no password protection at all). Either a password will be
+required to load any image, or password will be required to load any image
+not mentioned in \fBsilo.conf\fP or if the user gives some arguments to some
+image mentioned there.
+.PP
+.SH AUTHOR
+.B SILO
+was written by Jakub Jelinek (jakub@redhat.com) and is released
+under the conditions of the GNU General Public License.  See the file
+COPYING for details.  This man page was written by Donald Barnes
+(djb@redhat.com) and updated by the author.
+
+.SH CREDITS
+.br
+Mark Adler
+.br
+Wernel Almesberger
+.br
+Donald Barnes
+.br
+Eddie C. Dost
+.br
+Miguel de Icaza
+.br
+Jakub Jelinek
+.br
+David S. Miller
+.br
+Mauricio Plaza
+.br
+Adrian Rodrigues
+.br
+Andrew Tridgell
+.br
+Peter Zaitcev
+.br
+
+.SH SEE ALSO
+\fBsilo.conf(5)\fP, \fBmkisofs(8)\fP, \fBgenromfs(8)\fP

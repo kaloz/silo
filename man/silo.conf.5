@@ -1,0 +1,449 @@
+.\" Copyright (c) 1999 Jakub Jelinek <jakub@redhat.com>
+.\" Portions of this manual page from lilo.conf documentation
+.\" Copyright (c) 1992-1998 Werner Almesberger
+.\" This program is distributed according to the Gnu General Public License.
+.\" See the file COPYING in the SILO source distribution.
+.\"
+.TH SILO.CONF 5 "20 September 1999" "SILO"
+.SH NAME
+silo.conf \- File format used by SILO.
+.SH SYNOPSIS
+.BI "/etc/silo.conf"
+.SH DESCRIPTION
+The \fBsilo.conf\fP file is a configuration file for \fBSILO\fP
+which is read during booting.
+
+\fBsilo.conf\fP provides instructions for \fBSILO\fP. This includes
+which kernels or other operating systems to load and what options pass to
+them. Unlike \fBLILO\fP bootloader on the Intel platform, \fBSILO\fP reads
+and parses the configuration file at boot time. This means any
+changes can be made to the configuration file and if the system is shut down
+properly or the config file makes it to the disk, \fBSILO\fP will use it on
+next bootup.
+
+\fBSILO\fP is able to boot kernels even without this configuration file or
+if this file is crippled or contains syntax errors, but the user has to
+enter full PROM names and full path of the images to load and all options
+required for them manually.
+.SH "FILE FORMAT"
+The file consists of comments and variable assignments.
+.TP
+Comments
+Start with a \fI#\fP character, and continue to
+the end of the line.
+.TP
+Flag variables
+Consist of a single keyword and are followed by whitespace
+or the end of the file.
+.TP
+String variables
+Consist of the variable name, optional architecture scope,
+optional whitespace, a \fI=\fP character, optional whitespace, the value
+and required whitespace, or the end of the file.
+.TP
+Architecture scope
+Allowed only for variable names \fIimage\fP and \fIother\fP. Must directly
+follow variable name without any whitespace. Consists of the \fI[\fP character,
+a subset of case-insensitive tokens \fIsun4\fP, \fIsun4c\fP, \fIsun4d\fP,
+\fIsun4e\fP, \fIsun4m\fP,  \fIsun4u\fP, separated by \fI,\fP characters
+(no whitespace allowed in between) and ends with the \fI]\fP character.
+.TP
+File names
+Some string variables are expecting file names. A file name format in \fBSILO\fP
+is:
+
+  [<devicename>][<part>]<absolute_pathname>
+
+  or
+
+  [<devicename>][<part>][\fB[\fP<m>\fB-\fP<n>\fB]\fP]
+
+The first form refers to a file or directory on some supported filesystem
+(currently \fIext2\fP, \fIufs\fP, \fIromfs\fP or \fIiso9660\fP), the latter
+refers to a range of 512B blocks on a device. For a device block range,
+either <devicename>, or <part>, or [<m>-<n>] must be given. If the last part
+is not given, it defaults to [1-16] (ie. 7680 bytes from offset 512 in the
+device - normal SPARC bootblock location).
+
+Optional <devicename> is the PROM name of the device the file or range
+is located on. See below for its syntax. For v2 and P1275 PROMs the device
+name must be immediately followed by the \fI;\fP character. The default is
+the boot device SILO was booted from.
+
+Optional <part> is the 1 based partition number on the device. First
+partition is 1 (e.g. on \fI/dev/sda\fP in Linux is this \fI/dev/sda1\fP).
+The default is the default partition (the value of the \fIpartition\fP
+variable in the config file).
+
+<absolute_pathname> must start with a \fI/\fP character and is the
+pathname from the root of the filesystem on that device (unless it is the
+root filesystem this is different to the pathname you will see in Linux).
+
+<m> is the first block number (in blocksize 512 bytes) of the range to
+be loaded and <n> is the last block number plus one.
+
+SILO will transparently uncompress files when loading them if they are
+gzipped, unless the file is an initial ramdisk.
+.TP
+Device names
+Depend on the PROM version of the machine used during bootup. For older
+PROMs (v0), the device name syntax is:
+
+  <xx>\fB(\fP<m>\fB,\fP<n>\fB,\fP<o>\fB)\fP
+
+where:
+
+  <xx> is one of \fIsd\fP, \fIst\fP, \fIxd\fP, \fIxy\fP, \fIfd\fP, \fIle\fP, \fIie\fP,
+
+  <m> is controller number as decimal number,
+
+  <n> is device id as decimal number,
+
+  and <o> is zero based partition number.
+
+Example:
+
+  sd(0,3,0)
+  fd(0,0,0)
+
+For newer PROMs (v2) and all PROMs in the 64bit SPARC machines the syntax
+is:
+
+  <fully_qualified_prom_device_name>[\fB:\fP<part_letter>]
+
+where the fully qualified PROM device name starts with a \fI/\fP character
+for the root of the PROM device tree and contains all the nodes from the
+root in the tree up to the disk device node. If some node contains more than
+one child node with the same name and the path has to go through such node,
+a \fI@\fP character followed by hexadecimal address pair is desirable to
+resolve the ambiguity. Optional partition number is a \fI:\fP character
+followed by a letter \fIa\fP (for first partition) through \fIh\fP (for
+last, 8th, partition). v2 PROM device names might look like:
+
+  /sbus@3,0/SUNW,fas@3,8800000/sd@0,0
+  /iommu/sbus/espdma@5,8400000/esp@5,8800000/sd@6,0:d
+  /pci@1f,0/pci@1,1/ide@3/disk@2,0
+  /pci@1f,4000/ide/ata@0,0/cmdk@0,0
+
+v2 PROM device names if specified as part of the file name (see above)
+should be followed by the \fI;\fP character to separate the device name from
+the optional Linux partition number (note that there can be two partition
+numbers specified, the latter takes precedence) and from the required
+pathname.
+.PP
+Variable names are case insensitive, values of string variables are case
+sensitive.
+
+Blanks and equal signs may only be part of a variable name or a value if
+they are escaped by a backslash or if the value is embedded in double
+quotes. An equal sign may not be the only character in a name or value.
+
+An escaped tab is converted to an escaped blank. An escaped newline is
+removed from the input stream. An escaped backslash (i.e. two
+backslashes) is converted to a backslash. Inside quoted strings, only
+double quotes, backslashes and newlines can be escaped.
+
+Example:
+
+  # Simple silo.conf
+  timeout=50
+  partition=5
+  root=/dev/sda5
+  read-only
+  image=/boot/vmlinux
+    label=linux
+  image=/boot/vmlinux.old
+    label=old
+
+.SH "GLOBAL OPTIONS"
+\fB/etc/silo.conf\fP begins with a possibly empty global options section.
+This section contains all variable assignments up to the first \fIimage\fP
+or \fIother\fP setting.
+
+The following global options are recognized:
+.TP
+.BI "default=" name
+Uses the specified image as the default boot image. If `default' is omitted,
+the image appearing first in the configuration file is used.
+.TP
+.BI "message=" message_filename
+Specifies a file containing a message that is displayed before the boot
+prompt.
+.TP
+.BI "password=" password
+Protect booting by a password. The password is given in cleartext in the
+configuration file. Because of that the configuration file should be only
+readable by the super user and the password should differ if possible from
+other passwords on the system.
+.TP
+.BI "restricted"
+A password is only required to boot the image specified in
+\fB/etc/silo.conf\fP if parameters are specified on the command line
+or if the image is not specified in the configuration file at all (ie.
+arbitrary file load).
+.TP
+.BI "timeout=" tsecs
+Sets a timeout (in tenths of a second) for keyboard input. If no key is
+pressed for the specified time, the first image is automatically booted.
+.PP
+In addition to these global options, per-image options
+\fIappend\fP, \fIdevice\fP, \fIfill-reboot-cmd\fP, \fIimage\fP,
+\fIinitrd-prompt\fP, \fIinitrd-size\fP, \fIinitrd\fP,
+\fIother\fP, \fIpartition\fP, \fIpause-after\fP, \fIpause-message\fP,
+\fIramdisk\fP, \fIread-only\fP, \fIread-write\fP and \fIroot\fP can be
+specified in the global section. They are used as defaults if they aren't
+specified in the configuration sections of the respective kernel images
+and will be used also for the arbitrary images specified on the input line
+and not mentioned in the configuration file (unless overridden by input line
+options).
+.SH "PER-IMAGE SECTIONS"
+A per-image section starts with either a line
+
+  \fBimage=\fP\fIfilename\fP
+
+(for booting from files) or
+
+  \fBother=\fP\fIpartition_name\fP
+
+(for booting from device ranges).
+The \fIimage\fP or \fIother\fP tokens can be directly followed by
+architecture scope (see above). In that case, the image declaration will be
+only available if the architecture of the booting machine is listed in the
+scope. If it is not listed, the whole \fIimage\fP or \fIother\fP line and
+the following related section will be treated as not present in the config
+file.
+Example:
+
+  image[sun4c,sun4d,sun4m]=/boot/vmlinux32.gz
+
+will declare image with the specified filename only on sun4c, sun4d or
+sun4m.
+
+SILO will transparently decompress gzipped images.
+
+\fIpartition_name\fP in the \fBother\fP setting is a normal filename whose
+syntax is described above, but without the pathname part. So it is either a
+single partition number (starting with 1), or a device name (for v2 and
+P1275 PROMs followed by \fI;\fP character) followed by such partition
+number. Examples:
+
+  other=1
+    bootblock=/boot/old.b
+  # Example with device for v0 PROM:
+  other=sd(0,2,0)3
+  # Example with device for v2 or P1275 PROM:
+  other=/iommu/sbus/espdma/esp/sd@3,0;3
+
+The \fIfilename\fP above can also include two special tokens: \fIcat\fP and
+\fIls\fP. Both have to be followed by whitespace and some filename (directory
+name in the \fIls\fP case). \fIls\fP can have options between the \fIls\fP
+token and the directory name. \fIcat\fP causes the filename to be loaded and
+printed to the screen instead of being executed, \fIls\fP causes a directory
+listing to be generated to the screen. \fIls\fP uses syntax:
+
+  \fBls\fP [\fB-\fP[\fBl\fP][\fBt\fP][\fBr\fP]] <dirname>
+
+Option \fBl\fP generates long listing instead of listing only filenames,
+option \fBt\fP sorts by mtime instead of name and \fBr\fP reverses the
+sorting. As both \fIcat\fP and \fIls\fP require white space between the
+token and the filename, you should probably surround it into double quotes
+as in:
+
+  image="cat /etc/passwd"
+  image="ls /lib/modules/"
+  image="ls -lt /lib/"
+
+From the \fIimage\fP or \fIother\fP line on until next \fIimage\fP or
+\fIother\fP line are variable assignments and flags for this image's
+section. The following options and flags are recognized:
+.TP
+.BI "label=" name
+The boot loader uses the main file name (without its path) of each image
+specification to identify that image. A different name can be used by
+setting the variable `label'.
+.TP
+.BI "alias=" name
+A second name for the same entry can be used by specifying an alias.
+.TP
+.BI "partition=" part_no
+Specifies the default partition number (a digit between 1 and 8, sda1 is
+part_no 1) to be used if some filename does not specify a partition number
+explicitely.
+.TP
+.BI "device=" device_name
+Specifies the default device name to be used if some filename does not
+specify a partition number explicitely. This defaults to the device
+\fBSILO\fP has been booted from if you don't specify \fIdevice\fP in either
+the global section or per-image section of the config file.
+.TP
+.BI "append=" string
+Appends the options specified to the parameter line
+passed to the kernel. This is typically used to
+specify parameters of hardware that can't be
+entirely auto-detected or for which probing may be
+dangerous. Example:
+
+  append = "video=sbusfb:off"
+.TP
+.BI "literal=" string
+Like `append', but removes all other options (e.g. setting of the root
+device). Because vital options can be removed unintentionally with
+`literal', this option cannot be set in the global options section.
+.TP
+.BI "ramdisk=" size
+This specifies the size of the optional RAM disk. A value of zero indicates
+that no RAM disk should be created. If this variable is omitted, the RAM
+disk size configured into the boot image is used.
+.TP
+.BI "read-only"
+This specifies that the root file system should be mounted read-only.
+Typically, the system startup procedure re-mounts the root file system
+read-write later (e.g. after fsck'ing it).
+.TP
+.BI "read-write"
+This specifies that the root file system should be mounted read-write.
+.TP
+.BI "root=" root-device
+This specifies the device that should be mounted as root.
+.TP
+.BI "proll=" filename
+This should be only used for JavaStation flash installs. It specifies a file
+that will be loaded at boot time and executed in order to emulate old Sun v2
+PROM on top of IEEE P1275 PROM called PROLL.
+.TP
+.BI "initrd=" filename
+Specifies the file that will be loaded at boot time as the initial RAM disk.
+Example:
+
+  initrd=/images/initrd.img
+
+SILO will not decompress the initial ramdisk, the Linux kernel will do that.
+If the initial ramdisk does not fit on one media (usually floppy), you can
+split it into several pieces and separate the filenames in the list by
+\fI|\fP characters. In this case, you have to provide a non-zero
+\fIinitrd-size\fP and, if the images reside on different medias,
+\fIinitrd-prompt\fP as well.
+Example (on the first floppy is initrd1.img, on the second initrd2.img
+always in the root directory and the sum of both image sizes is 1700000
+bytes):
+
+  initrd=/initrd1.img|/initrd2.img
+  initrd-size=1700000
+  initrd-prompt
+.TP
+.BI "initrd-size=" size
+When more than one initial ramdisk part is specified in the \fIinitrd\fP
+setting, this option is required to be the sum of sizes of all the images
+mentioned on that line, in bytes. It is required so that SILO can reserve
+space for the image, eventhough size of some parts has not been determined
+yet.
+.TP
+.BI "initrd-prompt"
+If more than one initial ramdisk part is specified, wait for user pressing a
+key between loading the different images, so that the user can exchange
+media. This flag is needed if some initrd parts reside on the same device,
+but different removable media. On the other side, if you e.g. load one part
+from a floppy and the second part from a hard disk, such option is not
+needed (the question is who'd write something like that into silo.conf).
+.TP
+.BI "bootblock=" filename
+For the \fIother\fP image section, if booting from some partition is desired
+but the bootblock on that partition has been saved off to some file and the
+bootblock in that partition contains something else (e.g. SILO bootblock),
+this option specifies the name of the file where the bootblock has been
+saved to. SILO loads the image from that file, pretends as if it had
+loaded it from the specified partition and executes it. This is e.g. useful
+if you have Solaris installed on the first partition of the disk and want to
+install SILO into the master boot record (ie. bootblock of the first
+partition). Then you should first save the Solaris bootblock into some file,
+e.g. by issuing:
+
+  \fBdd if=/dev/sda of=/boot/old.b bs=512 count=15 skip=1\fP
+
+then install SILO and put this snippet into \fIsilo.conf\fP:
+
+  other=1
+    bootblock=/boot/old.b
+
+Note that this does not work correctly on UltraSPARC boxes at the moment.
+.TP
+.BI "fill-reboot-cmd"
+This flag should be used only with Linux kernels. If specified for an image,
+it causes the file \fI/proc/sys/kernel/reboot-cmd\fP to be initialized by
+the device SILO has been booted from, image name of the kernel beeing loaded
+and all arguments to it specified either in the configuration file, or on
+the input line. This means that if the user does not modify that file and
+reboots the system, it should load the same kernel as last time and pass it
+the same arguments.
+.TP
+.BI "pause-after"
+If this flag is specified, SILO will stop after loading the kernel (and
+initial ramdisks if specified) and ask the user to press a key before
+continuing.
+.TP
+.BI "pause-message=" string
+If \fIpause-after\fP is specified, this variable specifies the string to
+print to the user when asking him to press a key. The default is:
+
+  Press ENTER to continue.
+.TP
+.BI "single-key"
+Enables booting the image by hitting a single key when the cursor is at the
+first character in the input line, without the need to press <ENTER>
+afterwards. \fIsingle-key\fP requires that either the image's label or its
+alias (or both) is a single character. If you need to specify parameters for
+such an image, or if you want to boot some other image which happens to
+start with the same letter, then you need to start the input line with at
+least one space which will be removed before processing but will disable
+this single-key feature.
+.TP
+.BI "solaris"
+This flag tells SILO that the image to be loaded is a Solaris kernel. This
+has been implemented so that users don't have to save the old Solaris
+bootblock or in case it has been lost. SILO then tries to use the Solaris
+ufsboot second stage loader to load specified kernel image. The usual kernel
+name is \fI/kernel/unix\fP (SILO automatically prepends the
+\fI/platform/<platform>\fP path before it if needed). SILO recognizes the
+special pathname \fI/kernel/unix\fP (with any device and/or partition) though
+and assumes the \fIsolaris\fP flag for it by default. Note that this method
+of loading Solaris might not work for you, as it is quite error prone due to
+different versions of Solaris and different PROMs.
+The recommended solution for sharing Solaris and Linux on the same disk is
+to install SILO into the Linux's own partition bootblock (as opposed to the
+master bootblock) and add PROM aliases to boot from the devices. E.g. if
+Solaris is installed on Linux device sda1 and Linux on sda4, \fIsilo.conf\fP
+could look like this:
+
+  partition=4
+  timeout=50
+  image=/boot/vmlinux
+    label=linux
+    root=/dev/sda4
+  other=1
+    label=solaris
+
+one would invoke SILO as:
+
+  \fB/sbin/silo -t\fP
+
+and in PROM (this depends on the PROM version, lets assume P1275)
+one would do either:
+
+  \fBsetenv boot-device /sbus/espdma/esp/sd@0,0:d\fP
+
+(so that by default it boots from the 4th (ie. Linux) partition) or:
+
+  \fBnvalias linux /sbus/espdma/esp/sd@0,0:d\fP
+  \fBnvalias solaris /sbus/espdma/esp/sd@0,0:a\fP
+
+so that one could already in PROM boot either with \fBboot linux\fP or with
+\fBboot solaris\fP. For the former, there would still be possibility to type
+\fBsolaris\fP on the SILO prompt to boot Solaris.
+.SH AUTHOR
+\fBSILO\fP has been written by Jakub Jelinek <jakub@redhat.com> and
+the SparcLinux team (see documentation on the list of contributors).
+.SH AVAILABILITY
+The latest version of the sources may be obtained by ftp from
+ftp://ultra.linux.cz/pub/silo/
+.SH "SEE ALSO"
+silo(8)

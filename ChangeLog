@@ -1,0 +1,182 @@
+Fri Feb 11 14:56:15 2000  Jakub Jelinek <jakub@redhat.com>
+
+	* RAID1 support.
+	* JavaStation support (js patches by Pete Zaitcev).
+	* Forgot to write changelog for quite some time,
+	  so many other things...
+
+Mon Sep 20 15:55:12 1999  Jakub Jelinek <jj@ultra.linux.cz>
+
+	* New man pages.
+
+Fri Sep 17 15:45:11 1999  Jakub Jelinek <jj@ultra.linux.cz>
+
+	* Revamped bootable CD support. Now SILO understands
+	ISO9660 and RR and actual CD preparation is done
+	in mkisofs. See docs/CDROM.HOWTO.
+
+	* Support for cat and ls commands.
+
+	* Support for single-key (like in lilo.conf).
+
+Mon Oct 19 18:51:23 1998  Jakub Jelinek <jj@ultra.penguin.cz>
+
+	* Initrd should be working again.
+
+	* The rotating dash should be fixed on serial console.
+
+	* A bunch of fixes here and there.
+
+Wed Sep 30 14:40:19 1998  Jakub Jelinek <jj@ultra.linux.cz>
+
+	* Romfs support.
+
+	* Conditionals in silo.conf.
+
+	* Make CD and floppy do the combo boot.
+
+	* Fixed -r handling.
+
+	* root=/dev/fd0 gets rewritten to /dev/fd1 if the machine
+	has a single floppy fd1 (e.g. UltraAX).
+
+	* If you have root specified in silo.conf before any images
+	(that is, a default root) and you boot some custom kernel
+	and don't pass root= to it (and it has not been rdev'ed),
+	SILO will fill it in.
+
+	* Support for huge kernels on sparc64 (up to 3.5MB).
+
+	* a bunch of other changes (sorry, I did not keep notes).
+
+Thu Apr  9 13:25:17 1998  Jakub Jelinek <jj@ultra.linux.cz>
+
+	* Allow multiple segments in linux kernel.
+
+	* Fix timeout issues on Ultra5.
+
+Fri Mar 20 21:28:20 1998  Jakub Jelinek <jj@ultra.linux.cz>
+
+	* Support glibc.
+
+	* SS1000/SC2000 support.
+
+	* sun4u support (well, it has been in for a while, but I haven't
+	bothered to update ChangeLog).
+
+Fri Aug 30 13:00:54 1996  Jakub Jelinek <jj@sunsite.mff.cuni.cz>
+
+	* A workaround for sun4c timer
+
+	* As davem suggested, when booted just with boot or auto-booted
+	and you have garbage in boot-file or diag-file (from previous
+	SunOS/Solaris bootings), you're just warned and SILO acts as if
+	there were no arguments at all from PROM. On the other side, if you
+	type wrong imagename on the PROM command line, you'll have to type
+	it correctly again. Also, error messages changed a bit and added
+	`help' keyword which shows some help screen.
+
+	* Halfway of support for Solaris SILO (bootblock will have to be
+	compiled under Linux still, but there will be a solaris program
+	which will install SILO under solaris, /sbin/silo in Linux will
+	stay there as well, of course) - not yet tested - do not try yet
+	(you have been warned).
+
+Mon Aug 26 13:48:12 1996  Jakub Jelinek <jj@sunsite.mff.cuni.cz>
+
+	* Support for symlinks inside of ext2fs.
+
+	* Support for having second.b on an ufs partition.
+
+Tue Aug 20 12:20:10 1996  Jakub Jelinek <jj@sunsite.mff.cuni.cz>
+
+	* A trial to support nearly all starting cylinders of partitions,
+	so that it will be always possible to boot from the first one (ie.
+	by just booting boot disk or boot sd(), as partition 0/a/sda1
+	(v0/v2/linux naming) is the default one for PROM). The only
+	requirement is that if you don't have sda1 and sda3 starting at
+	offsets 0, you should rerun /sbin/silo after every fdisk change
+	which will make any partition starting before at cylinder 0 (this
+	usualy includes disabled partitions as well) start at non-zero
+	cylinder afterwards.
+
+	* cdrom support (read README for a short HOWTO) - not yet tested.
+
+Tue Jul 30 22:48:12 1996  Jakub Jelinek <jj@sunsite.mff.cuni.cz>
+
+	* Fixed together with Andrew Tridgell the v0 argument stuff and
+	mapio stuff, so that on v0 sun4c it runs ok, except some timer bugs
+	still
+
+	* Fixed several bugs in /sbin/silo, added -f argument to force
+	overwriting of boot sector
+
+	* memory.c (ensure_sun4m_mapping): Step by step checking of page
+	tables if it is already mapped and thus can be used for initial
+	ramdisk
+
+Mon Jul  8 23:13:17 1996  Jakub Jelinek <jj@sunsite.mff.cuni.cz>
+
+	* Changed syntax for v0 proms and left partition handling for prom
+
+	* Initrd support
+
+	* Floppy support
+
+Thu Jun 27 22:01:13 1996  Jakub Jelinek <jj@sunsite.mff.cuni.cz>
+
+	* Mostly rewritten. Thanks to David Miller, Peter Zaitcev,
+	Miguel de Icaza and Mauricio Plaza for their code and Eddie Dost
+        for shortening first stage for v0 architecture, so that it can
+	print SILO (512B is horribly short).
+
+Fri Mar 22 19:05:26 1996  Mauricio Plaza Villegas  <mok@sphinx.nuclecu.unam.mx>
+
+        * Ext2fs and libs are now on the distribution.
+	
+	* second/prom_io.c: Allowing prom paths.
+
+Thu Mar 21 13:59:41 1996  Mauricio Plaza Villegas  <mok@sphinx.nuclecu.unam.mx>
+
+	* second/main.c: Support for booting from other disks. 
+
+Tue Mar 19 07:23:28 1996  David Miller <davem@caip.rutgers.edu>
+
+	* The first stage loader can be compiled under SunOS.
+	
+Fri Mar 15 18:03:38 1996  Mauricio Plaza Villegas  <mok@nuclecu.unam.mx>
+
+	* second/prom_io.c: BUG FIXED: Block Size was hardcoded as 1024,
+	now it should work for other block sizes.
+
+Thu Mar 14 19:35:51 1996  Mauricio Plaza Villegas  <mok@sphinx.nuclecu.unam.mx>
+
+	* bin/uninstall: Uninstall Utility (a pretty simple one).
+
+	* second/main.c: CHAIN LOADING, Now we are able to load another
+	Operating System by saving the old loader and re-running it
+	instead of the kernel (tree steps). There are olny two reserved
+	words when second stage loader prompts, "halt" and "sunos". Halt
+	will interrupt the whole process backing you to the "ok"
+	prompt. Sunos will load the original loader of the original
+	Operating System like SunOS.
+
+	* instboot/instboot.c: BUG FIXED: Default parameters are keeped. 
+
+	* second/prom_io.c (load_kernel): BUG FIXED: Other partition
+	loading now works.
+ 	
+
+Wed Mar 13 09:22:32 1996  Mauricio Plaza Villegas  <mok@sphinx.nuclecu.unam.mx>
+
+	* second/main.c: Adding support for default partition (same
+	partition where the first stage is).
+	(readhint): Parameters from the blocktable. 
+
+	* instboot/instboot.c: Adding the params support. Read old
+	parameters and give the chance to change them.
+
+	* storage.h (struct Block_Table): Adding a field called params so
+	we can have default booting parameters. Also SILO_MAGIC has
+	changed so we can boot without prompting, if light runs out the
+	machine will be able to reboot.

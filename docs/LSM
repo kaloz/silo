@@ -1,0 +1,23 @@
+Begin3
+Title:		SILO          
+Version:	0.9.9
+Entered-date:	Fri Jul 14 2000
+Description:	Sparc Improved Boot Loader
+Keywords:	Sparc, Linux/Sparc, SILO, bootblock, silo.conf, SparcLinux
+Author:		jakub@redhat.com (Jakub Jelinek)
+		mok@nuclecu.unam.mx (Mauricio Plaza)
+		djb@redhat.com (Donnie J. Barnes)
+		zaitcev@metabyte.com (Pete A. Zaitcev)
+		davem@redhat.com (David S. Miller)
+		miguel@nuclecu.unam.mx (Miguel de Icaza)
+		ecd@skynet.be (Eddie C. Dost)
+		tridge@anu.edu.au (Andrew Tridgell)
+		tdyas@xenophanes.rutgers.edu (Tom Dyas)
+		sparclinux@vger.rutgers.edu (the Sparc Linux team)
+Maintained-by:  jakub@redhat.com (Jakub Jelinek)
+Primary-site:	sunsite.mff.cuni.cz /pub/silo
+			275kB silo-0.9.9.tgz
+Original-site:  sunsite.mff.cuni.cz /pub/silo
+Platform:       Sparc sun4c, sun4m, sun4d or sun4u
+Copying-policy: GPL
+End
