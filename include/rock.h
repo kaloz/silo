@@ -3,6 +3,14 @@
    extensions are present on the disk, and this is fine as long as they
    all use SUSP */
 
+#define SIG(A,B) ((A << 8) | B)
+
+#define CHECK_CE					\
+	{cont_extent = isonum_733(rr->u.CE.extent);	\
+	 cont_offset = isonum_733(rr->u.CE.offset);	\
+	 cont_size = isonum_733(rr->u.CE.size);}
+				  
+
 struct SU_SP{
   unsigned char magic[2];
   unsigned char skip;

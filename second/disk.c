@@ -290,7 +290,7 @@ int read (char *buff, int size, unsigned long long offset)
 		    if (((romvec->pv_printrev >> 16) < 2 || 
 		         ((romvec->pv_printrev >> 16) == 2 && (romvec->pv_printrev && 0xffff) < 6)) 
 		        && offset >= 0x40000000) {
-		    	printf ("Buggy old PROMs don't allow reading past 1GB from start of the disk. Send complains to SMCC\n");
+		    	printf ("Buggy old PROMs don't allow reading past 1GB from start of the disk. Send complaints to SMCC\n");
 	    		return -1;
 	    	    }
 	    }

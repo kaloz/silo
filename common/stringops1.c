@@ -61,3 +61,41 @@ void *memmove(void *dest,const void *src,size_t count)
 	}
 	return dest;
 }
+
+char *strchr(const char *s, int c)
+{
+	for(; *s != (char) c; ++s)
+		if (*s == '\0')
+			return 0;
+	return (char *) s;
+}
+
+int strlen(const char *s)
+{
+	const char *sc;
+	for (sc = s; *sc != '\0'; ++sc);
+		return sc - s;
+}
+
+int strncmp(const char *cs, const char *ct, size_t count)
+{
+	register signed char __res = 0;
+	while (count) {
+		if ((__res = *cs - *ct++) != 0 || !*cs++)
+			break;
+		count--;
+	}
+	return __res;
+}
+
+int memcmp(const void *cs, const void *ct, size_t count)
+{
+	const unsigned char *su1, *su2;
+	signed char res = 0;
+
+	for( su1 = cs, su2 = ct; 0 < count; ++su1, ++su2, count--)
+		if ((res = *su1 - *su2) != 0)
+			break;
+	return res;
+}
+

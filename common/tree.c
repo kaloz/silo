@@ -1,4 +1,4 @@
-/* $Id: tree.c,v 1.2 2001/06/16 06:35:24 bencollins Exp $
+/* $Id: tree.c,v 1.3 2003/04/14 03:24:43 bencollins Exp $
  * tree.c: Basic device tree traversal/scanning for the Linux
  *         prom library.
  *
@@ -145,7 +145,8 @@ int prom_searchsiblings(int node_start, char *nodename)
 					 sizeof(promlib_buf));
 		/* Should this ever happen? */
 		if(error == -1) continue;
-		if(strcmp(nodename, promlib_buf)==0) return thisnode;
+		if (strcmp(nodename, promlib_buf) == 0)
+			return thisnode;
 	}
 
 	return 0;

@@ -18,8 +18,8 @@ void *memset(void *, int, size_t);
 void __bzero(void *, size_t);
 void *memcpy(void *, const void *, size_t);
 void *memmove(void *, const void *, size_t);
+int strlen(const char *s);
 
-/* stringops2.c */
 char *strcat(char *, const char *);
 char *strncat(char *, const char *, size_t);
 int strncmp(const char *, const char *, size_t);

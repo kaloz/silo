@@ -40,7 +40,7 @@ OBJS3 = ../common/console.o ../common/printf.o malloc.o ../common/jmp.o \
 OBJS4 = main.o
 OBJS4N = mainnet.o
 OBJS5 = cmdline.o disk.o file.o misc.o cfg.o strtol.o ranges.o timer.o \
-	memory.o fs/libfs.a divdi3.o mul.o rem.o sdiv.o umul.o \
+	memory.o fs/libfs.a divdi3.o mul.o ../common/rem.o ../common/sdiv.o umul.o \
 	../common/stringops2.o ls.o muldi3.o
 OBJS = $(OBJS1) $(OBJS2) $(OBJS3) bmark.o $(OBJS4) $(OBJS5)
 OBJSNET = $(OBJS1) $(OBJS2N) $(OBJS3) bmark.o $(OBJS4N) $(OBJS5)
