@@ -35,7 +35,7 @@ image.  The only value PROM looks at is starting offset, so that it will
 boot on all machines correctly.  In the boot process PROM finds start of
 the boot partition (in SILO's case it is always 0) and loads 7680 bytes
 from offset 512 in that partition.  Fortunately iso9660 has the first 32KB
-(16 secotrs) reserved for OS use, so that the partition table and
+(16 sectors) reserved for OS use, so that the partition table and
 bootblock can be safely stored there. As SILO is longer in size than those
 32KB (eventhough it is compressed), it puts its first stage loader in
 there and puts its second stage loader somewhere in the iso9660

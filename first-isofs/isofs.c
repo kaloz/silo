@@ -26,10 +26,6 @@
 #include <rock.h>
 #include <stringops.h>
 
-#ifndef NULL
-#define NULL (void *)0
-#endif
-
 
 #define SECOND_BLK	"/boot/second.b"
 #define SILO_CONF	"/boot/silo.conf"
