@@ -1,6 +1,6 @@
 Summary: The SILO boot loader for SPARCs.
 Name: silo
-Version: 0.9.9
+Version: 0.9.9.5
 Release: 1
 Copyright: GPL
 ExclusiveArch: sparc
@@ -23,19 +23,7 @@ make
 
 %install
 rm -rf $RPM_BUILD_ROOT
-mkdir -p $RPM_BUILD_ROOT/{boot,sbin,usr/sbin,usr/man/man5,usr/man/man8}
-
-install -m755 sbin/silo		$RPM_BUILD_ROOT/sbin/silo
-install -m644 boot/first.b	$RPM_BUILD_ROOT/boot/first.b
-install -m644 boot/ultra.b	$RPM_BUILD_ROOT/boot/ultra.b
-install -m644 boot/cd.b		$RPM_BUILD_ROOT/boot/cd.b
-install -m644 boot/fd.b		$RPM_BUILD_ROOT/boot/fd.b
-install -m644 boot/ieee32.b	$RPM_BUILD_ROOT/boot/ieee32.b
-install -m644 boot/second.b	$RPM_BUILD_ROOT/boot/second.b
-install -m644 boot/silotftp.b	$RPM_BUILD_ROOT/boot/silotftp.b
-install -m755 misc/silocheck	$RPM_BUILD_ROOT/usr/sbin/silocheck
-install -m644 man/silo.conf.5	$RPM_BUILD_ROOT/usr/man/man5/silo.conf.5
-install -m644 man/silo.8	$RPM_BUILD_ROOT/usr/man/man8/silo.8
+make install DESTDIR=$RPM_BUILD_ROOT
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -56,6 +44,9 @@ rm -rf $RPM_BUILD_ROOT
 /usr/man/man8/silo.8*
  
 %changelog
+* Tue May 22 2001 Ben Collins <bcollins@debian.org>
+- Updated for new build
+
 * Fri Jul 14 2000 Jakub Jelinek <jakub@redhat.com>
 - Pete Zaitcev's JavaStation flash patch
 - work around 2.4 kernel headers
