@@ -1,7 +1,8 @@
-/* UFS filesystem handling
+/* SunOS UFS Interface for SILO filesystem access routines
    
    Copyright (C) 1996 Adrian Rodriguez
                  1996 Jakub Jelinek
+		 2001 Ben Collins
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -15,7 +16,8 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
+   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
+   USA.  */
 
 #include <ctype.h>
 #include <sys/types.h>
@@ -329,9 +331,7 @@ static void ufs_close(ufs_filsys fs)
     free (fs);
 }
 
-static int ufs_block_iterate(ufs_filsys fs, ino_t inode, 
-		      int (*func)(ufs_filsys, blk_t *, int, void *), 
-		      void *private)
+static int ufs_block_iterate(int (*func)(blk_t *, int))
 {
     struct ufs_inode ub;
     int i;
@@ -344,7 +344,7 @@ static int ufs_block_iterate(ufs_filsys fs, ino_t inode,
     for (i = 0; i < frags; i++) {
         nr = ufs_bmap (fs, inode, &ub, i);
         if (!nr) return -1;
-        switch ((*func) (fs, &nr, i, private)) {
+        switch ((*func) (&nr, i)) {
             case BLOCK_ABORT:
             case BLOCK_ERROR:
             	return -1;
@@ -421,7 +421,7 @@ static int open_ufs (char *device)
 
 static int dump_ufs (char *filename)
 {
-    if (ufs_block_iterate (fs, inode, dump_block, 0)) {
+    if (ufs_block_iterate (dump_block)) {
 	printf ("Error while loading of %s", filename);
 	return 0;
     }
@@ -444,7 +444,7 @@ static void print_error_ufs (int error_val) {
     printf("Unknown ufs error");
 }
 
-struct fs_ops iso_fs_ops = {
+struct fs_ops ufs_fs_ops = {
     name:               "SunOS UFS",
     open:               open_ufs,
     ls:                 NULL/*ls_ufs*/,

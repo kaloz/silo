@@ -1,7 +1,8 @@
-/* ROMFS filesystem handling
+/* Linux ROMFS Interface for SILO filesystem access routines
    
    Copyright (C) 1998 Jakub Jelinek <jj@ultra.linux.cz>
-   Copyright (C) 1997 Janos Farkas <chexum@shadow.banki.hu>
+                 1997 Janos Farkas <chexum@shadow.banki.hu>
+		 2001 Ben Collins <bcollins@debian.org>
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -15,7 +16,8 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
+   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
+   USA.  */
 
 #include <ctype.h>
 #include <sys/types.h>
@@ -227,7 +229,7 @@ static int open_namei(romfs_filsys fs, const char *pathname,
     return 0;
 }
 
-struct fs_ops ufs_fs_ops;
+struct fs_ops rom_fs_ops;
 
 static int namei_follow_romfs (const char *filename)
 {
@@ -237,7 +239,7 @@ static int namei_follow_romfs (const char *filename)
     link_count = 0;
 
     ret = open_namei (fs, filename, &inode, root);
-    ufs_fs_ops.have_inode = (ret) ? 0 : 1;
+    rom_fs_ops.have_inode = (ret) ? 0 : 1;
 
     return ret;
 }
@@ -248,9 +250,7 @@ static void romfs_close(romfs_filsys fs)
     free (fs);
 }
 
-static int romfs_block_iterate(romfs_filsys fs, ino_t inode, 
-		      int (*func)(romfs_filsys, blk_t *, int, void *), 
-		      void *private)
+static int romfs_block_iterate(int (*func)(blk_t *, int))
 {
     struct romfs_inode ub;
     int i;
@@ -268,7 +268,7 @@ static int romfs_block_iterate(romfs_filsys fs, ino_t inode,
     size = (ub.size + 511) / 512;
     nr /= 512;
     for (i = 0; i < size; i++, nr++) {
-        switch ((*func) (fs, &nr, i, private)) {
+        switch ((*func) (&nr, i)) {
             case BLOCK_ABORT:
             case BLOCK_ERROR:
             	return -1;
@@ -299,10 +299,12 @@ static int open_romfs (char *device)
 
 static int dump_romfs (char *filename)
 {
-    if (romfs_block_iterate (fs, inode, dump_block, 0)) {
+    printf(__FUNCTION__": called\n");
+    if (romfs_block_iterate (dump_block)) {
 	printf ("Error while loading of %s", filename);
 	return 0;
     }
+    printf(__FUNCTION__": romfs_block_iterate done, calling dump_finish\n");
     return dump_finish ();
 }
 

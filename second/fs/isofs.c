@@ -420,9 +420,7 @@ static void isofs_close(isofs_filsys fs)
     free (fs);
 }
 
-static int isofs_block_iterate(isofs_filsys fs,
-			  int (*func)(isofs_filsys, blk_t *, int, void *), 
-			  void *private)
+static int isofs_block_iterate(int (*func)(blk_t *, int))
 {
     int i;
     blk_t nr;
@@ -431,7 +429,7 @@ static int isofs_block_iterate(isofs_filsys fs,
     nr = inode.extent;
     size = (inode.size + 2047) / 2048;
     for (i = 0; i < size; i++, nr++) {
-        switch ((*func) (fs, &nr, i, private)) {
+        switch ((*func) (&nr, i)) {
             case BLOCK_ABORT:
             case BLOCK_ERROR:
             	return -1;
@@ -442,7 +440,7 @@ static int isofs_block_iterate(isofs_filsys fs,
 
 static int dump_isofs (char *filename)
 {
-    if (isofs_block_iterate (fs, dump_block, 0)) {
+    if (isofs_block_iterate (dump_block)) {
 	printf ("Error while loading of %s", filename);
 	return 0;
     }

@@ -72,12 +72,18 @@ static int open_ext2 (char *device)
     return 1;
 }
 
+static int dump_block_ext2 (ext2_filsys fs, blk_t *blocknr,
+			    int blockcnt, void *private)
+{
+    return dump_block(blocknr, blockcnt);
+}
+
 static int dump_ext2 (char *filename)
 {
     errcode_t retval;
 
     retval = ext2fs_block_iterate (fs, inode, 0, 0,
-				   dump_block, 0);
+				   dump_block_ext2, 0);
     if (retval) {
         printf ("\n");
     	ext2fs_error (retval);

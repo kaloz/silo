@@ -28,7 +28,7 @@ extern ext2_filsys fs;			/* Generic filesystem */
 extern ino_t root, cwd;			/* root and cwd for current fs */
 extern int solaris;
 
-extern int dump_block (ext2_filsys, blk_t *, int,void *);
+extern int dump_block (blk_t *, int);
 extern int dump_finish (void);
 extern void register_silo_inode (unsigned int, unsigned int,
 				 unsigned int, unsigned int,

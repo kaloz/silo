@@ -147,8 +147,7 @@ static void unget_gzip_input (void)
 
 static int gunzipped_len = 0;
 
-int dump_block (ext2_filsys fs, blk_t * blocknr, int blockcnt,
-                       void *private)
+int dump_block (blk_t * blocknr, int blockcnt)
 {
     if (blockcnt < 0)
         return 0;
@@ -223,7 +222,7 @@ int dump_finish (void)
 {
     if (block_no) {
 	blk_t tmp = 0;
-	if (dump_block (fs, &tmp, 0, 0))
+	if (dump_block (&tmp, 0))
 	    return 0;
     }
     if (do_gunzip) {
@@ -284,7 +283,7 @@ static int dump_device_range (char *filename, char *bogusdev, int *len,
 	    last_blockcnt = 0;
 	    block_cnt = 0;
 	    for (tmp = start; tmp < end; tmp++) {
-		if (dump_block (fs, &tmp, tmp - start, 0))
+		if (dump_block (&tmp, tmp - start))
 		    break;
 	    }
 
@@ -395,12 +394,16 @@ int load_file (char *device, int partno, char *filename, char *buffer,
 	goto done_1;
     }
 
+    printf("\nImage found, getting ready to load (%s)\n", filename);
+
     if (lenfunc) {
         do_gunzip = 0;
 	size = cur_ops->ino_size();
         (*lenfunc)(size, (char **)&filebuffer, (char **)&filelimit);
         do_gunzip = cmd & LOADFILE_GZIP;
     }
+
+    printf("Image is being loaded via %s\n", do_gunzip ? "gunzip" : "disk");
 
     first_block = do_gunzip;
     last_blockcnt = 0;
@@ -409,7 +412,9 @@ int load_file (char *device, int partno, char *filename, char *buffer,
     retval = 0;
 
     if (cur_ops->have_inode) {
+	printf("Have an inode, caling ");
 	if (cmd & LOADFILE_LS) {
+	    printf("ls.\n");
 	    if ((retval = cur_ops->ls())) {
 		if (!(cmd & LOADFILE_MATCH)) {
 		    printf("\nError: could not list (");
@@ -422,9 +427,13 @@ int load_file (char *device, int partno, char *filename, char *buffer,
 		sino->inolen = 0;
 		retval = 1;
 	    }
-	} else
+	} else {
+	    printf("dump.\n");
 	    retval = cur_ops->dump(filename);
+	}
     }
+
+    printf("Dump run (%d)\n", retval);
 
     if (retval && len) {
 	if (size != -1)
@@ -433,6 +442,8 @@ int load_file (char *device, int partno, char *filename, char *buffer,
 	    *len = gunzipped_len;
 	else
 	    *len = cur_ops->ino_size();
+
+	printf("Length = %d\n", *len);
     }
 
 done_1:
