@@ -1,3 +1,35 @@
+Sat Jun 16 02:15:35 EDT 2001  Ben Collins <bcollins@debian.org>
+
+	* common/printf.c: Cleanups, and document correct allowed formats.
+	Also output format if unrecognized.
+
+	* common/stringops2.c: Remove unused code that was only needed for
+	libext2fs.a.
+
+	* common/tree.c: Remove unused code.
+
+	* first/cd.S: Minor formatting changes to match fd.S.
+
+	* include/promlib.h: Remove non-existent declerations.
+	* include/silo.h: Likewise.
+	* include/stringops.h: Likewise.
+
+	* include/ext2fs/bitops.h: Updated from current e2fsprogs.
+	* include/ext2fs/ext2_err.h: Likewise.
+	* include/ext2fs/ext2fs.h: Likewise.
+	* include/ext2fs/ext2_io.h: Used to be io.h, from update.
+
+	* second/file.c: Remove extraneous includes.
+	* second/fs/ext2.c: Add realloc() and time() stubs.
+
+	* include/et/error_table.h: Removed.
+	* include/et/internal.h: Removed.
+	* include/et/mit-sipb-copyright.h: Removed.
+	* include/ext2fs/ext2_err.et: Removed.
+	* include/ext2fs/io.h: Removed.
+	* include/non-linux/iso_fs.h: Removed.
+	* include/non-linux/romfs_fs.h: Removed.
+
 Fri Jun 15 23:45:53 EDT 2001  Ben Collins <bcollins@debian.org>
 
 	* The "Fix the FSF Address Update". Replace the COPYING file with the

@@ -278,7 +278,7 @@ static int dir_namei(ufs_filsys fs, const char *pathname, int *namelen,
     ino_t inode;
 
     if ((c = *pathname) == '/') {
-	base = (ino_t)fs->private;
+	base = root;
 	pathname++;
     }
     if (ufs_read_inode (fs, base, &ub)) return -1;
@@ -320,7 +320,6 @@ static int open_namei(ufs_filsys fs, const char *pathname,
 
 static int ufs_namei (ufs_filsys fs, ino_t root, ino_t cwd, const char *filename, ino_t *inode)
 {
-    fs->private = (void *)root;
     link_count = 0;
     return open_namei (fs, filename, inode, cwd);
 }

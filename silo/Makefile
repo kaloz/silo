@@ -8,7 +8,6 @@ ifeq ($(OPSYS),Solaris)
 endif
 
 all: $(PROGRAMS)
-	@echo $(MESSAGE)
 
 HEADERS=../first/first.h ../first/ultra.h ../first/fd.h
 SILO_OBJS=confcheck.o prom.o silo.o

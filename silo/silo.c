@@ -28,7 +28,7 @@
 #define DFL_SECONDARY "/boot/second.b"
 
 #ifdef __sun__
-#include "../second/ufs.c"
+#include "../second/fs/ufs.c"
 #endif
 
 #include <errno.h>

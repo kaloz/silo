@@ -131,22 +131,3 @@ char * strstr(const char * s1,const char * s2)
 	}
 	return 0;
 }
-
-/* These two are not exactly stringops... */
-
-/* This one is needed for libext2fs.a. It's only a stub */
-unsigned long time(void)
-{
-	return 0; /* I think this is never actually used */
-}
-
-void *realloc(void *p, int size)
-{
-	return 0; /* We do not support this */
-}
-
-int sprintf (char *buf, char *fmt,...)
-{
-	strcpy (buf, fmt);
-	return 0;
-}

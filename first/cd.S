@@ -37,7 +37,8 @@ bootmain:
 	ba,a,pt	%xcc, 1f
 extent:	.word	0
 size:	.word	0
-1:	sethi	%hi(0x10000), dest
+1:
+	sethi	%hi(0x10000), dest
 	mov	%o4, promvec
 
 	add	buffer, %lo(chosen), %o1
@@ -53,12 +54,14 @@ size:	.word	0
 	 add	buffer, %lo(bootpath), %o0
 	add	dest, 256, %o0
 	mov	':', %o4
-2:	ldub	[%o0], %o3
+2:
+	ldub	[%o0], %o3
 	brz,pn	%o3, 3f
 	 cmp	%o3, %o4
 	bne,a,pt %icc, 2b
 	 inc	%o0
-3:	stb	%o4, [%o0]
+3:
+	stb	%o4, [%o0]
 	mov	'a', %o4
 	stb	%o4, [%o0 + 1]
 	stb	%g0, [%o0 + 2]
@@ -109,8 +112,10 @@ putchar:
 	mov	1, %o3
 	ba,pt	%xcc, prom31
 	 add	buffer, %lo(write), %o0
-9:	add	buffer, %lo(exit), %o0
-10:	call	prom11
+9:
+	add	buffer, %lo(exit), %o0
+10:
+	call	prom11
 getprop:
 	 stx	%o0, [dest + 32]
 	add	dest, 256, %o0
@@ -121,18 +126,21 @@ getprop:
 	add	buffer, %lo(getprops), %o0
 	mov	4, %o2
 	stx	%o2, [dest + 8]
-2:	ba,pt	%xcc, 1f
+2:
+	ba,pt	%xcc, 1f
 prom11:
 	 mov	1, %o2
 	stx	%o2, [dest + 8]
-1:	stx	%o0, [dest]
+1:
+	stx	%o0, [dest]
 	stx	%o2, [dest + 16]
 	stx	%o1, [dest + 24]
 	jmpl	promvec + %g0, %g0
 	 mov	dest, %o0
 rwprom31:
 	mov	fd, %o1
-prom31:	mov	3, %o4
+prom31:
+	mov	3, %o4
 	stx	%o4, [dest + 8]
 	stx	%o2, [dest + 32]
 	ba,pt	%xcc, 2b
@@ -197,11 +205,13 @@ sparc_v8:
 	sth	%o2, [buffer + 0x408]		! put there the rest ')\0' as well...
 	b	4f
 	ld	[promvec+36], %o1		! pv_v0devops.v0_devopen
-1:	ld	[promvec+172], %o1
+1:
+	ld	[promvec+172], %o1
 	ld	[%o0], %o0
 	add	buffer, 0x400, %o2
 	mov	':', %o4
-2:	ldub	[%o0], %o3
+2:
+	ldub	[%o0], %o3
 	tst	%o3
 	be	3f
 	 cmp	%o3, %o4
@@ -211,11 +221,13 @@ sparc_v8:
 	add	%o2, 1, %o2
 	b	2b
 	 add	%o0, 1, %o0
-3:	stb	%o4, [%o2]
+3:
+	stb	%o4, [%o2]
 	mov	'a', %o4
 	stb	%o4, [%o2 + 1]
 	stb	%g0, [%o2 + 2]
-4:	call	%o1
+4:
+	call	%o1
 	 add	buffer, 0x400, %o0
 
 	mov	%o0, fd
@@ -235,7 +247,8 @@ sparc_v8:
 	 mov	%l1, %o1
 	cmp	%o0, %l1
 	b,a	0f
-6:	ld	[promvec+188], %o4		! pv_v2devops.v2_dev_seek
+6:
+	ld	[promvec+188], %o4		! pv_v2devops.v2_dev_seek
 	mov	%g0, %o1
 	sll	%l3, 11, %o2
 	call	%o4
@@ -248,7 +261,8 @@ sparc_v8:
 	call	%o4
 	 mov	fd, %o0
 	cmp	%o0, %l1
-0:	bne	9f
+0:
+	bne	9f
 	 nop
 
 	call	putchar_v8

@@ -9,6 +9,9 @@
  * %End-Header%
  */
 
+#ifndef _EXT2FS_EXT2_IO_H
+#define _EXT2FS_EXT2_IO_H
+
 /*
  * ext2_loff_t is defined here since unix_io.c needs it.
  */
@@ -19,13 +22,13 @@ typedef long		ext2_loff_t;
 #endif
 
 /* llseek.c */
-ext2_loff_t ext2fs_llseek (unsigned int, ext2_loff_t, unsigned int);
+ext2_loff_t ext2fs_llseek (int, ext2_loff_t, int);
 
 typedef struct struct_io_manager *io_manager;
 typedef struct struct_io_channel *io_channel;
 
 struct struct_io_channel {
-	int		magic;
+	errcode_t	magic;
 	io_manager	manager;
 	char		*name;
 	int		block_size;
@@ -46,10 +49,11 @@ struct struct_io_channel {
 	int		refcount;
 	int		reserved[15];
 	void		*private_data;
+	void		*app_data;
 };
 
 struct struct_io_manager {
-	int magic;
+	errcode_t magic;
 	const char *name;
 	errcode_t (*open)(const char *name, int flags, io_channel *channel);
 	errcode_t (*close)(io_channel channel);
@@ -85,3 +89,6 @@ extern void (*test_io_cb_write_blk)
 	(unsigned long block, int count, errcode_t err);
 extern void (*test_io_cb_set_blksize)
 	(int blksize, errcode_t err);
+
+#endif /* _EXT2FS_EXT2_IO_H */
+	

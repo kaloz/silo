@@ -134,7 +134,6 @@ void sun4c_unmapio (unsigned long);
 /* libc */
 char *strdup (const char *);
 char *strstr (const char *, const char *);
-int sprintf (char *buf, char *fmt,...);
 int strcmp (const char *, const char *);
 char *strcat (char *, const char *);
 #undef tolower

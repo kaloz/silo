@@ -229,7 +229,7 @@ static int dir_namei(romfs_filsys fs, const char *pathname, int *namelen,
     ino_t inode;
 
     if ((c = *pathname) == '/') {
-	base = (ino_t)fs->private;
+	base = root;
 	pathname++;
     }
 
@@ -276,7 +276,6 @@ static int namei_follow_romfs (const char *filename)
 {
     int ret;
     
-    fs->private = (void *)root;
     link_count = 0;
 
     ret = open_namei (fs, filename, &inode, root);

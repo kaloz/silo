@@ -48,7 +48,6 @@ OBJSNET = $(OBJS1) $(OBJS2N) $(OBJS3) bmark.o $(OBJS4N) $(OBJS5)
 FS_OBJS = fs/iom.o fs/ext2.o fs/isofs.o fs/romfs.o fs/ufs.o
 
 # Should really switch to autoconf...
-LIBINC=$(shell if [ ! -f /lib/ld-linux.so.2 -o ! -f /usr/lib/libext2fs.so ]; then echo -L../include; fi)
 all: second.b silotftp.b
 
 fs/libfs.a: $(FS_OBJS)
@@ -56,13 +55,13 @@ fs/libfs.a: $(FS_OBJS)
 	$(AR) rc $@ $(FS_OBJS)
 
 second: $(OBJS) mark.o
-	$(LD) $(LDFLAGS_SMALL) -Bstatic -o second $(OBJS) $(LIBINC) -lext2fs mark.o
-	$(LD) $(LDFLAGS_LARGE) -Bstatic -o second2 $(OBJS) $(LIBINC) -lext2fs mark.o
+	$(LD) $(LDFLAGS_SMALL) -Bstatic -o second $(OBJS) -lext2fs mark.o
+	$(LD) $(LDFLAGS_LARGE) -Bstatic -o second2 $(OBJS) -lext2fs mark.o
 	$(NM) second | grep -v '*ABS*' | sort > second.map
 
 silotftp: $(OBJSNET) mark.o
-	$(LD) $(LDFLAGS_SMALL) -Bstatic -o silotftp $(OBJSNET) $(LIBINC) -lext2fs mark.o
-	$(LD) $(LDFLAGS_LARGE) -Bstatic -o silotftp2 $(OBJSNET) $(LIBINC) -lext2fs mark.o
+	$(LD) $(LDFLAGS_SMALL) -Bstatic -o silotftp $(OBJSNET) -lext2fs mark.o
+	$(LD) $(LDFLAGS_LARGE) -Bstatic -o silotftp2 $(OBJSNET) -lext2fs mark.o
 	$(NM) silotftp | grep -v '*ABS*' | sort > silotftp.map
 
 second.l: second

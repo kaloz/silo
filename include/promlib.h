@@ -22,16 +22,11 @@ int prom_getproplen (int, char *);
 int prom_getproperty (int, char *, char *, int);
 int prom_getint (int, char *);
 int prom_getintdefault (int, char *, int);
-int prom_getbool (int, char *);
 int prom_finddevice (char *);
 void prom_getstring (int, char *, char *, int);
 void prom_chain (unsigned long, int, unsigned long, char *, int);
 void prom_reboot (char *command);
-int prom_nodematch (int, char *);
 int prom_searchsiblings (int, char *);
-char *prom_firstprop (int, char *);
-char *prom_nextprop (int, char *, char *);
-int prom_node_has_property (int, char *);
 int prom_setprop (int, char *, char *, int);
 void prom_adjust_regs (struct linux_prom_registers *, int,
 		       struct linux_prom_ranges *, int);

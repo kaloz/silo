@@ -19,7 +19,6 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307,
    USA.  */
 
-#include <sys/types.h>
 #include <silo.h>
 #include <file.h>
 #include <stringops.h>

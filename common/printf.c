@@ -1,7 +1,9 @@
 /* Dumb printing routines
    
    Copyright (C) 1996 Pete A. Zaitcev
-   Copyright (C) 1997 Jakub Jelinek
+                 1997 Jakub Jelinek
+		 2001 Ben Collins
+   
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -61,7 +63,7 @@ void putchar (char c)
  */
 static void printn (long n, int b)
 {
-    char prbuf[24];
+    static char prbuf[24];
     register char *cp;
 
     if (b == 10 && n < 0) {
@@ -97,20 +99,22 @@ void vprintf (char *fmt, va_list adx)
 	} else if (c == 'c') {
 	    putchar (va_arg (adx, unsigned));
 	} else if (c == 's') {
-	    s = va_arg (adx, char *);
-	    if (s == NULL)
+	    if ((s = va_arg (adx, char *)) == NULL)
 		s = (char *)"(null)";
 	    while ((c = *s++))
 		putchar (c);
 	} else if (c == 'l' || c == 'O') {
 	    printn ((long) va_arg (adx, long), c == 'l' ? 10 : 8);
+	} else {
+	    /* This is basically what libc's printf does */
+	    putchar('%'); putchar(c);
 	}
     }
 }
 
 /*
  * Scaled down version of C Library printf.
- * Only %c %s %u %d (==%u) %o %x %l %O are recognized.
+ * Only %c %s %d (==%u) %o %x %X %l %O are recognized.
  */
 
 void prom_printf (char *fmt,...)

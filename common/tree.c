@@ -1,4 +1,4 @@
-/* $Id: tree.c,v 1.1 2001/05/25 14:41:26 bencollins Exp $
+/* $Id: tree.c,v 1.2 2001/06/16 06:35:24 bencollins Exp $
  * tree.c: Basic device tree traversal/scanning for the Linux
  *         prom library.
  *
@@ -8,8 +8,6 @@
 
 #include <silo.h>
 #include <stringops.h>
-
-static char promlib_buf[128];
 
 /* Return the child of node 'node' or zero if no this node has no
  * direct descendent.
@@ -118,16 +116,6 @@ int prom_getintdefault(int node, char *property, int deflt)
 	return retval;
 }
 
-/* Acquire a boolean property, 1=TRUE 0=FALSE. */
-int prom_getbool(int node, char *prop)
-{
-	int retval;
-
-	retval = prom_getproplen(node, prop);
-	if(retval == -1) return 0;
-	return 1;
-}
-
 /* Acquire a property whose value is a string, returns a null
  * string on error.  The char pointer is the user supplied string
  * buffer.
@@ -142,18 +130,6 @@ void prom_getstring(int node, char *prop, char *user_buf, int ubuf_size)
 	return;
 }
 
-
-/* Does the device at node 'node' have name 'name'?
- * YES = 1   NO = 0
- */
-int prom_nodematch(int node, char *name)
-{
-	static char namebuf[128];
-	prom_getproperty(node, "name", namebuf, sizeof(namebuf));
-	if(strcmp(namebuf, name) == 0) return 1;
-	return 0;
-}
-
 /* Search siblings at 'node_start' for a node with name
  * 'nodename'.  Return node if successful, zero if not.
  */
@@ -161,6 +137,7 @@ int prom_searchsiblings(int node_start, char *nodename)
 {
 
 	int thisnode, error;
+	static char promlib_buf[128];
 
 	for(thisnode = node_start; thisnode;
 	    thisnode=prom_getsibling(thisnode)) {
@@ -172,109 +149,6 @@ int prom_searchsiblings(int node_start, char *nodename)
 	}
 
 	return 0;
-}
-
-/* Gets name in the form prom v2+ uses it (name@x,yyyyy or name (if no reg)) */
-int prom_getname (int node, char *buffer, int len)
-{
-	int i;
-	struct linux_prom_registers reg[PROMREG_MAX];
-	
-	i = prom_getproperty (node, "name", buffer, len);
-	if (i <= 0) return -1;
-	buffer [i] = 0;
-	len -= i;
-	i = prom_getproperty (node, "reg", (char *)reg, sizeof (reg));
-	if (i <= 0) return 0;
-	if (len < 11) return -1;
-	buffer = strchr (buffer, 0);
-	sprintf (buffer, "@%x,%x", reg[0].which_io, (unsigned)reg[0].phys_addr);
-	return 0;
-}
-
-/* Return the first property type for node 'node'.
- */
-char * prom_firstprop(int node, char *buffer)
-{
-	char *ret;
-
-	*buffer = 0;
-	if (node == -1) return buffer;
-	if (prom_vers != PROM_P1275) {
-		ret = prom_nodeops->no_nextprop(node, (char *) 0x0);
-		strcpy (buffer, ret);
-	} else {
-		p1275_cmd ("nextprop", 3, node, (char *)0, buffer);
-	}
-	return buffer;
-}
-
-/* Return the property type string after property type 'oprop'
- * at node 'node' .  Returns NULL string if no more
- * property types for this node.
- */
-char * prom_nextprop(int node, char *oprop, char *buffer)
-{
-	char *ret;
-	char buf[32];
-
-	if (node == -1) {
-		*buffer = 0;
-		return buffer;
-	}
-	if (oprop == buffer) {
-		strcpy (buf, oprop);
-		oprop = buf;
-	}
-	*buffer = 0;
-	if(node == -1) return buffer;
-	if (prom_vers != PROM_P1275) {
-		ret = prom_nodeops->no_nextprop(node, oprop);
-		strcpy (buffer, ret);
-	} else {
-		p1275_cmd ("nextprop", 3, node, oprop, buffer);
-	}
-	return buffer;
-}
-
-int prom_node_has_property(int node, char *prop)
-{
-	char buf [32];
-
-	*buf = 0;
-	do {
-		prom_nextprop(node, buf, buf);
-		if(!strcmp(buf, prop))
-		   return 1;
-	} while (*buf);
-	return 0;
-}
-
-/* Set property 'pname' at node 'node' to value 'value' which has a length
- * of 'size' bytes.  Return the number of bytes the prom accepted.
- */
-int prom_setprop(int node, char *pname, char *value, int size)
-{
-	int ret;
-
-	if((pname == 0) || (value == 0)) return 0;
-	if (prom_vers != PROM_P1275)
-		ret = prom_nodeops->no_setprop(node, pname, value, size);
-	else
-		ret = p1275_cmd ("setprop", 4, node, pname, value, size);
-	return ret;
-}
-
-int prom_inst2pkg(int inst)
-{
-	int node;
-
-	if (prom_vers != PROM_P1275)
-		node = (*romvec->pv_v2devops.v2_inst2pkg)(inst);
-	else
-		node = p1275_cmd ("instance-to-package", 1, inst);
-	if (node == -1) return 0;
-	return node;
 }
 
 int prom_finddevice(char *path)

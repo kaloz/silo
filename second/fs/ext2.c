@@ -24,17 +24,6 @@
 #include <file.h>
 #include <stringops.h>
 
-#define ec ,},{
-
-static struct {
-    int errnum;
-    char *desc;
-} ext2errors[] = { 
-{ 0, "OK"
-#include <ext2fs/ext2_err.et>
-}
-};
-
 static ino_t inode = 0;
 struct fs_ops ext2_fs_ops;
 
@@ -45,13 +34,14 @@ void com_err (const char *a, long i, const char *fmt,...)
 
 static void ext2fs_error (int errcode)
 {
+#if 0
     int i;
-    
     for (i = 0; i < sizeof (ext2errors) / sizeof (ext2errors[0]); i++)
     	if (ext2errors[i].errnum == errcode) {
     	    printf ("%s", ext2errors [i].desc);
     	    return;
     	}
+#endif
     printf ("Unknown ext2 error");
 }
 
@@ -162,3 +152,14 @@ struct fs_ops ext2_fs_ops = {
     namei_follow:	namei_follow_ext2,
     have_inode:		0,
 };
+
+/* These are silly stubs to satisfy libext2fs symbols */
+unsigned long time(void)
+{
+        return 0;
+}
+
+void *realloc(void *p, int size)
+{
+        return NULL;
+}
