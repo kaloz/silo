@@ -189,10 +189,10 @@ dd if=/dev/ram of=floppy.img bs=1440k count=1
 
 and you're done. -i defaults to /boot/fd.b for romfs floppies, -b defaults
 to /boot/second.b, -C to /etc/silo.conf. The -A 2048,/.. argument to romfs
-is required so that you have enough space for the first stage loader and -a
-512 is required because of the internal implementation of romfs in second
-stage loader (but even if that changes, it would be required at least for
-/boot/second.b anyway).
+is required so that you have enough space for the first stage loader and
+-a 512 is required because of the internal implementation of romfs in
+second stage loader (but even if that changes, it would be required at
+least for /boot/second.b anyway).
 
 To create a bootable flash image for JavaStation-NC or JavaStation-E equiped
 with flash, populate flash/ directory with boot/ieee32.b, boot/second.b,
