@@ -82,7 +82,12 @@ static int tab_complete(void) {
     int image_len, defpart, part, ret = 0;
     char *device;
     char *p = cfg_get_strg (0, "partition");
-    char *kname, *r = strdup(cbuff);
+    char *kname, *r;
+
+    if ((r = strrchr(cbuff, ' ')) == NULL)
+	r = strdup(cbuff);
+    else
+	r = strdup(r + 1);
 
     if (p && *p >= '1' && *p <= '8' && !p[1])
 	defpart = *p - '0';
@@ -102,19 +107,20 @@ static int tab_complete(void) {
 	    char *addr = (char *)0x4000;
 	    int count = cfg_print_images (addr, r);
 	    if (*addr) {
-		int len = strlen(cbuff);
+		int len = strlen(r);
+		int len2 = strlen(cbuff);
 		/* We have some completions... */
 		if (count == 1) {
 		    /* Just one, complete it... */
 		    while (addr[len]) {
-			cbuff[len] = addr[len];
-			cbuff[len + 1] = 0;
-			prom_puts(cbuff + len, 1);
-			len++;
+			cbuff[len2] = addr[len];
+			cbuff[len2 + 1] = 0;
+			prom_puts(cbuff + len2, 1);
+			len++; len2++;
 		    }
-		    cbuff[len] = ' ';
-		    cbuff[len + 1] = 0;
-		    prom_puts(cbuff + len, 1);
+		    cbuff[len2] = ' ';
+		    cbuff[len2 + 1] = 0;
+		    prom_puts(cbuff + len2, 1);
 		} else if (count > 1) { /* This should always be true, if we get here */
 		    /* Complete the line as much as possible */
 		    int common = 1, orig = len, i;
@@ -125,10 +131,10 @@ static int tab_complete(void) {
 				common = 0;
 
 			if (common) {
-			    cbuff[len] = addr[len];
-			    cbuff[len + 1] = 0;
-			    prom_puts(cbuff + len, 1);
-			    len++;
+			    cbuff[len2] = addr[len];
+			    cbuff[len2 + 1] = 0;
+			    prom_puts(cbuff + len2, 1);
+			    len++; len2++;
 			}
 		    }
 		    if (orig == len)
@@ -157,7 +163,7 @@ static void maintabfunc (void)
 	 * the config file.  */
 	if (cfg_print_images (NULL, NULL))
 	    printf ("boot: %s", cbuff);
-    } else if (strchr(cbuff, ' ') == NULL) {
+    } else {
 	/* If tab_complete() returns non-zero, then it just listed
 	 * possible completions, and we need to redo our command line.  */
 	if (tab_complete())
