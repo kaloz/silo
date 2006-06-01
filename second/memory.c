@@ -24,7 +24,7 @@
 #define IMAGE_TLB_ENTRY		63
 #define INITRD_TLB_ENTRY	62
 
-#define INITRD_VIRT_ADDR	0x50000000
+#define INITRD_VIRT_ADDR	0x40c00000
 #define IMAGE_VIRT_ADDR		0x40000000
 
 static char *sun4u_memory_find (unsigned int len, int is_kernel);

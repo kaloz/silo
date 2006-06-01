@@ -142,15 +142,15 @@ void close_ext2 (void) {
 }
 
 struct fs_ops ext2_fs_ops = {
-    name:		"Linux EXT2",
-    open:		open_ext2,
-    ls:			ls_ext2,
-    dump:		dump_ext2,
-    close:		close_ext2,
-    ino_size:		ino_size_ext2,
-    print_error:	print_error_ext2,
-    namei_follow:	namei_follow_ext2,
-    have_inode:		0,
+    .name		= "Linux EXT2",
+    .open		= open_ext2,
+    .ls			= ls_ext2,
+    .dump		= dump_ext2,
+    .close		= close_ext2,
+    .ino_size		= ino_size_ext2,
+    .print_error	= print_error_ext2,
+    .namei_follow	= namei_follow_ext2,
+    .have_inode		= 0,
 };
 
 /* These are silly stubs to satisfy libext2fs symbols */

@@ -1057,7 +1057,9 @@ int bootmain (void)
     if (*silo_conf && silo_conf_partition >= 1 && silo_conf_partition <= 8) {
 	int len;
 	solaris = 0;
-	fileok = load_file (0, silo_conf_partition, silo_conf, (unsigned char *) 0x4000, (unsigned char *) &_start, &len, LOADFILE_GZIP, 0);
+	fileok = load_file (0, silo_conf_partition, silo_conf,
+			    (unsigned char *) 0x4000, (unsigned char *) &_start,
+			    &len, LOADFILE_GZIP | LOADFILE_NO_ROTATE, 0);
 	if (!fileok || (unsigned) len >= 65535)
 	    printf ("\nCouldn't load %s\n", silo_conf);
 	else {
@@ -1161,7 +1163,7 @@ try_again:
 	    char *image_end = (char *)&_start;
 
 	    /* See if we can use some extra memory for the kernel */
-	    if (!load_cmd && image_base == (char *)0x4000) {
+	    if (!load_cmd) {
 		unsigned int size;
 		char *mem;
 
@@ -1184,6 +1186,9 @@ try_again:
 	    if (!load_file (device, part, kname, image_base, image_end,
 			&image_len, load_cmd == CMD_LS ? LOADFILE_LS : LOADFILE_GZIP, 0)) {
 		printf ("\nImage not found.... try again\n");
+
+		if (!load_cmd)
+		    image_memory_release();
 
         	continue;
             }
@@ -1362,15 +1367,19 @@ try_again:
 		    parse_name (initrd_string, initrd_defpart, &initrd_device, &initrd_partno, &initrd_kname);
 		    if (initrd_kname) {
 		        if (!initrd_device) initrd_device = initrd_defdevice;
-	        	if (load_file (initrd_device, initrd_partno, initrd_kname, (unsigned char *) 0x300000, (unsigned char *) LARGE_RELOC, 0, 0, initrd_lenfunc)) {
+	        	if (load_file (initrd_device, initrd_partno, initrd_kname,
+				       (char *) 0x300000, (unsigned char *) LARGE_RELOC,
+				       0, 0, initrd_lenfunc)) {
 	        	    extern unsigned long long sun4u_initrd_phys;
 	        	    extern unsigned long sun4m_initrd_pa;
+
 			    if (architecture == sun4u)
 	            	        *(unsigned int *)(p + 16) = (unsigned int)sun4u_initrd_phys;
 			    else if (sun4m_initrd_pa)
 				*(unsigned int *)(p + 16) = ((unsigned int)sun4m_initrd_pa);
 	            	    else
 	            	        *(unsigned int *)(p + 16) = ((unsigned int)initrd_start | 0xf0000000);
+
 	            	    *(unsigned int *)(p + 20) = initrd_size;
 	        	}
 		    } else
@@ -1387,6 +1396,7 @@ try_again:
         strcpy (other_device, p);
         params_device = other_device;
     }
+
     close ();
     if (timer_status >= 1)
         close_timer ();
@@ -1398,6 +1408,7 @@ try_again:
 	}
     } else {
 	set_bootargs (params, params_device);
+
 	if (kernel_params) {
     	    extern char barg_out[];
     	    int len = *(unsigned int *)kernel_params;
@@ -1406,11 +1417,13 @@ try_again:
     	    kernel_params [8 + len - 1] = 0;
     	    *(unsigned int *)(kernel_params + 4) = 1;
 	}
+
 	if (show_arguments) {
     	    show_bootargs ();
     	    pause_after = 1;
 	}
     }
+
     if (pause_after) {
         printf ("%s", pause_message);
         prom_getchar ();

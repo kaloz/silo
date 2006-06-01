@@ -112,14 +112,14 @@ static errcode_t silo_flush (io_channel channel)
 /* The actual I/O Manager.  */
 static struct struct_io_manager struct_silo_manager =
 {
-    EXT2_ET_MAGIC_IO_MANAGER,
-    "SILO I/O Manager",
-    silo_open,
-    silo_close,
-    silo_set_blksize,
-    silo_read_blk,
-    silo_write_blk,
-    silo_flush
+    .magic		= EXT2_ET_MAGIC_IO_MANAGER,
+    .name		= "SILO I/O Manager",
+    .open		= silo_open,
+    .close		= silo_close,
+    .set_blksize	= silo_set_blksize,
+    .read_blk		= silo_read_blk,
+    .write_blk		= silo_write_blk,
+    .flush		= silo_flush
 };
 
 io_manager silo_io_manager = &struct_silo_manager;

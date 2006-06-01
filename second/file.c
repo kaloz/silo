@@ -165,6 +165,8 @@ int dump_block (blk_t * blocknr, int blockcnt)
     if (blockcnt < 0)
         return 0;
 
+    rotate();
+
     if (!first_block && do_gunzip) {
         if (blockcnt != last_blockcnt + 1) {
             int i;
@@ -212,7 +214,6 @@ int dump_block (blk_t * blocknr, int blockcnt)
                 block_cnt = 0;
                 return 0;
             }
-	    rotate();
             filebuffer += block_cnt * bs;
             if (*blocknr && blockcnt && blockcnt != last_blockcnt + 1) {
                 memset (filebuffer, 0, (blockcnt - last_blockcnt - 1) * bs);
@@ -239,6 +240,7 @@ int dump_finish (void)
 	if (dump_block (&tmp, 0))
 	    return 0;
     }
+
     if (do_gunzip) {
 	*cur_gzipped_block++ = 0;
 	cur_gzipped_block = gzipped_blocks + 1;
@@ -459,6 +461,7 @@ int load_file (char *device, int partno, char *filename, char *buffer,
 done_1:
     if (dir) free(dir);
     cur_ops->close();
+
 done_2:
     release (mmark);
 

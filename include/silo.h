@@ -61,8 +61,10 @@ struct silo_inode {
 #define LOADFILE_GZIP		0x01
 #define LOADFILE_LS		0x02
 #define LOADFILE_MATCH		0x04
-#define LOADFILE_LS_MATCH	0x06
 #define LOADFILE_QUIET		0x08
+#define LOADFILE_NO_ROTATE	0x10
+
+#define LOADFILE_LS_MATCH	(LOADFILE_MATCH | LOADFILE_MATCH)
 
 /* cmdline.c */
 void cmdinit ();
