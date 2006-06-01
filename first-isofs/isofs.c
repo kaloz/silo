@@ -124,8 +124,7 @@ static int cd_read_block(unsigned long long offset, int size, void *data)
 
 		if (seekp != offset) {
 			if (prom_vers == PROM_P1275) {
-				if (p1275_cmd("seek", -3, (unsigned long long)
-					      (unsigned long)fd, 0LL, offset) == -1)
+				if (p1275_cmd("seek", P1275_ARG_64B(2) | 3, fd, 0, offset) == -1)
 					return -1;
 			} else {
 				if ((*romvec->pv_v2devops.v2_dev_seek)

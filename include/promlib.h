@@ -32,6 +32,24 @@ void prom_adjust_regs (struct linux_prom_registers *, int,
 		       struct linux_prom_ranges *, int);
 void prom_adjust_ranges (struct linux_prom_ranges *, int,
 		         struct linux_prom_ranges *, int);
+
+/* Map client program address ranges.  First the format of
+ * the mapping mode argument.
+ */
+#define PROM_MAP_WRITE	0x0001 /* Writable */
+#define PROM_MAP_READ	0x0002 /* Readable - sw */
+#define PROM_MAP_EXEC	0x0004 /* Executable - sw */
+#define PROM_MAP_LOCKED	0x0010 /* Locked, use i/dtlb load calls for this instead */
+#define PROM_MAP_CACHED	0x0020 /* Cacheable in both L1 and L2 caches */
+#define PROM_MAP_SE	0x0040 /* Side-Effects */
+#define PROM_MAP_GLOB	0x0080 /* Global */
+#define PROM_MAP_IE	0x0100 /* Invert-Endianness */
+#define PROM_MAP_DEFAULT (PROM_MAP_WRITE | PROM_MAP_READ | PROM_MAP_EXEC | PROM_MAP_CACHED)
+
+int prom_map(int mode, unsigned long long size, unsigned long long vaddr,
+	     unsigned long long paddr);
+void prom_unmap(unsigned long long size, unsigned long long vaddr);
+
 void prom_apply_obio_ranges (struct linux_prom_registers *, int);
 void prom_ranges_init(void);
 void prom_puts (char *, int);
@@ -40,7 +58,10 @@ char prom_getchar (void);
 int prom_nbputchar (char);
 int prom_nbgetchar (void);
 void prom_printf (char *, ...);
-int p1275_cmd (char *, int, ...);
+int p1275_cmd (char *, unsigned, ...);
+
+#define P1275_ARG_64B(x) (1 << ((x) + 8))
+
 #define printf prom_printf
 
 enum prom_major_version { PROM_V0, PROM_V2, PROM_V3, PROM_P1275 };

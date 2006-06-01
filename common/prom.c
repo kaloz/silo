@@ -31,18 +31,26 @@ struct linux_nodeops *prom_nodeops;
 
 static long long p1275_args[23];
 
-int p1275_cmd (char *service, int args, ...)
+int p1275_cmd (char *service, unsigned fmt, ...)
 {
 	va_list list;
 	int i;
-	int longlong = 0;
+	int args = fmt & 0xf;
 
+	fmt >>= 8;
+
+	/* This means we have a P1275 PROM on a 32-bit machine. There
+	 * better not be any 64-bit arguments. */
 	if (prom_cif_handler == 0) {
 		long *p1275_args32 = (long *)p1275_args;
+
+		if (fmt)
+			prom_halt();
+
 		p1275_args32[0] = (long)service;
 		p1275_args32[1] = args;
 		p1275_args32[2] = 1;
-		va_start (list, args);
+		va_start (list, fmt);
 		for (i = 0; i < args; i++)
 			p1275_args32[i + 3] = (long) va_arg (list, char *);
 		va_end (list);
@@ -51,19 +59,15 @@ int p1275_cmd (char *service, int args, ...)
 	}
 
 	p1275_args[0] = (unsigned long long)(unsigned long)service;
-	if (args < 0) {
-		args = -args;
-		longlong = 1;
-	}
 	p1275_args[1] = args;
 	p1275_args[2] = 1;
-	va_start (list, args);
-	if (longlong)
-		for (i = 0; i < args; i++)
+	va_start (list, fmt);
+	for (i = 0; i < args; i++, fmt >>= 1) {
+		if (fmt & 0x1)
 			p1275_args[i + 3] = va_arg (list, unsigned long long);
-	else
-		for (i = 0; i < args; i++)
+		else
 			p1275_args[i + 3] = (unsigned long long)(unsigned long) va_arg (list, char *);
+	}
 	va_end (list);
 	__asm__ __volatile__ ("\t"
 		"mov	%1, %%g1\n\t"
@@ -165,3 +169,44 @@ prom_halt(void)
 	/* Not reached */
 }
 
+static int mmu_ihandle_cache = 0;
+
+static int prom_get_mmu_ihandle(void)
+{
+        int node, ret;
+
+        if (mmu_ihandle_cache != 0)
+                return mmu_ihandle_cache;
+
+        node = prom_finddevice("/chosen");
+        ret = prom_getint(node, "mmu");
+        if (ret == -1 || ret == 0)
+                mmu_ihandle_cache = -1;
+        else
+                mmu_ihandle_cache = ret;
+
+        return ret;
+}
+
+int prom_map(int mode, unsigned long long size,
+             unsigned long long vaddr, unsigned long long paddr)
+{
+	int ret;
+
+	if (prom_vers != PROM_P1275)
+		return -1;
+
+	ret = p1275_cmd("call-method", P1275_ARG_64B(3) | P1275_ARG_64B(4) | P1275_ARG_64B(6) | 7,
+			"map", prom_get_mmu_ihandle(), mode, size, vaddr, 0, paddr);
+
+	if (ret == 0)
+		ret = -1;
+
+	return ret;
+}
+
+void prom_unmap(unsigned long long size, unsigned long long vaddr)
+{
+	p1275_cmd("call-method", P1275_ARG_64B(2) | P1275_ARG_64B(3) | 4, "unmap",
+		  prom_get_mmu_ihandle(), size, vaddr);
+}
