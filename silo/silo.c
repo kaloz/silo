@@ -676,10 +676,9 @@ void flash_check_sum (char *data, unsigned int dsize)
 {
     unsigned int sum;
 
-    sum = 0;
-    while (dsize-- != 0) {
-        sum += *((unsigned char *)data)++;
-    }
+    for (sum = 0; dsize-- != 0; data++)
+        sum += *((unsigned char *)data);
+
     data[0] = sum >> 24;
     data[1] = sum >> 16;
     data[2] = sum >> 8;
