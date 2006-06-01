@@ -21,9 +21,6 @@
 
 #include <silo.h>
 
-#define IMAGE_TLB_ENTRY		61
-#define INITRD_TLB_ENTRY	60
-
 #define INITRD_VIRT_ADDR	0x40c00000
 #define IMAGE_VIRT_ADDR		0x40000000
 
@@ -198,20 +195,6 @@ inline void sun4m_set_direct (unsigned long l, unsigned long set)
 	"sta %0, [%1] 32\n\t" : : "r" (set), "r" (l));
 }
 
-#ifndef TLB_TAG_ACCESS
-#define TLB_TAG_ACCESS 		0x30
-#endif
-
-#ifndef ASI_DMMU
-#define ASI_DMMU 		0x58
-#define ASI_DTLB_DATA_ACCESS	0x5d
-#endif
-
-#ifndef ASI_IMMU
-#define ASI_IMMU		0x50
-#define ASI_ITLB_DATA_ACCESS	0x55
-#endif
-
 unsigned long long initrd_phys;
 
 unsigned long sun4m_initrd_pa;
@@ -300,7 +283,6 @@ static char *sun4u_memory_find (unsigned int len, int is_kernel)
 		unsigned long long size;
 	} *p = (struct p1275_mem *)0;
 	unsigned int virt = (is_kernel ? IMAGE_VIRT_ADDR : INITRD_VIRT_ADDR);
-	unsigned int tlb_entry = (is_kernel ? IMAGE_TLB_ENTRY : INITRD_TLB_ENTRY);
 	unsigned long long phys = 0, phys_base;
 
 	p = (struct p1275_mem *)malloc(2048);
@@ -390,7 +372,6 @@ static char *sun4u_memory_find (unsigned int len, int is_kernel)
 static void sun4u_memory_release(int is_kernel)
 {
 	unsigned long long virt, len;
-	unsigned int tlb_entry = (is_kernel ? IMAGE_TLB_ENTRY : INITRD_TLB_ENTRY);
 
 	if (is_kernel) {
 		virt = sun4u_image_virt;
@@ -405,32 +386,6 @@ static void sun4u_memory_release(int is_kernel)
 
 
 	prom_unmap(len, virt);
-
-        __asm __volatile("\n\
-            rdpr %%pil, %%g1\n\
-            wrpr 15, %%pil\n\
-            stxa %%g0, [%0] %1\n\
-            membar #Sync\n\
-            stxa %%g0, [%2] %3\n\
-            membar #Sync\n\
-            wrpr %%g1, %%pil\n\
-        " : : "r" (TLB_TAG_ACCESS), "i" (ASI_DMMU),
-              "r" (tlb_entry << 3),
-              "i" (ASI_DTLB_DATA_ACCESS) : "g1");
-
-	if (is_kernel) {
-	        __asm __volatile("\n\
-        	    rdpr %%pil, %%g1\n\
-	            wrpr 15, %%pil\n\
-        	    stxa %%g0, [%0] %1\n\
-		    membar #Sync\n\
-        	    stxa %%g0, [%2] %3\n\
-	            membar #Sync\n\
-        	    wrpr %%g1, %%pil\n\
-	        " : : "r" (TLB_TAG_ACCESS), "i" (ASI_IMMU),
-        	      "r" (tlb_entry << 3),
-	              "i" (ASI_ITLB_DATA_ACCESS) : "g1");
-	}
 
 	if (is_kernel)
 		sun4u_image_len = 0;

@@ -112,6 +112,25 @@ flush_icache:
 	tst	%i4			/* quit unless it's Sun4u */
 	be	0f
 	 nop
+
+	/* Careful, we cannot read the %ver register on sun4v because
+	 * there that register is hyperprivileged and we are executing
+	 * in privileged mode.
+	 *
+	 * This early on it's difficult to portably detect sun4v as
+	 * that requires OBP calls.  So do this super-ugly trick of
+	 * trying to set the PSTATE_AG bit in %pstate which will read
+	 * back as zero on sun4u.
+	 */
+	rdpr	%pstate, %l0
+	or	%l0, 0x1, %l1
+	wrpr	%l1, %pstate
+	rdpr	%pstate, %l1
+	wrpr	%l0, %pstate
+	andcc	%l1, 0x1, %g0
+	be,pn	%xcc, 0f
+	 nop
+
 	rdpr	%ver, %l0
 	srlx	%l0, (32 + 16), %l1
 	cmp	%l1, 0x3e

@@ -518,6 +518,7 @@ enum arch silo_get_architecture(void)
     case 'e':
 	return sun4e;
     case 'u':
+    case 'v':
 	return sun4u;
     default:
     	for(i = 0; i < NUM_SUN_MACHINES; i++)

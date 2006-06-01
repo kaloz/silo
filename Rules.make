@@ -3,7 +3,7 @@ IMGVERSION=0.99
 RM=rm -f
 # We want to force 32-bit builds
 CC=gcc -m32
-LD=ld
+LD=ld -m elf32_sparc
 AS=as
 STRIP=strip
 NM=nm
