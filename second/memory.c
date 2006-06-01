@@ -197,14 +197,13 @@ inline void sun4m_set_direct (unsigned long l, unsigned long set)
 #endif
 
 unsigned long sun4u_initrd_pa;
-static unsigned long long sun4u_memory_base;
 unsigned long sun4m_initrd_pa;
 unsigned long sun4m_initrd_va;
-extern unsigned long _start;
 
 char *memory_find (int len)
 {
     register struct linux_mlist_v0 *mlist;
+    unsigned long long sun4u_memory_base;
     char *beg = 0, *start;
     int l = 0, num;
     unsigned long totalmem = 0;
