@@ -1,4 +1,4 @@
-VERSION=1.4.5
+VERSION=1.4.6
 IMGVERSION=0.99
 RM=rm -f
 # We want to force 32-bit builds
