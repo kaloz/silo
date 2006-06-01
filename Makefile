@@ -58,7 +58,6 @@ release: ../silo-loaders-$(VERSION).tar.gz ../silo-$(VERSION).tar.gz ../silo-$(V
 		install -d -m755 ../silo-$(VERSION); \
 		cp -a ./ ../silo-$(VERSION); \
 	fi
-	cd ../silo-$(VERSION) && find -name .\#\* -o -name CVS -o -name .cvsignore | \
-		xargs -r rm -rf
+	cd ../silo-$(VERSION) && find -name .svn | xargs -r rm -rf
 	case "$*" in .gz) foo="gzip -c9";; .bz2) foo="bzip2 -c9";; *) foo=cat;; esac; \
 		(cd ../ && tar cf - silo-$(VERSION)) | $$foo > $@
