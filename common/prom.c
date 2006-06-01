@@ -168,3 +168,51 @@ prom_halt(void)
 		p1275_cmd ("exit", 0);
 	/* Not reached */
 }
+
+static int mmu_ihandle_cache = 0;
+
+static int prom_get_mmu_ihandle(void)
+{
+	int node, ret;
+
+	if (mmu_ihandle_cache != 0)
+		return mmu_ihandle_cache;
+
+	node = prom_finddevice("/chosen");
+	ret = prom_getint(node, "mmu");
+	if (ret == -1 || ret == 0)
+		mmu_ihandle_cache = -1;
+	else
+		mmu_ihandle_cache = ret;
+
+	return ret;
+}
+
+int prom_map(int mode, unsigned long long size,
+	     unsigned long long vaddr,
+	     unsigned long long paddr)
+{
+	int ret = p1275_cmd("call-method",
+			    P1275_ARG_64B(3) | P1275_ARG_64B(4) |
+			    P1275_ARG_64B(6) | 7,
+			    "map",
+			    prom_get_mmu_ihandle(),
+			    mode,
+			    size,
+			    vaddr,
+			    0,
+			    paddr);
+
+        return ret;
+}
+
+void prom_unmap(unsigned long long size, unsigned long long vaddr)
+{
+	p1275_cmd("call-method",
+		  P1275_ARG_64B(0) | P1275_ARG_64B(2) |
+		  P1275_ARG_64B(3) | 4,
+		  "unmap",
+		  prom_get_mmu_ihandle(),
+		  size,
+		  vaddr);
+}

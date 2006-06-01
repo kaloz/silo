@@ -128,6 +128,8 @@ void reset_ticks (void);
 /* memory.c */
 char *memory_find (int);
 void memory_release (void);
+char *image_memory_find (unsigned int len);
+void image_memory_release (void);
 struct linux_mlist_v0 *prom_meminit (void);
 int sun4c_mapio (unsigned long, unsigned long, int);
 void sun4c_unmapio (unsigned long);
