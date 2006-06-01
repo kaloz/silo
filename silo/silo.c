@@ -90,6 +90,7 @@ static int ufs_blocks (struct hwdevice *, ino_t);
 #include "../first/ultra.h"
 #include "../first/fd.h"
 #include "../first/ieee32.h"
+
 #define DIGIT_OFFSET (DIGIT_OFFSET_TMP + 0x223)
 #define LETTER_OFFSET (LETTER_OFFSET_TMP + 0x223)
 #define NUMBER_OFFSET (NUMBER_OFFSET_TMP + 0x223)
@@ -100,6 +101,8 @@ static int ufs_blocks (struct hwdevice *, ino_t);
 
 /* Checks our config file for errors */
 int confcheck(char*);
+char *cfg_get_strg (char *, char *);
+int cfg_get_flag (char *, char *);
 static int allow_confchk_fail = 0;
 
 /* This is just so that we don't have to fight with incompatible ufs_fs.h headers */
@@ -1061,7 +1064,7 @@ struct hwdevice *get_device(int majno, int minno)
 
 int main(int argc,char **argv)
 {
-    char *name = NULL, *config_file, *install = NULL, *secondary, *backup, *p;
+    char *name = NULL, *config_file, *install = NULL, *secondary = NULL, *backup, *p;
     struct utsname uts;
     int version = 0;
     struct stat st1, st2, st3;
@@ -1081,7 +1084,6 @@ int main(int argc,char **argv)
     	ultra = 1;
     config_file = DFL_CONFIG;
     backup = DFL_BACKUP;
-    secondary = DFL_SECONDARY;
     new_root = NULL;
     name = *argv++;
     argc--;
@@ -1224,6 +1226,17 @@ int main(int argc,char **argv)
     /* This _must_ be done after chrooting */
     if (!confcheck(config_file) && !allow_confchk_fail)
 	return 1;
+
+    /* Check for some values in the config that override defaults */
+    if (cfg_get_flag(NULL, "partition-boot"))
+	masterboot = 0;
+
+    if (!secondary) {
+	if (cfg_get_strg(NULL, "secondary"))
+	    secondary = cfg_get_strg(NULL, "secondary");
+	else
+	    secondary = DFL_SECONDARY;
+    }
 
     secondary = strdup (secondary);
     if (stat (secondary, &st1) < 0)

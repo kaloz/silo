@@ -69,6 +69,8 @@ CONFIG cf_options[] =
     {cft_strg, "password", NULL},
     {cft_flag, "restricted", NULL},
     {cft_strg, "proll", NULL},
+    {cft_flag, "partition-boot", NULL},
+    {cft_strg, "secondary", NULL},
     {cft_end, NULL, NULL}};
 
 CONFIG cf_image[] =

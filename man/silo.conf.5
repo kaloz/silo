@@ -185,6 +185,16 @@ arbitrary file load).
 .BI "timeout=" tsecs
 Sets a timeout (in tenths of a second) for keyboard input. If no key is
 pressed for the specified time, the first image is automatically booted.
+.TP
+.BI "partition-boot"
+This flag causes the same functionality as the \fI-t\fP command line
+option for the silo program. It's useful for not having to manually add
+that option everytime.
+.TP
+.BI "secondary=" filename
+Forces the second stage boot loader to be other than /boot/second.b. Same
+as the \fI-b\fP command line option. This can be overriden by the command
+line option.
 .PP
 In addition to these global options, per-image options
 \fIappend\fP, \fIdevice\fP, \fIfill-reboot-cmd\fP, \fIimage\fP,
