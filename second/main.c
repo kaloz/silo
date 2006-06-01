@@ -70,7 +70,7 @@ int solaris = 0;
 int other = 0;
 char *password = 0;
 
-void parse_name (char *, int, char **, int *, char **);
+static void parse_name (char *, int, char **, int *, char **);
 
 static char *next_tok (char *t) {
     while (*t++); /* That was easy */
@@ -173,7 +173,8 @@ static void maintabfunc (void)
     return;
 }
 
-void parse_name (char *imagename, int defpart, char **device, int *part, char **kname)
+static void parse_name (char *imagename, int defpart, char **device,
+			int *part, char **kname)
 {
     static char parsebuf[1024];
 
@@ -231,7 +232,7 @@ void parse_name (char *imagename, int defpart, char **device, int *part, char **
 	*kname = 0;
 }
 
-void check_initrd (char *label, int defpart, char *defdevice)
+static void check_initrd (char *label, int defpart, char *defdevice)
 {
     char *p;
     
@@ -246,7 +247,7 @@ void check_initrd (char *label, int defpart, char *defdevice)
     }
 }
 
-int dig_into_params (char *params)
+static int dig_into_params (char *params)
 {
     char *p, *q;
     char *last_root = 0;
@@ -300,7 +301,7 @@ int dig_into_params (char *params)
     return root_found;
 }
 
-void check_password(char *str)
+static void check_password(char *str)
 {
     int i;
     
@@ -318,7 +319,7 @@ void check_password(char *str)
     prom_halt();
 }
 
-char *ls_options(char *parms)
+static char *ls_options(char *parms)
 {
     char *p = parms;
     ls_opt = 0;
@@ -338,7 +339,8 @@ char *ls_options(char *parms)
     return p;
 }
 
-int get_params (char **device, int *part, char **kname, char **proll, char **params)
+static int get_params (char **device, int *part, char **kname, char **proll,
+		       char **params)
 {
     int defpart = -1;
     char *defdevice = 0;
@@ -831,7 +833,7 @@ int get_params (char **device, int *part, char **kname, char **proll, char **par
     return 0;
 }
 
-void initrd_lenfunc (int len, char **filebuffer, char **filelimit)
+static void initrd_lenfunc (int len, char **filebuffer, char **filelimit)
 {
     initrd_start = memory_find ((len + 16383) & ~16383);
     if (!initrd_start) {
@@ -844,8 +846,8 @@ void initrd_lenfunc (int len, char **filebuffer, char **filelimit)
     *filelimit = initrd_start + ((len + 16383) & ~16383);
 }
 
-int parse_executable (char *base, int image_len, unsigned int *poff, int *plen,
-    unsigned *pstart, char *image_name)
+static int parse_executable (char *base, int image_len, unsigned int *poff,
+			     int *plen, unsigned *pstart, char *image_name)
 {
     int isfile = 0;
     union {
