@@ -398,54 +398,59 @@ void print_message (char *msg)
     int curly;
     int i;
 
-    for (;;) {
+    while (*p) {
         while (*p && *p != '$') p++;
-        if (*p == '$') {
-            *p = 0;
-            printf ("%s", msg);
-            msg = p;
-            *p++ = '$';
-            curly = (*p == '{');
-            if (curly)
-        	p++;
-            if (!strncmp (p, "ARCH", 4)) {
-                switch (silo_get_architecture()) {
-                    case sun4: q = "SUN4"; break;
-                    case sun4c: q = "SUN4C"; break;
-                    case sun4d: q = "SUN4D"; break;
-                    case sun4m: q = "SUN4M"; break;
-                    case sun4e: q = "SUN4E"; break;
-                    case sun4p: q = "SUN4P"; break;
-                    case sun4u: q = "SUN4U"; break;
-                    default: break;
-                }
-                printf ("%s", q);
-                p += 4;
-            } else if (!strncmp (p, "PROM", 4)) {
-            	switch (prom_vers) {
-            	case PROM_V0: printf ("0"); break;
-            	case PROM_V2: printf ("2"); break;
-            	case PROM_V3: printf ("3"); break;
-            	case PROM_P1275: printf ("IEEE"); break;
-            	}
-            	p += 4;
-            } else if (!strncmp (p, "ETHER", 5)) {
-    		for (i = 0; i < 6; i++)
-    		    printf ("%x%x%s", ((unsigned char)idprm.id_eaddr[i]) >> 4, idprm.id_eaddr[i] & 0xf, i == 5 ? "" : ":");
-    		p += 5;
-            } else if (!strncmp (p, "SYSTYPE", 7)) {
-                printf ("%s", get_systype ());
-                p += 7;
-            } else continue;
-            if (curly && *p == '}') p++;
-            msg = p;
-        } else if (!*p) {
-	    break;
-	} else {
-            printf ("%s", msg);
-            break;
-        }
+
+	if (!*p)
+		break;
+
+	*p = 0;
+	printf ("%s", msg);
+	msg = p;
+	*p++ = '$';
+	if ((curly = (*p == '{')))
+		p++;
+
+	if (!strncmp (p, "ARCH", 4)) {
+		switch (silo_get_architecture()) {
+			case sun4: q = "SUN4"; break;
+			case sun4c: q = "SUN4C"; break;
+			case sun4d: q = "SUN4D"; break;
+			case sun4m: q = "SUN4M"; break;
+			case sun4e: q = "SUN4E"; break;
+			case sun4p: q = "SUN4P"; break;
+			case sun4u: q = "SUN4U"; break;
+			default: break;
+		}
+		printf ("%s", q);
+		p += 4;
+	} else if (!strncmp (p, "PROM", 4)) {
+		switch (prom_vers) {
+			case PROM_V0: printf ("0"); break;
+			case PROM_V2: printf ("2"); break;
+			case PROM_V3: printf ("3"); break;
+			case PROM_P1275: printf ("IEEE"); break;
+		}
+		p += 4;
+	} else if (!strncmp (p, "ETHER", 5)) {
+		for (i = 0; i < 6; i++)
+			printf ("%x%x%s", ((unsigned char)idprm.id_eaddr[i]) >> 4, idprm.id_eaddr[i] & 0xf, i == 5 ? "" : ":");
+		p += 5;
+	} else if (!strncmp (p, "SYSTYPE", 7)) {
+		printf ("%s", get_systype ());
+		p += 7;
+	} else
+		continue;
+
+	if (curly && *p == '}')
+		p++;
+
+	msg = p;
     }
+
+    if (*msg)
+	    printf ("%s", msg);
+	
 }
 
 void silo_set_prollargs(char *params, unsigned int kbase, int ksize)
