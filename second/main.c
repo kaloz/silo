@@ -1367,8 +1367,7 @@ try_again:
 	        	extern unsigned long sun4m_initrd_pa;
 
 			if (architecture == sun4u)
-	            	    *(unsigned int *)(p + 16) = (unsigned int)sun4u_initrd_phys +
-				    (hdrs_ver < 0x301 ? 0x400000 : 0);
+	            	    *(unsigned int *)(p + 16) = (unsigned int)sun4u_initrd_phys + 0x400000;
 	            	else if (sun4m_initrd_pa)
 	            	    *(unsigned int *)(p + 16) = ((unsigned int)sun4m_initrd_pa);
 	            	else
