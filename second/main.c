@@ -64,7 +64,6 @@ static char other_device [512];
 static int reboot = 0;
 static int floppyswap = 0;
 int tab_ambiguous = 0;
-unsigned int linux_end = 0;
 int other_part = -1;
 int solaris = 0;
 int other = 0;
@@ -841,9 +840,9 @@ static void initrd_lenfunc (int len, char **filebuffer, char **filelimit)
         prom_halt ();
     }
     initrd_size = len;
-    printf ("Loading initial ramdisk....\n");
     *filebuffer = initrd_start;
     *filelimit = initrd_start + ((len + 16383) & ~16383);
+    printf("Loading initial ramdisk (%d bytes at 0x%x)...\n", len, initrd_start);
 }
 
 static int parse_executable (char *base, int image_len, unsigned int *poff,
@@ -1193,7 +1192,13 @@ int bootmain (void)
     	params_device = 0;
         memcpy (image_base, image_base + off, len);
         p = find_linux_HdrS (image_base, image_len);
+
         if (p) {
+	    unsigned int linux_version = *(unsigned int *)(p + 4);
+
+	    printf("Loaded kernel version %d.%d.%d\n", (linux_version >> 16) & 0xff,
+		   (linux_version >> 8) & 0xff, linux_version & 0xff);
+
             if (fill_reboot_cmd && *(unsigned short *)(p + 8) >= 0x201) { /* ie. uses reboot_command */
                 char *q = (char *)(*(unsigned int *)(p + 24)), *r;
                 extern char bootdevice[];
@@ -1232,10 +1237,7 @@ int bootmain (void)
             }
             if (*(unsigned short *)(p + 8) >= 0x202)
             	kernel_params = (char *)(*(unsigned int *)(p + 36)&0x3fffff);
-            if (*(unsigned short *)(p + 8) >= 0x203) {
-		linux_end = *(unsigned int *)(p + 40)&0x3fffff;
-		linux_end = (linux_end + 32 + 0x1fff) & ~0x1fff;
-	    }
+
             /* Some UltraAX machines have /dev/fd1 floppies only. */
             if (floppyswap) {
             	char *s1;
@@ -1274,11 +1276,11 @@ int bootmain (void)
 			if (!initrd_kname) break;
 			if (!initrd_device) initrd_device = initrd_defdevice;
 			if (!load_file (initrd_device, initrd_partno, initrd_kname, initrd_cur, initrd_limit, &len, 0, 0)) break;
+			initrd_cur += len;
 			if (!c) {
 			    statusok = 1;
 			    break;
 			}
-			initrd_cur += len;
 			r = q + 1;
 			q = strchr (r, '|');
 			if (!q) q = strchr (r, 0);
@@ -1290,12 +1292,12 @@ int bootmain (void)
 			}
     		    }
     		    free (string);
+		    printf("Loaded initial ramdisk (%d bytes at 0x%x)...\n", (unsigned int)initrd_cur -
+			   (unsigned int)initrd_start, initrd_start);
     		    if (statusok) {
 	        	extern unsigned long sun4u_initrd_pa;
 	        	extern unsigned long sun4m_initrd_pa;
-	        	if ((linux_end & 0x3fffff) == (unsigned int)initrd_start)
-			    *(unsigned int *)(p + 16) = linux_end;
-			else if (architecture == sun4u)
+			if (architecture == sun4u)
 	            	    *(unsigned int *)(p + 16) = ((unsigned int)sun4u_initrd_pa + 0x400000);
 	            	else if (sun4m_initrd_pa)
 	            	    *(unsigned int *)(p + 16) = ((unsigned int)sun4m_initrd_pa);
@@ -1311,9 +1313,7 @@ int bootmain (void)
 	        	if (load_file (initrd_device, initrd_partno, initrd_kname, (unsigned char *) 0x300000, (unsigned char *) 0x380000, 0, 0, initrd_lenfunc)) {
 	        	    extern unsigned long sun4u_initrd_pa;
 	        	    extern unsigned long sun4m_initrd_pa;
-			    if ((linux_end & 0x3fffff) == (unsigned int)initrd_start)
-				*(unsigned int *)(p + 16) = linux_end;
-			    else if (architecture == sun4u)
+			    if (architecture == sun4u)
 	            	        *(unsigned int *)(p + 16) = ((unsigned int)sun4u_initrd_pa + 0x400000);
 			    else if (sun4m_initrd_pa)
 				*(unsigned int *)(p + 16) = ((unsigned int)sun4m_initrd_pa);

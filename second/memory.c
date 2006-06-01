@@ -200,7 +200,6 @@ unsigned long sun4u_initrd_pa;
 static unsigned long long sun4u_memory_base;
 unsigned long sun4m_initrd_pa;
 unsigned long sun4m_initrd_va;
-extern unsigned int linux_end;
 extern unsigned long _start;
 
 char *memory_find (int len)
@@ -211,8 +210,6 @@ char *memory_find (int len)
     unsigned long totalmem = 0;
     char *min = (char *)0x300000;
 
-    if (linux_end && (linux_end & 0x3fffff) + len < ((long)&_start) - 16384)
-	return (char *)(linux_end & 0x3fffff);
     if (architecture != sun4u) {
         prom_meminit ();
         for (mlist = prom_phys_avail; mlist; mlist = mlist->theres_more) {
