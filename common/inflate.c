@@ -825,16 +825,6 @@ int *e;				/* last block flag */
     return 2;
 }
 
-static void rotate (void)
-{
-    static int i = 0;
-    static char rot[] = "\\|/-";
-
-    printf ("%c\b", rot[i % 4]);
-
-    i++;
-}
-
 STATIC int inflate ()
 /* decompress an inflated entry */
 {
@@ -852,7 +842,6 @@ STATIC int inflate ()
     /* decompress until the last block */
     h = 0;
     do {
-	rotate();
 	hufts = 0;
 	gzip_mark (&ptr);
 	if ((r = inflate_block (&e)) != 0) {

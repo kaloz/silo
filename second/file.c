@@ -145,6 +145,20 @@ static void unget_gzip_input (void)
 }
 
 static int gunzipped_len = 0;
+static int do_rotate = 0;
+
+static void rotate (void)
+{
+    static int i = 0;
+    static char rot[] = "\\|/-";
+
+    if (!do_rotate)
+	return;
+
+    printf ("%c\b", rot[i % 4]);
+
+    i++;
+}
 
 int dump_block (blk_t * blocknr, int blockcnt)
 {
@@ -198,6 +212,7 @@ int dump_block (blk_t * blocknr, int blockcnt)
                 block_cnt = 0;
                 return 0;
             }
+	    rotate();
             filebuffer += block_cnt * bs;
             if (*blocknr && blockcnt && blockcnt != last_blockcnt + 1) {
                 memset (filebuffer, 0, (blockcnt - last_blockcnt - 1) * bs);
@@ -333,6 +348,11 @@ int load_file (char *device, int partno, char *filename, char *buffer,
 	goto done_2;
 
     do_gunzip = cmd & LOADFILE_GZIP;
+    if (cmd & ~LOADFILE_GZIP)
+	do_rotate = 0;
+    else
+	do_rotate = 1;
+
     filebuffer = buffer;
     filelimit = limit;
 

@@ -1160,10 +1160,8 @@ try_again:
 	} else {
 	    char *image_end = (char *)&_start;
 
-	    image_base = (char *)0x4000;
-
 	    /* See if we can use some extra memory for the kernel */
-	    if (!load_cmd) {
+	    if (!load_cmd && image_base == (char *)0x4000) {
 		unsigned int size;
 		char *mem;
 
@@ -1186,9 +1184,6 @@ try_again:
 	    if (!load_file (device, part, kname, image_base, image_end,
 			&image_len, load_cmd == CMD_LS ? LOADFILE_LS : LOADFILE_GZIP, 0)) {
 		printf ("\nImage not found.... try again\n");
-
-		if (!load_cmd)
-		    image_memory_release();
 
         	continue;
             }
@@ -1378,7 +1373,8 @@ try_again:
 	            	        *(unsigned int *)(p + 16) = ((unsigned int)initrd_start | 0xf0000000);
 	            	    *(unsigned int *)(p + 20) = initrd_size;
 	        	}
-		    }
+		    } else
+			printf ("Error: initial ramdisk loading failed. No initrd will be used.\n");
 		}
 	    }
         }
