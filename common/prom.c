@@ -209,8 +209,7 @@ int prom_map(int mode, unsigned long long size,
 void prom_unmap(unsigned long long size, unsigned long long vaddr)
 {
 	p1275_cmd("call-method",
-		  P1275_ARG_64B(0) | P1275_ARG_64B(2) |
-		  P1275_ARG_64B(3) | 4,
+		  P1275_ARG_64B(2) | P1275_ARG_64B(3) | 4,
 		  "unmap",
 		  prom_get_mmu_ihandle(),
 		  size,
