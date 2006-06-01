@@ -3,15 +3,7 @@
 ##
 #
 
-CC=gcc
-LD=ld
-AS=as
-STRIP=strip
-NM=nm
-
-RM=/bin/rm -f
 DD=dd
-ELFTOAOUT=/usr/bin/elftoaout
 
 include ../Rules.make
 
