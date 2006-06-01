@@ -21,7 +21,8 @@ all: maketilo
 
 OBJS_COMMON = ../common/printf.o ../common/jmp.o ../common/prom.o \
 	../common/tree.o ../common/console.o ../common/stringops1.o \
-	../common/urem.o ../common/stringops2.o ../common/udiv.o
+	../common/urem.o ../common/stringops2.o ../common/udiv.o \
+	../common/divdi3.o ../common/udivdi3.o
 OBJS = crt0.o tilo.o $(OBJS_COMMON) malloc.o
 OBJS2 = crt0l.o tilol.o $(OBJS_COMMON) mallocl.o
 
