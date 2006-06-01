@@ -1220,7 +1220,7 @@ try_again:
 
         p = find_linux_HdrS (image_base, image_len);
 
-	if (1) { //p && *(unsigned short *)(p + 8) < 0x300 && image_base != (char *)0x4000) {
+	if (p && *(unsigned short *)(p + 8) < 0x300 && image_base != (char *)0x4000) {
 	    /* Kernel doesn't support being loaded to other than
 	     * phys_base, so let's try to copy it down there. */
 	    if ((unsigned int)&_start - 0x4000 < len) {
