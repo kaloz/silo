@@ -32,13 +32,13 @@ static int read_sun_partition (int partno)
     sun_partition sdl;
     unsigned short csum, *ush;
 
-    rc = read ((char *) &sdl, 512, 0);
+    rc = silo_disk_read((char *) &sdl, 512, 0);
     if (rc != 512) {
-        fatal ("Cannot read partition");
+        silo_fatal("Cannot read partition");
         return 0;
     }
     if (sdl.magic != SUN_LABEL_MAGIC)
-        fatal ("Wrong disklabel magic");
+        silo_fatal("Wrong disklabel magic");
     for (csum = 0, ush = ((unsigned short *) ((&sdl) + 1)) - 1; ush >= (unsigned short *) &sdl;)
         csum ^= *ush--;
     if (csum)
@@ -66,7 +66,7 @@ static errcode_t silo_open (const char *name, int flags, io_channel * channel)
     io->write_error = 0;
 
     doff = 0LL;
-    if (strncmp (name, "/dev/fd0", 8) && partitionable()) {
+    if (strncmp (name, "/dev/fd0", 8) && silo_disk_partitionable()) {
         partno = *(name + strlen (name) - 1) - '0';
         if (partno && !read_sun_partition (partno))
 	    return EXT2_ET_BAD_DEVICE_NAME;
@@ -91,7 +91,7 @@ static errcode_t silo_read_blk (io_channel channel, unsigned long block, int cou
     int size, got;
 
     size = (count < 0) ? -count : count * bs;
-    got = read (data, size, ((unsigned long long)block) * bs + doff);
+    got = silo_disk_read(data, size, ((unsigned long long)block) * bs + doff);
     if (got != size) {
 	printf ("\nRead error on block %d (tried %d, got %d)\n", block, size, got);
 	return EXT2_ET_SHORT_READ;

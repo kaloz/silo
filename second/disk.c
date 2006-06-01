@@ -26,10 +26,15 @@ static int floppy = 0;
 static unsigned int flash = 0;
 static int fd;
 static unsigned long long seekp;
-char bootdevice[4096];
+static char bootdevice[4096];
 static char currentdevice[4096];
 
-int open (char *device)
+char *silo_disk_get_bootdevice(void)
+{
+	return bootdevice;
+}
+
+int silo_disk_open(char *device)
 {
     strcpy (currentdevice, device);
     net = 0;
@@ -114,7 +119,7 @@ int get_boot_part(void)
     return ret;
 }
 
-int diskinit ()
+int silo_diskinit(void)
 {
     fd = 0;
     if (prom_vers == PROM_V0) {
@@ -145,17 +150,17 @@ int diskinit ()
 	} else if (p[1] >= 'a' && p[1] <= 'z' && !p[2])
 	    p[1] = get_boot_part() + 'a';
     }
-    return open (bootdevice);
+    return silo_disk_open(bootdevice);
 }
 
-void reopen(void)
+static void silo_disk_reopen(void)
 {
     char c;
     
     c = *currentdevice;
-    close ();
+    silo_disk_close();
     *currentdevice = c;
-    open (currentdevice);
+    silo_disk_open(currentdevice);
 }
 
 static unsigned int flash_ld(unsigned int offset)
@@ -168,7 +173,7 @@ static unsigned int flash_ld(unsigned int offset)
     return retval;
 }
 
-int read (char *buff, int size, unsigned long long offset)
+int silo_disk_read(char *buff, int size, unsigned long long offset)
 {
     if (!size)
 	return 0;
@@ -187,7 +192,7 @@ int read (char *buff, int size, unsigned long long offset)
 		for (j = 0; j < 5; j++) {
 	        	rc = (*romvec->pv_v0devops.v0_rdblkdev) (fd, 1, (unsigned)(offset >> 9), buffer);
 	        	if (rc) break;
-	        	reopen();
+	        	silo_disk_reopen();
 	        }
 	        if (rc != 1)
 		    return -1;
@@ -201,7 +206,7 @@ int read (char *buff, int size, unsigned long long offset)
 		for (j = 0; j < 5; j++) {
 	        	rc = (*romvec->pv_v0devops.v0_rdblkdev) (fd, size >> 9, (unsigned)(offset >> 9), buff);
 	        	if (rc) break;
-	        	reopen();
+	        	silo_disk_reopen();
 	        }
 	        if (rc != (size >> 9)) {
 		    /* Lets try if the floppy is not happy because the read size is too large for it */
@@ -209,7 +214,7 @@ int read (char *buff, int size, unsigned long long offset)
 			for (j = 0; j < 5; j++) {
 			    rc = (*romvec->pv_v0devops.v0_rdblkdev) (fd, 1, (unsigned)(offset >> 9) + k, buff + (k << 9));
 			    if (rc) break;
-			    reopen();
+			    silo_disk_reopen();
 			}
 			if (rc != 1)
 			    return -1;
@@ -225,7 +230,7 @@ int read (char *buff, int size, unsigned long long offset)
 		for (j = 0; j < 5; j++) {
 	        	rc = (*romvec->pv_v0devops.v0_rdblkdev) (fd, 1, (unsigned)(offset >> 9), buffer);
 	        	if (rc) break;
-	        	reopen();
+	        	silo_disk_reopen();
 	        }
 	        if (rc != 1)
 		    return -1;
@@ -312,16 +317,16 @@ int read (char *buff, int size, unsigned long long offset)
 		for (i = 0; i < 2; i++) {
 		    rc = (*romvec->pv_v2devops.v2_dev_read) (fd, buff, size);
 		    if (rc == size) break;
-		    reopen();
+		    silo_disk_reopen();
 		    if ((*romvec->pv_v2devops.v2_dev_seek) (fd, (unsigned)(offset >> 32), (unsigned)offset) == -1)
 			return -1;
 		}
 		if (rc != size && size > 32768) {
 		    int j, s = size;
-		    reopen();
+		    silo_disk_reopen();
 		    while (size) {
 			if (size < 32768) j = size; else j = 32768;
-			if (read (buff, j, offset) != j)
+			if (silo_disk_read(buff, j, offset) != j)
 			    return -1;
 			size -= j;
 			offset += j;
@@ -340,23 +345,7 @@ int read (char *buff, int size, unsigned long long offset)
     return -1;
 }
 
-int xmit (char *buff, int size)
-{
-    if (!net) return -1;
-    switch (prom_vers) {
-    case PROM_V0:
-    	return (*romvec->pv_v0devops.v0_wrnetdev) (fd, size, buff);
-    case PROM_V2:
-    case PROM_V3:
-    	return (*romvec->pv_v2devops.v2_dev_write) (fd, buff, size);
-    case PROM_P1275:
-    	return p1275_cmd ("write", 3, fd, buff, size);
-    default:
-    	return -1;
-    }
-}
-
-void close ()
+void silo_disk_close(void)
 {
     if (*currentdevice) {
     	switch (prom_vers) {
@@ -372,21 +361,21 @@ void close ()
     *currentdevice = 0;
 }
 
-int setdisk (char *device)
+int silo_disk_setdisk(char *device)
 {
-    if (!strcmp (currentdevice, device)) {
+    if (!strcmp(currentdevice, device))
 	return 0;
-    }
-    close ();
-    return open (device);
+
+    silo_disk_close();
+    return silo_disk_open(device);
 }
 
 /*
  * XXX Good thing would be to have an argument, perhaps some device name.
- * XXX Other option is to make open() to return partitionable flag.
+ * XXX Other option is to make silo_disk_open() to return partitionable flag.
  * XXX Retrofit floppy ((flash == 0) && (floppy == 0) && (net == 0));
  */
-int partitionable()
+int silo_disk_partitionable(void)
 {
     return (flash == 0);
 }

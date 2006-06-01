@@ -141,7 +141,7 @@ unsigned long doff;
 int nblocks = 0;
 __u32 blocks[16384];
 
-void fatal (char *fmt,...)
+static void silo_fatal(char *fmt,...)
 {
     va_list ap;
     va_start (ap, fmt);
@@ -158,7 +158,7 @@ int check_fs (int fd)
     struct ext2_super_block sb;	/* Super Block Info */
 
     if (lseek (fd, 1024, 0) != 1024 || read (fd, &sb, sizeof (sb)) != sizeof (sb))
-	fatal ("Cannot read Super Block!");
+	silo_fatal("Cannot read Super Block!");
     if (swab16 (sb.s_magic) == EXT2_SUPER_MAGIC)
         return 1024 << swab32 (sb.s_log_block_size);
     if (lseek (fd, 8192, 0) != 8192 || read (fd, &ufs, sizeof (ufs)) != sizeof (ufs))
@@ -176,10 +176,11 @@ void read_sb (char *device, char *bootdev)
     int offset;
 
     if ((fd = open (device, O_RDONLY)) == -1)
-	fatal ("Cannot open superblock on %s", device);
+	silo_fatal("Cannot open superblock on %s", device);
     bs = check_fs (fd);
     if (bs == (unsigned short)-1)
-	fatal ("File systems other than ext2, ext3, ufs and romfs not yet supported", device);
+	silo_fatal("File systems other than ext2, ext3, ufs and romfs "
+		   "not yet supported", device);
     close (fd);
     nsect = bs / 512;
     doff = 0;
@@ -190,9 +191,9 @@ void read_sb (char *device, char *bootdev)
 #endif
     sdl = (struct sun_disklabel *) &buff;
     if ((fd = open (bootdev, O_RDONLY)) == -1)
-	fatal ("Error opening %s", bootdev);
+	silo_fatal("Error opening %s", bootdev);
     if (read (fd, buff, sizeof (buff)) != sizeof (buff))
-        fatal ("Error reading %s's label", bootdev);
+        silo_fatal("Error reading %s's label", bootdev);
     doff = bswab16(sdl->ntrks) * bswab16(sdl->nsect) * bswab32(sdl->partitions[partno].start_cylinder);
     offset = bswab16(sdl->ntrks) * bswab16(sdl->nsect) * bswab32(sdl->partitions[0].start_cylinder);
     close (fd);
@@ -206,10 +207,10 @@ int get_partition_blocks (char *device, char *filename)
     int size;
     
     if ((fd = open (filename, O_RDONLY)) == -1) {
-	fatal ("Cannot find %s", filename);
+	silo_fatal("Cannot find %s", filename);
     }
     if (fstat (fd, &st) < 0) {
-        fatal ("Couldn't stat %s", filename);
+        silo_fatal("Couldn't stat %s", filename);
     }
 #ifdef __linux__
     size = st.st_size;
@@ -298,7 +299,7 @@ int main(int argc,char **argv)
     if (argc != 1) usage(name);
     filename = *argv;
     if (stat (filename, &st1) < 0)
-        fatal ("Cannot open %s", filename);
+        silo_fatal("Cannot open %s", filename);
 #ifdef __linux__
     if (mmajor(st1.st_dev) == 8) {
         sprintf (bootdev2, "/dev/sd%c%c", (mminor(st1.st_dev) >> 4) + 'a', (mminor(st1.st_dev) & 0xf) + '0');
@@ -308,7 +309,8 @@ int main(int argc,char **argv)
     {
 	char *p = find_dev (st1.st_dev);
 
-	if (!p) fatal ("Couldn't find out what device is %s on", filename);
+	if (!p)
+	  silo_fatal("Couldn't find out what device is %s on", filename);
 	strcpy (bootdev, p);
 	strcpy (bootdev2, p);
 #ifdef __sun__
@@ -393,7 +395,7 @@ static errcode_t std_open (const char *name, int flags, io_channel * channel)
 	return EXT2_ET_BAD_DEVICE_NAME;
     std_fd = open (name, O_RDONLY);
     if (std_fd < 0)
-    	fatal ("Cannot open %s", name);
+    	silo_fatal("Cannot open %s", name);
     memset (io, 0, sizeof (struct struct_io_channel));
     io->magic = EXT2_ET_MAGIC_IO_CHANNEL;
     io->manager = std_io_manager;
@@ -423,9 +425,9 @@ static errcode_t std_read_blk (io_channel channel, unsigned long block, int coun
 
     size = (count < 0) ? -count : count * cbs;
     if (lseek (std_fd, block * cbs, SEEK_SET) != block * cbs)
-    	fatal ("Cannot seek");
+    	silo_fatal("Cannot seek");
     if (read (std_fd, data, size) != size)
-	fatal ("Read error on block %d", block);
+	silo_fatal("Read error on block %d", block);
     return 0;
 }
 
@@ -449,10 +451,10 @@ static int ufs_blocks_dump (ufs_filsys fs, blk_t *block, int i, void *private)
 static int ufs_blocks (char *device, ino_t inode)
 {
     if (ufs_open (device, std_io_manager, &fs))
-    	fatal ("Cannot open ufs filesystem containing second stage");
+    	silo_fatal("Cannot open ufs filesystem containing second stage");
     nsect = cbs / 512;
     if (ufs_block_iterate (fs, inode, ufs_blocks_dump, 0))
-        fatal ("Block iterating error on second stage");
+        silo_fatal("Block iterating error on second stage");
     blocks [ufs_block_idx] = 0;
     nblocks = ufs_block_idx;
     return 0;

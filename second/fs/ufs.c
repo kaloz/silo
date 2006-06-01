@@ -79,7 +79,7 @@ static char *get_archstr(void)
 {
         char *p = "sun4c";
 
-        switch (get_architecture()) {
+        switch (silo_get_architecture()) {
         case sun4: p = "sun4"; break;
         case sun4c: p = "sun4c"; break;
         case sun4m: p = "sun4m"; break;

@@ -27,13 +27,13 @@ char passwdbuff[CMD_LENG];
 extern int useconf;
 extern int tab_ambiguous;
 
-void cmdinit ()
+void silo_cmdinit(void)
 {
     cbuff[0] = 0;
     passwdbuff[0] = 0;
 }
 
-void cmdedit (void (*tabfunc) (void), int password)
+void silo_cmdedit(void (*tabfunc)(void), int password)
 {
     int x, c;
     char *buff = password ? passwdbuff : cbuff;

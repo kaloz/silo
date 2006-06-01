@@ -67,8 +67,8 @@ struct silo_inode {
 #define LOADFILE_LS_MATCH	(LOADFILE_MATCH | LOADFILE_MATCH)
 
 /* cmdline.c */
-void cmdinit ();
-void cmdedit (void (*)(void),int);
+void silo_cmdinit(void);
+void silo_cmdedit(void (*)(void), int);
 extern char cbuff[];
 extern char passwdbuff[];
 /* ls.c */
@@ -78,14 +78,13 @@ extern char passwdbuff[];
 extern int ls_opt;
 int do_ls (unsigned char *, int *);
 /* disk.c */
-extern char bootdevice[];
-int diskinit (void);
-int read (char *, int, unsigned long long);
-int xmit (char *, int);
-int open (char *);
-int setdisk (char *);
-int partitionable (void);
-void close (void);
+char *silo_disk_get_bootdevice(void);
+int silo_diskinit(void);
+int silo_disk_read(char *, int, unsigned long long);
+int silo_disk_open(char *);
+int silo_disk_setdisk(char *);
+int silo_disk_partitionable(void);
+void silo_disk_close(void);
 /* printf.c */
 int vprintf (char *, va_list);
 int putchar (int);
@@ -95,16 +94,16 @@ void free (void *);
 void mark (void **);
 void release (void *);
 /* file.c */
-int load_file (char *, int, char *, char *, char *, int *, int, void (*)(int, char **, char **));
+int silo_load_file(char *, int, char *, char *, char *, int *, int, void (*)(int, char **, char **));
 /* misc.c */
-void fatal (const char *);
-char *get_bootargs (int);
-void show_bootargs (void);
-void set_bootargs (char *, char *);
-void set_prollargs (char *, unsigned int, int);
-char *v0_device (char *);
-enum arch get_architecture();
-unsigned char *find_linux_HdrS (char *, int);
+void silo_fatal(const char *);
+char *silo_get_bootargs(int);
+void silo_show_bootargs(void);
+void silo_set_bootargs(char *, char *);
+void silo_set_prollargs(char *, unsigned int, int);
+char *silo_v0_device(char *);
+enum arch silo_get_architecture(void);
+unsigned char *silo_find_linux_HdrS(char *, int);
 void print_message(char *);
 void get_idprom(void);
 char *get_syspackage(void);

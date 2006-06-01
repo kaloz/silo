@@ -24,12 +24,12 @@
 #include <asm/machines.h>
 #include <stringops.h>
 
-void fatal (const char *msg)
+void silo_fatal(const char *msg)
 {
-    printf ("\nFatal error: %s\n", msg);
+    printf("\nFatal error: %s\n", msg);
 }
 
-char *v0_device (char *imagename)
+char *silo_v0_device(char *imagename)
 {
     if (((imagename[0] == 's' && strchr ("dt", imagename[1])) ||
         (imagename[0] == 'x' && strchr ("dy", imagename[1])) ||
@@ -92,7 +92,7 @@ char *seed_part_into_device (char *device, int part)
 static char barg_buf[1024];
 char barg_out[1024];
 
-void set_bootargs (char *params, char *device)
+void silo_set_bootargs(char *params, char *device)
 {
     char *q, *r;
     char **p;
@@ -219,7 +219,7 @@ void set_bootargs (char *params, char *device)
     }
 }
 
-char *get_bootargs (int full)
+char *silo_get_bootargs(int full)
 {
     int iter;
     char *cp, *q;
@@ -235,7 +235,7 @@ char *get_bootargs (int full)
 	    	q = p [iter];
 	        if (q) {
 	            if (!iter && !full) {
-	                q = v0_device (q);
+	                q = silo_v0_device(q);
 	                
 	                if (q && !q[1])
 	                    continue;
@@ -296,12 +296,12 @@ char *get_bootargs (int full)
     return barg_buf;
 }
 
-void show_bootargs ()
+void silo_show_bootargs(void)
 {
-    printf ("Kernel args: %s\n", get_bootargs (0));
+    printf("Kernel args: %s\n", silo_get_bootargs(0));
 }
 
-unsigned char *find_linux_HdrS (char *base, int len)
+unsigned char *silo_find_linux_HdrS(char *base, int len)
 {
     /* Ugly magic to find HdrS, we dig into first jmp gokernel */
     char *p = base + ((*(unsigned short *) (base+2)) << 2) - 512;
@@ -409,7 +409,7 @@ void print_message (char *msg)
             if (curly)
         	p++;
             if (!strncmp (p, "ARCH", 4)) {
-                switch (get_architecture ()) {
+                switch (silo_get_architecture()) {
                     case sun4: q = "SUN4"; break;
                     case sun4c: q = "SUN4C"; break;
                     case sun4d: q = "SUN4D"; break;
@@ -448,7 +448,7 @@ void print_message (char *msg)
     }
 }
 
-void set_prollargs (char *params, unsigned int kbase, int ksize)
+void silo_set_prollargs(char *params, unsigned int kbase, int ksize)
 {
     struct silo_to_proll {
         char magic[4];          /* SiPR */
@@ -486,7 +486,7 @@ void set_prollargs (char *params, unsigned int kbase, int ksize)
     strcpy(p->kern_args, params);
 }
 
-enum arch get_architecture ()
+enum arch silo_get_architecture(void)
 {
     char *buffer = "sun4c    ";
     int i;

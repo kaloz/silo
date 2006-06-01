@@ -56,8 +56,8 @@ static int open_namei(const char *pathname, struct isofs_inode *res_inode,
 
 static int cd_init (void)
 {
-	char bootdevice[1024];
-	char *s = bootdevice;
+	char iso_bootdevice[1024];
+	char *s = iso_bootdevice;
 
 	if (prom_vers == PROM_V0) {
 		struct linux_arguments_v0 *ap = *romvec->pv_v0bootargs;
@@ -74,12 +74,12 @@ static int cd_init (void)
 		*s++ = ')';
 		*s = 0;
 
-		fd = (*romvec->pv_v0devops.v0_devopen) (bootdevice);
+		fd = (*romvec->pv_v0devops.v0_devopen) (iso_bootdevice);
 	} else {
 		if (prom_vers == PROM_P1275)
-			prom_getproperty (prom_chosen, "bootpath", bootdevice, sizeof(bootdevice));
+			prom_getproperty (prom_chosen, "bootpath", iso_bootdevice, sizeof(iso_bootdevice));
 		else
-			strcpy(bootdevice, *romvec->pv_v2bootargs.bootpath);
+			strcpy(iso_bootdevice, *romvec->pv_v2bootargs.bootpath);
 
 		for (; *s && *s != ':'; s++)
 			/* Do nothing */;
@@ -90,9 +90,9 @@ static int cd_init (void)
 			s[1] = 'a';
 
 		if (prom_vers == PROM_P1275)
-			fd = p1275_cmd ("open", 1, bootdevice);
+			fd = p1275_cmd ("open", 1, iso_bootdevice);
 		else
-			fd = (*romvec->pv_v2devops.v2_dev_open) (bootdevice);
+			fd = (*romvec->pv_v2devops.v2_dev_open) (iso_bootdevice);
 	}
 
 	if (fd == 0 || fd == -1)

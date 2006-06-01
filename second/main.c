@@ -113,7 +113,7 @@ static int tab_complete(void) {
     if (p && *p >= '1' && *p <= '8' && !p[1])
 	defpart = *p - '0';
     else {
-	fatal("\nDefault partition could not be found");
+	silo_fatal("\nDefault partition could not be found");
 	free(r);
 	return 1;
     }
@@ -167,8 +167,9 @@ static int tab_complete(void) {
     } else {
 	if (!device) device = cfg_get_strg (0, "device");
 
-	if (load_file(device, part, kname, (unsigned char *) 0x4000,
-		(unsigned char *) &_start, &image_len, LOADFILE_LS_MATCH|LOADFILE_QUIET, 0))
+	if (silo_load_file(device, part, kname, (unsigned char *) 0x4000,
+			   (unsigned char *) &_start, &image_len,
+			   LOADFILE_LS_MATCH|LOADFILE_QUIET, 0))
 	    if (do_ls((unsigned char *)0x4000, &tab_ambiguous))
 		ret = 1;
     }
@@ -204,7 +205,7 @@ static void parse_name (char *imagename, int defpart, char **device,
     *kname = 0;
     if (prom_vers == PROM_V0) {
         static char v0_buffer[20];
-        *kname = v0_device (imagename);
+        *kname = silo_v0_device(imagename);
         if (*kname) {
             memcpy (v0_buffer, imagename, *kname - imagename + 1);
             v0_buffer [*kname - imagename + 1] = 0;
@@ -328,7 +329,7 @@ static void check_password(char *str)
     for (i = 0; i < 3; i++) {
 	printf ("\n%sassword: ", str);
 	passwdbuff[0] = 0;
-	cmdedit ((void (*)(void)) 0, 1);
+	silo_cmdedit((void (*)(void)) 0, 1);
 	printf ("\n");
 	if (!strcmp (password, passwdbuff))
 	    return;
@@ -391,7 +392,7 @@ static int get_params (char **device, int *part, char **kname, char **proll,
     pause_after = 0;
     reboot = 0;
     *proll = 0;
-    cmdinit ();
+    silo_cmdinit();
     *params = "";
     if (useconf) {
 	defdevice = cfg_get_strg (0, "device");
@@ -408,7 +409,7 @@ static int get_params (char **device, int *part, char **kname, char **proll,
 	    if (p && *p)
 	        timeout = atoi (p);
 	    if (no_prom_args) p = 0;
-	    else p = get_bootargs (0);
+	    else p = silo_get_bootargs(0);
 	    if (p) while (*p == ' ') p++;
 	    if (p && *p) {
 	        for (q = p; *q && *q != ' '; q++);
@@ -483,7 +484,7 @@ static int get_params (char **device, int *part, char **kname, char **proll,
 	if (!imagename) {
 	    if ((!*cbuff || (timeout > 0 && timer_status < 0)) && !tabbedout)
                 printf ("boot: ");
-	    cmdedit (maintabfunc, 0);
+	    silo_cmdedit(maintabfunc, 0);
 	    if (*cbuff == ' ') {
 		for (p = cbuff; *p == ' '; p++);
 		q = cbuff;
@@ -608,7 +609,7 @@ static int get_params (char **device, int *part, char **kname, char **proll,
     		    if (defdevice)
     		        oth_device = defdevice;
     		    else
-    		        oth_device = bootdevice;
+    		        oth_device = silo_disk_get_bootdevice();
     		}
     		strcpy (other_device, oth_device);
 	    	p = cfg_get_strg (label, "bootblock");
@@ -634,7 +635,7 @@ static int get_params (char **device, int *part, char **kname, char **proll,
         if (first) {
             first = 0;
 	    if (no_prom_args) p = 0;
-	    else p = get_bootargs (0);
+	    else p = silo_get_bootargs(0);
 	    if (p) while (*p == ' ') p++;
 	    if (p && *p) {
 	        for (q = p; *q && *q != ' '; q++);
@@ -650,7 +651,7 @@ static int get_params (char **device, int *part, char **kname, char **proll,
 	}
 	if (!imagename) {
             printf ("boot: ");
-	    cmdedit ((void (*)(void)) 0, 0);
+	    silo_cmdedit((void (*)(void)) 0, 0);
 	    if (*cbuff == ' ') {
 		for (p = cbuff; *p == ' '; p++);
 		q = cbuff;
@@ -755,7 +756,7 @@ static int get_params (char **device, int *part, char **kname, char **proll,
     	if (*part != -2) {
 	    other_part = *part;
 	    if (!*device)
-	    	strcpy (other_device, bootdevice);
+	    	strcpy (other_device, silo_disk_get_bootdevice());
 	    else
 	    	strcpy (other_device, *device);
 	    p = strstr (*params, "bootblock=");
@@ -859,7 +860,8 @@ static void initrd_lenfunc (int len, char **filebuffer, char **filelimit)
 
     initrd_start = memory_find ((len + 16383) & ~16383);
     if (!initrd_start) {
-        fatal ("You do not have enough continuous available memory for such initial ramdisk.");
+        silo_fatal("You do not have enough continuous available memory "
+		   "for such initial ramdisk.");
         prom_halt ();
     }
     initrd_size = len;
@@ -905,7 +907,7 @@ static int parse_executable (char *base, int image_len, unsigned int *poff,
 		hp.e->e_ident[EI_MAG3] == ELFMAG3) {
 
         if (hp.e->e_ident[EI_DATA] != ELFDATA2MSB) {
-	    fatal ("Image is not a MSB ELF");
+	    silo_fatal("Image is not a MSB ELF");
 	    prom_halt ();
 	}
 	if (hp.e->e_ident[EI_CLASS] == ELFCLASS32) {
@@ -913,7 +915,8 @@ static int parse_executable (char *base, int image_len, unsigned int *poff,
 
 	    p = (Elf32_Phdr *) (hp.b + hp.e->e_phoff);
 	    if (p->p_type != PT_LOAD) {
-		fatal ("Cannot find a loadable segment in your ELF image");
+		silo_fatal("Cannot find a loadable segment in your "
+			   "ELF image");
 		prom_halt ();
 	    }
 	    if (solaris) {
@@ -923,7 +926,8 @@ static int parse_executable (char *base, int image_len, unsigned int *poff,
 	        for (i = 0; i < hp.e->e_phnum; i++, p++) {
 	            if (p->p_vaddr < 0x4000 + image_len ||
 				p->p_vaddr + p->p_memsz >= sa) {
-	        	fatal("Unable to handle your Solaris `ufsboot' bootloader.");
+	        	silo_fatal("Unable to handle your "
+				   "Solaris `ufsboot' bootloader.");
 	            	prom_halt ();
 	            }
 	            memcpy ((char *)p->p_vaddr,
@@ -951,7 +955,8 @@ static int parse_executable (char *base, int image_len, unsigned int *poff,
 				p->p_filesz = n + q->p_filesz;
 				p->p_memsz = n + q->p_memsz;
 	                } else {
-	                    fatal("Multiple loadable segments in your ELF image");
+	                    silo_fatal("Multiple loadable segments in "
+				       "your ELF image");
 	                    prom_halt();
 	                }
 	            }
@@ -968,7 +973,8 @@ static int parse_executable (char *base, int image_len, unsigned int *poff,
 
 	    p = (Elf64_Phdr *) (hp.b + hp.f->e_phoff);
 	    if (p->p_type != PT_LOAD) {
-		fatal ("Cannot find a loadable segment in your ELF image");
+		silo_fatal("Cannot find a loadable segment in your "
+			   "ELF image");
 		prom_halt ();
 	    }
 	    if (solaris) {
@@ -979,7 +985,8 @@ static int parse_executable (char *base, int image_len, unsigned int *poff,
 		    if (p->p_vaddr < 0x4000 + image_len ||
 			 p->p_vaddr + p->p_memsz >= sa) {
 
-			 fatal("Unable to handle your Solaris `ufsboot' bootloader.");
+			 silo_fatal("Unable to handle your "
+				    "Solaris `ufsboot' bootloader.");
 			 prom_halt ();
  		    }
 		    memcpy ((Elf64_Addr *)(long)(p->p_vaddr),
@@ -1005,7 +1012,8 @@ static int parse_executable (char *base, int image_len, unsigned int *poff,
 			    p->p_filesz = n + q->p_filesz;
 			    p->p_memsz = n + q->p_memsz;
 			} else {
-			    fatal("Multiple loadable segments in your ELF image");
+			    silo_fatal("Multiple loadable segments "
+				       "in your ELF image");
 			    prom_halt();
 			}
 		    }
@@ -1045,12 +1053,12 @@ int bootmain (void)
 
     prom_ranges_init ();
     get_idprom();
-    architecture = get_architecture ();
-    strcpy (given_bootargs, get_bootargs (1));
-    strcpy (my_bootargs, get_bootargs (0));
+    architecture = silo_get_architecture();
+    strcpy (given_bootargs, silo_get_bootargs(1));
+    strcpy (my_bootargs, silo_get_bootargs(0));
 
 #ifndef TFTP
-    if (diskinit () == -1)
+    if (silo_diskinit() == -1)
 	prom_halt ();
 #endif
 	
@@ -1080,9 +1088,10 @@ int bootmain (void)
     if (*silo_conf && silo_conf_partition >= 1 && silo_conf_partition <= 8) {
 	int len;
 	solaris = 0;
-	fileok = load_file (0, silo_conf_partition, silo_conf,
-			    (unsigned char *) 0x4000, (unsigned char *) &_start,
-			    &len, LOADFILE_GZIP | LOADFILE_NO_ROTATE, 0);
+	fileok = silo_load_file(0, silo_conf_partition, silo_conf,
+				(unsigned char *) 0x4000,
+				(unsigned char *) &_start,
+				&len, LOADFILE_GZIP | LOADFILE_NO_ROTATE, 0);
 	if (!fileok || (unsigned) len >= 65535)
 	    printf ("\nCouldn't load %s\n", silo_conf);
 	else {
@@ -1104,7 +1113,10 @@ int bootmain (void)
 			if (!device)
 			    device = cfg_get_strg (0, "device");
 			solaris = 0;
-			if (load_file (device, part, kname, (unsigned char *) 0x4000, (unsigned char *) &_start, &len, LOADFILE_GZIP, 0)) {
+			if (silo_load_file(device, part, kname,
+					   (unsigned char *) 0x4000,
+					   (unsigned char *) &_start, &len,
+					   LOADFILE_GZIP, 0)) {
 			    *(unsigned char *) (0x4000 + len) = 0;
 			    printf ("\n");
 			    print_message ((char *) 0x4000);
@@ -1147,7 +1159,7 @@ try_again:
 	    break;
 
 	if (solaris) {
-	    char *p = seed_part_into_device ((!device || !*device) ? bootdevice : device, part);
+	    char *p = seed_part_into_device ((!device || !*device) ? silo_disk_get_bootdevice() : device, part);
 	    strcpy (sol_params, p);
 	    params_device = strchr (sol_params, 0) + 1;
 	    strcpy (params_device, kname);
@@ -1162,8 +1174,9 @@ try_again:
 		printf ("\nNeither \"other\" nor \"solaris\" are compatible with proll\n");
 		continue;
 	    }
-	    if (!load_file (device, part, proll, (unsigned char *) 0x4000,
-			(unsigned char *) 0x40000, &image_len, LOADFILE_GZIP, 0)) {
+	    if (!silo_load_file(device, part, proll, (unsigned char *) 0x4000,
+				(unsigned char *) 0x40000, &image_len,
+				LOADFILE_GZIP, 0)) {
 	        printf ("\nProll not found.... try again\n");
 		continue;
 	    }
@@ -1172,8 +1185,9 @@ try_again:
             memcpy ((char *) 0x4000, ((char *) 0x4000) + off, len);
 
 	    image_base = (char *) 0x40000;
-	    if (!load_file (device, part, kname, image_base,
-			(unsigned char *) &_start, &image_len, LOADFILE_GZIP, 0)) {
+	    if (!silo_load_file(device, part, kname, image_base,
+				(unsigned char *) &_start, &image_len,
+				LOADFILE_GZIP, 0)) {
 	        printf ("\nImage not found.... try again\n");
 		continue;
 	    }
@@ -1206,8 +1220,10 @@ try_again:
 		}
 	    }
 
-	    if (!load_file (device, part, kname, image_base, image_end,
-			&image_len, load_cmd == CMD_LS ? LOADFILE_LS : LOADFILE_GZIP, 0)) {
+	    if (!silo_load_file(device, part, kname, image_base, image_end,
+				&image_len, ((load_cmd == CMD_LS) ?
+					     LOADFILE_LS :
+					     LOADFILE_GZIP), 0)) {
 		printf ("\nImage not found.... try again\n");
 
 		if (!load_cmd)
@@ -1243,7 +1259,8 @@ try_again:
 
 	memcpy (image_base, image_base + off, len);
 
-        hdrs = (struct HdrS_struct *)find_linux_HdrS (image_base, image_len);
+        hdrs = (struct HdrS_struct *)
+		silo_find_linux_HdrS(image_base, image_len);
 
 	if (hdrs && hdrs->ver < 0x300 && image_base != (char *)0x4000) {
 	    /* Kernel doesn't support being loaded to other than
@@ -1266,7 +1283,8 @@ try_again:
 
 	    /* Readjust some things */
 	    ret_offset = 0x4000;
-	    hdrs = (struct HdrS_struct *)find_linux_HdrS (image_base, image_len);
+	    hdrs = (struct HdrS_struct *)
+		silo_find_linux_HdrS(image_base, image_len);
 
 	    printf("done.\n");
 	}
@@ -1280,7 +1298,6 @@ try_again:
             if (fill_reboot_cmd && hdrs->ver >= 0x201) { /* ie. uses reboot_command */
 		char *q = (char *)hdrs->reboot_cmd_ptr_high;
                 char *r;
-                extern char bootdevice[];
 
                 /* On Ultra there is xword there, this hack makes
                  * it work...
@@ -1290,8 +1307,8 @@ try_again:
                 q = (char *)(((unsigned long)q)& 0x003fffff);
                 if (q >= (char *)0x4000 && q <= (char *)0x300000) {
                     if (given_bootargs_by_user) {
-                        if (strlen (bootdevice) <= 254) {
-			    strcpy (q, bootdevice);
+                        if (strlen (silo_disk_get_bootdevice()) <= 254) {
+			    strcpy (q, silo_disk_get_bootdevice());
 			    r = strchr (q, 0);
 			    if (strlen (given_bootargs) < 255 - (r - q)) {
 			        *r++ = ' ';
@@ -1341,15 +1358,19 @@ try_again:
             	
             	q = strchr (initrd_string, '|');
             	if (q && !initrd_size) {
-            	    fatal ("When more than one initial ramdisk piece is specified, you have to give\n"
-            	           "a non-zero initrd-size option which is no shorter than sum of all pieces\n"
-            	           "lengths. Try again...\n");
+            	    silo_fatal("When more than one initial ramdisk piece "
+			       "is specified, you have to give\n"
+			       "a non-zero initrd-size option which is no "
+			       "shorter than sum of all pieces\n"
+			       "lengths. Try again...\n");
             	    prom_halt ();
             	}
             	if (q) {
     		    initrd_start = memory_find ((initrd_size + 16383) & ~16383);
     		    if (!initrd_start) {
-        		fatal ("You do not have enough continuous available memory for such initial ramdisk.");
+        		silo_fatal("You do not have enough continuous "
+				   "available memory for such initial "
+				   "ramdisk.");
         		prom_halt ();
     		    }
     		    string = strdup (initrd_string);
@@ -1364,7 +1385,10 @@ try_again:
 			parse_name (r, initrd_defpart, &initrd_device, &initrd_partno, &initrd_kname);
 			if (!initrd_kname) break;
 			if (!initrd_device) initrd_device = initrd_defdevice;
-			if (!load_file (initrd_device, initrd_partno, initrd_kname, initrd_cur, initrd_limit, &len, 0, 0)) break;
+			if (!silo_load_file(initrd_device, initrd_partno,
+					    initrd_kname, initrd_cur,
+					    initrd_limit, &len, 0, 0))
+			  break;
 			initrd_cur += len;
 			if (!c) {
 			    statusok = 1;
@@ -1374,7 +1398,7 @@ try_again:
 			q = strchr (r, '|');
 			if (!q) q = strchr (r, 0);
 			if (initrd_prompt) {
-			    close ();
+			    silo_disk_close();
 			    printf ("Insert next media and press ENTER");
 			    prom_getchar ();
 			    printf ("\n");
@@ -1407,9 +1431,10 @@ try_again:
 		    parse_name (initrd_string, initrd_defpart, &initrd_device, &initrd_partno, &initrd_kname);
 		    if (initrd_kname) {
 		        if (!initrd_device) initrd_device = initrd_defdevice;
-	        	if (load_file (initrd_device, initrd_partno, initrd_kname,
-				       (char *) 0x300000, (unsigned char *) LARGE_RELOC,
-				       0, 0, initrd_lenfunc)) {
+	        	if (silo_load_file(initrd_device, initrd_partno,
+					   initrd_kname, (char *) 0x300000,
+					   (unsigned char *) LARGE_RELOC,
+					   0, 0, initrd_lenfunc)) {
 	        	    extern unsigned long long sun4u_initrd_phys;
 	        	    extern unsigned long sun4m_initrd_pa;
 
@@ -1443,17 +1468,17 @@ try_again:
         params_device = other_device;
     }
 
-    close ();
+    silo_disk_close();
     if (timer_status >= 1)
         close_timer ();
     if (proll) {
-	set_prollargs (params, (unsigned int)image_base, len);
+	silo_set_prollargs(params, (unsigned int)image_base, len);
 	if (show_arguments) {
 	    printf ("Arguments: \"%s\"\n");
     	    pause_after = 1;
 	}
     } else {
-	set_bootargs (params, params_device);
+	silo_set_bootargs(params, params_device);
 
 	if (kernel_params) {
     	    extern char barg_out[];
@@ -1465,7 +1490,7 @@ try_again:
 	}
 
 	if (show_arguments) {
-    	    show_bootargs ();
+    	    silo_show_bootargs();
     	    pause_after = 1;
 	}
     }

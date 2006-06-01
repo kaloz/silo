@@ -176,7 +176,7 @@ int promver = -1;
 int oldroot = -1;
 enum fs_type { unknownfs, ext2fs, ufsfs, romfs } fstype = unknownfs;
 
-void fatal (char *fmt,...)
+static void silo_fatal(char *fmt,...)
 {
     va_list ap;
     va_start (ap, fmt);
@@ -213,7 +213,7 @@ int check_fs (int fd)
     } rsd;
 
     if (lseek (fd, 1024, 0) != 1024 || read (fd, &sb, sizeof (sb)) != sizeof (sb))
-	fatal ("Cannot read Super Block!");
+	silo_fatal("Cannot read Super Block!");
     if (swab16 (sb.s_magic) == EXT2_SUPER_MAGIC) {
         if (fstype == unknownfs) fstype = ext2fs;
         return 1024 << swab32 (sb.s_log_block_size);
@@ -243,19 +243,20 @@ void read_sb (struct hwdevice *hwdev)
 
     hwdev->partat0 = 0;
     if ((fd = devopen (hwdev->dev, O_RDONLY)) == -1)
-	fatal ("Cannot open superblock on %s", hwdev->dev);
+	silo_fatal("Cannot open superblock on %s", hwdev->dev);
     hwdev->bs = check_fs (fd);
     if (hwdev->bs == (unsigned short)-1)
-	fatal ("File systems other than ext2, ext3, ufs and romfs not yet supported", hwdev->dev);
+	silo_fatal("File systems other than ext2, ext3, ufs and romfs "
+		   "not yet supported", hwdev->dev);
     close (fd);
     hwdev->nsect = hwdev->bs / 512;
     if (hwdev->part == -1)
 	return;
     sdl = (struct sun_disklabel *) &buff;
     if ((fd = devopen (hwdev->wholedev, O_RDONLY)) == -1)
-	fatal ("Error opening %s", hwdev->wholedev);
+	silo_fatal("Error opening %s", hwdev->wholedev);
     if (read (fd, buff, sizeof (buff)) != sizeof (buff))
-        fatal ("Error reading %s's label", hwdev->wholedev);
+        silo_fatal("Error reading %s's label", hwdev->wholedev);
     for (i = 0; i < 8; i++) {
 	if (i == 2) continue;
 	if (!sdl->partitions[i].start_cylinder && sdl->partitions[i].num_sectors) {
@@ -286,9 +287,12 @@ void read_sb (struct hwdevice *hwdev)
         }
     }
     if (i == 8) {
-	fatal ("In order to install SILO you must start at least one partition on cylinder\n"
-	       "0. Consider setting %s3 as WHOLE_DISK (starting at 0 and ending at disk end)\n"
-	       "and %s1 starting on cylinder 0 (both will make your life easier)\n", hwdev->wholedev, hwdev->wholedev);
+	silo_fatal("In order to install SILO you must start at least "
+		   "one partition on cylinder\n"
+		   "0. Consider setting %s3 as WHOLE_DISK (starting at 0 "
+		   "and ending at disk end)\n"
+		   "and %s1 starting on cylinder 0 (both will make your "
+		   "life easier)\n", hwdev->wholedev, hwdev->wholedev);
     }
     hwdev->doff = bswab16(sdl->ntrks) * bswab16(sdl->nsect) * bswab32(sdl->partitions[hwdev->part].start_cylinder);
     close (fd);
@@ -317,26 +321,26 @@ void make_room_for_raid1 (struct hwdevice *hwdev, char *name)
     if (raid1 <= 1)
 	return;
     if ((fd = open (name, O_RDWR)) == -1)
-	fatal ("Cannot open %s", name);
+	silo_fatal("Cannot open %s", name);
     if (fstat (fd, &st) < 0)
-        fatal ("Couldn't stat %s", name);
+        silo_fatal("Couldn't stat %s", name);
     if (lseek (fd, 0x90c, 0) != 0x90c || read(fd, buf, 12) != 12)
-	fatal ("Could not read %s version and length header", name);
+	silo_fatal("Could not read %s version and length header", name);
     if (memcmp (buf, "SILO", 4))
-	fatal ("Second stage %s too old", name);
+	silo_fatal("Second stage %s too old", name);
     len = *(int *)&buf[8];
     if (len % 512 || st.st_size < len || (st.st_size - len) % 2048)
-	fatal ("Second stage %s has wrong size", name);
+	silo_fatal("Second stage %s has wrong size", name);
     i = raid1 - 1 - (st.st_size - len) / 2048;
     if (i > 0) {
 	if (lseek (fd, len, 0) != len)
-	    fatal ("Could not seek in %s", name);
+	    silo_fatal("Could not seek in %s", name);
 	memset(buf, 0, 512);
 	/* Should not use ftruncate here, because we cannot have fs
 	   holes in */
 	for (i = 4 * i; i > 0; i--) {
 	    if (write (fd, buf, 512) != 512)
-		fatal ("Could not write to %s", name);
+		silo_fatal("Could not write to %s", name);
 	}
     }
     second_b_len = len;
@@ -357,11 +361,11 @@ int get_partition_blocks (struct hwdevice *hwdev, char *filename)
 again:
     if ((fd = open (name, O_RDONLY)) == -1) {
     	gpb_cleanup(filename, movecount);
-	fatal ("Cannot find %s", name);
+	silo_fatal("Cannot find %s", name);
     }
     if (fstat (fd, &st) < 0) {
     	gpb_cleanup(filename, movecount);
-        fatal ("Couldn't stat %s", name);
+        silo_fatal("Couldn't stat %s", name);
     }
 #ifdef __linux__
     if (!movecount)
@@ -372,7 +376,8 @@ again:
     	if (p) p++; else p = name;
     	start = (long)st.st_ino + 16 + ((strlen(p) + 16) & ~15);
     	if (start & 511)
-    		fatal ("File %s on romfs not aligned on 512B boundary. Use genromfs -a to generate the image", name);
+    		silo_fatal("File %s on romfs not aligned on 512B boundary. "
+			   "Use genromfs -a to generate the image", name);
     	start = hwdev->doff + start / 512;
 	if (flash_image) start += 1024 / 512;	/* make room for ieee32 */
     	for (j = 0; j * 512 < size; j++)
@@ -387,7 +392,9 @@ again:
 	    break;
 	if (!block) {
 	    if ((j << 9) < size)
-	        fatal ("Filesystem holes are not yet supported for second stage loader. Mail silo-general@lists.sparc-boot.org");
+	        silo_fatal("Filesystem holes are not yet supported for "
+			   "second stage loader. Mail "
+			   "silo-general@lists.sparc-boot.org");
 	    else
 	        break;
 	}
@@ -395,14 +402,18 @@ again:
 	    if (movecount < 5) {
 	    	if (!movecount) {
 			if (hwdev->id)
-				fatal ("Your %s is located above the magic %dGB boundary from the start of the disk\n"
-				       "on one of the RAID1 mirrors. Please make sure it is below the limit on all\n"
-				       "mirrors.", filename, prombug);
+				silo_fatal("Your %s is located above the "
+					   "magic %dGB boundary from the "
+					   "start of the disk\n"
+					   "on one of the RAID1 mirrors. "
+					   "Please make sure it is below the "
+					   "limit on all\n"
+					   "mirrors.", filename, prombug);
 	    		buf = malloc (size);
 	    		if (!buf)
-	    			fatal ("Not enough memory");
+	    			silo_fatal("Not enough memory");
 	    		if (read (fd, buf, size) != size)
-	    			fatal ("Cannot read from %s", filename);
+	    			silo_fatal("Cannot read from %s", filename);
 	    	}
 	    	close (fd);
 	    	movecount++;
@@ -411,14 +422,18 @@ again:
 	    	fd = creat (name, 0644);
 	    	if (!fd || write (fd, buf, size) != size) {
     			gpb_cleanup(filename, movecount);
-	    		fatal ("Your %s is located above the magic %dGB boundary from the start of the disk.\n"
-	    	   	       "Please move it down, so that SILO first stage loader can load it.", filename, prombug);
+	    		silo_fatal("Your %s is located above the magic %dGB "
+				   "boundary from the start of the disk.\n"
+				   "Please move it down, so that SILO first "
+				   "stage loader can load it.",
+				   filename, prombug);
 	    	}
 	    	close (fd);
 	    	goto  again;
 	    }
     	    gpb_cleanup(filename, movecount);
-	    fatal ("Your %s is located above the magic %dGB boundary from the start of the disk.\n"
+	    silo_fatal("Your %s is located above the magic %dGB boundary "
+		       "from the start of the disk.\n"
 	    	   "Please move it down, so that SILO first stage loader can load it.", filename, prombug);
 	}
 	for (k = 0; k < hwdev->nsect; k++)
@@ -432,8 +447,9 @@ again:
 		   would resync away the bootblock unless second.b starts on exactly the same
 		   offsets in each device */
 		if (memcmp (hwdevs->blocks, hwdev->blocks, sizeof(hwdev->blocks)))
-			fatal ("With silo -t on RAID1 all mirrors must start at the same offset\n"
-			       "from the start of the disk.");
+			silo_fatal("With silo -t on RAID1 all mirrors must "
+				   "start at the same offset\n"
+				   "from the start of the disk.");
 	    } else
 		for (i = 0; i < 4; i++)
 		    hwdev->blocks[i] = hwdev->blocks[second_b_len / 512 + (hwdev->id - 1) * 4 + i];
@@ -443,8 +459,9 @@ again:
     if (movecount) {
     	if (rename (name, filename) < 0) {
     	    gpb_cleanup(filename, movecount - 1);
-    	    fatal ("Cannot rename a suitably located copy (below 1GB from start of disk) of %s to it's old position.\n"
-    	    	   "Please check %s\n", filename, filename);
+    	    silo_fatal("Cannot rename a suitably located copy (below 1GB "
+		       "from start of disk) of %s to it's old position.\n"
+		       "Please check %s\n", filename, filename);
     	}
     	gpb_cleanup(filename, movecount - 1);
     }
@@ -465,12 +482,12 @@ void write_block_device (struct hwdevice *hwdev)
     unsigned char part;
 
     if ((fd = devopen (masterboot ? hwdev->wholedev : hwdev->dev, O_RDWR)) == -1)
-	fatal ("Cannot open %s", hwdev->dev);
+	silo_fatal("Cannot open %s", hwdev->dev);
     if (flash_image) off = IEEE32_OFFSET;
     else if (floppy_image) off = 1020 + 512 - 4;
     else off = 1020;
     if (lseek (fd, off, SEEK_SET) != off)
-	fatal ("Seek error on %s", hwdev->dev);
+	silo_fatal("Seek error on %s", hwdev->dev);
     if (floppy_image) {
     	int j;
     	for (j = 0; j < 512 && hwdev->blocks[j]; j++);
@@ -478,12 +495,12 @@ void write_block_device (struct hwdevice *hwdev)
     	tmp = bswab32 (j);
     	rc = write (fd, &tmp, 4);
 	if (rc != 4)
-    	    fatal ("Couldn't write to %s", hwdev->dev);
+    	    silo_fatal("Couldn't write to %s", hwdev->dev);
     }
     tmp = bswab32 (hwdev->blocks[0]);
     rc = write (fd, &tmp, 4);
     if (rc != 4)
-    	fatal ("Couldn't write to %s", hwdev->dev);
+    	silo_fatal("Couldn't write to %s", hwdev->dev);
     if (!flash_image) {
         if (!ultra || floppy_image) {
     	    if (floppy_image)
@@ -491,11 +508,11 @@ void write_block_device (struct hwdevice *hwdev)
     	    else
     	        offset = DIGIT_OFFSET;
 	    if (lseek (fd, offset, SEEK_SET) != offset)
-		fatal ("Seek error on %s", hwdev->dev);
+		silo_fatal("Seek error on %s", hwdev->dev);
 	    part = hwdev->partat0 + '0';
 	    rc = write (fd, &part, 1);
 	    if (rc != 1)
-	    	fatal ("Couldn't write to %s", hwdev->dev);
+	    	silo_fatal("Couldn't write to %s", hwdev->dev);
         }
         if (floppy_image)
             offset = FD_LETTER_OFFSET;
@@ -504,24 +521,24 @@ void write_block_device (struct hwdevice *hwdev)
         else
             offset = LETTER_OFFSET;
         if (lseek (fd, offset, SEEK_SET) != offset)
-	    fatal ("Seek error on %s", hwdev->dev);
+	    silo_fatal("Seek error on %s", hwdev->dev);
         part = hwdev->partat0 + 'a';
         rc = write (fd, &part, 1);
         if (rc != 1)
-    	    fatal ("Couldn't write to %s", hwdev->dev);
+    	    silo_fatal("Couldn't write to %s", hwdev->dev);
     	if (!floppy_image) {
 	    if (ultra)
 		offset = ULTRA_NUMBER_OFFSET;
 	    else
 		offset = NUMBER_OFFSET;
 	    if (lseek (fd, offset, SEEK_SET) != offset)
-		fatal ("Seek error on %s", hwdev->dev);
+		silo_fatal("Seek error on %s", hwdev->dev);
 	    part = 0;
 	    if (raid1)
 		part = hwdev->id + 1;
 	    rc = write (fd, &part, 1);
 	    if (rc != 1)
-	    	fatal ("Couldn't write to %s", hwdev->dev);
+	    	silo_fatal("Couldn't write to %s", hwdev->dev);
     	}
     }
     close (fd);
@@ -546,50 +563,53 @@ void write_block_tables (struct hwdevice *hwdev, char *filename, char *config_fi
 
     if ((fd = open (filename, O_RDWR)) == -1) {
 	if (raid1)
-	    fatal ("Cannot open %s", filename);
+	    silo_fatal("Cannot open %s", filename);
         if ((fd = open (filename, O_RDONLY)) >= 0) {
             close (fd); /* Maybe it is romfs */
             if ((fd = devopen (hwdev->wholedev, O_RDWR)) == -1)
-	    	fatal ("Cannot open %s", hwdev->wholedev);
+	    	silo_fatal("Cannot open %s", hwdev->wholedev);
 	    tordonly = 1;
         } else
-	    fatal ("Cannot open %s", filename);
+	    silo_fatal("Cannot open %s", filename);
     }
     if (tordonly) {
         char *p = (char *)hwdev->blocks, *pend = p + sizeof (hwdev->blocks);
 
 	if (raid1)
-	    fatal ("RAID1 not supported with read-only filesystems");
+	    silo_fatal("RAID1 not supported with read-only filesystems");
         for (i = 0, rc = 0; p < pend; i++, p+=512) {
             if (lseek (fd, hwdev->blocks [i] * 512, SEEK_SET) != hwdev->blocks [i] * 512)
-        	fatal ("Cannot seek in %s", filename);
+        	silo_fatal("Cannot seek in %s", filename);
             rc += write (fd, p, 512);
         }
     } else {
 	if (lseek (fd, 0, SEEK_SET) != 0)
-            fatal ("Cannot seek in %s", filename);
+            silo_fatal("Cannot seek in %s", filename);
         rc = write (fd, hwdev->blocks, sizeof (hwdev->blocks));
         if (raid1 > 1) {
-	    if (rc != sizeof (hwdev->blocks)) fatal ("Couldn't write to %s", filename);
+	    if (rc != sizeof (hwdev->blocks))
+		silo_fatal("Couldn't write to %s", filename);
 	    if (lseek (fd, second_b_len, SEEK_SET) != second_b_len)
-		fatal ("Cannot seek in %s", filename);
+		silo_fatal("Cannot seek in %s", filename);
 	    for (d = hwdev->next; d; d = d->next)
 		rc = write (fd, d->blocks, sizeof (d->blocks));
 	}
     }
-    if (rc != sizeof (hwdev->blocks)) fatal ("Couldn't write to %s", filename);
+    if (rc != sizeof (hwdev->blocks))
+	silo_fatal("Couldn't write to %s", filename);
     if (tordonly)
     	i = hwdev->blocks [0x808/512] * 512 + 0x808 % 512;
     else
     	i = 0x808;
     if (lseek (fd, i, SEEK_SET) != i)
-        fatal ("Cannot seek in %s", filename);
+        silo_fatal("Cannot seek in %s", filename);
     if (read (fd, &buffer, sizeof(buffer)) != sizeof(buffer))
-	fatal ("Couldn't read from %s", filename);
+	silo_fatal("Couldn't read from %s", filename);
     if (lseek (fd, i, SEEK_SET) != i)
-        fatal ("Cannot seek in %s", filename);
+        silo_fatal("Cannot seek in %s", filename);
     if (buffer.l != 'L' || memcmp(buffer.silover, "SILO", 4))
-	fatal ("Corrupted %s or second stage with incorrect version", filename);
+	silo_fatal("Corrupted %s or second stage with incorrect version",
+		   filename);
     buffer.partno = partno;
     buffer.partat0 = hwdev->partat0;
     buffer.raid_dsk_number = 0;
@@ -602,7 +622,7 @@ void write_block_tables (struct hwdevice *hwdev, char *filename, char *config_fi
 	}
     }
     if (write (fd, &buffer, sizeof(buffer)) != sizeof(buffer))
-        fatal ("Couldn't write to %s", filename);
+        silo_fatal("Couldn't write to %s", filename);
     close (fd);
     for (d = hwdev; d; d = d->next)
 	write_block_device (d);
@@ -650,11 +670,11 @@ int examine_bootblock (char *device, char *filename, int do_backup)
     int ret = 0;
 
     if ((fd = devopen (device, O_RDONLY)) == -1)
-	fatal ("Cannot open %s", device);
+	silo_fatal("Cannot open %s", device);
     if (lseek (fd, 512, 0) != 512)
-        fatal ("Couldn't seek on %s", device);
+        silo_fatal("Couldn't seek on %s", device);
     if (read (fd, buffer, sizeof (buffer)) != sizeof(buffer))
-        fatal ("Couldn't read your old bootblock");
+        silo_fatal("Couldn't read your old bootblock");
     close (fd);
     if (memcmp (buffer + 24, "SILO" IMGVERSION, 8))
         ret = 1;
@@ -663,10 +683,11 @@ int examine_bootblock (char *device, char *filename, int do_backup)
     	if ((fp = fopen (filename, "w")) == NULL) {
     	    if (do_backup >= 2)
     	    	return ret;
-	    fatal ("Cannot open file for saving backup of your bootblock");
+	    silo_fatal("Cannot open file for saving backup of your bootblock");
 	}
         if ((rc = fwrite (buffer, 1, sizeof (buffer), fp)) != sizeof (buffer))
-            fatal ("Couldn't write to %s backup of your bootblock", filename);
+            silo_fatal("Couldn't write to %s backup of your bootblock",
+		       filename);
         fclose (fp);
     }
     return ret;
@@ -694,12 +715,12 @@ void install_first_stage (char *device, char *filename)
     struct sun_disklabel sdl;
 
     if ((fd = devopen (device, floppy_image ? O_RDWR : O_WRONLY)) == -1)
-	fatal ("Couldn't open device %s for writing", device);
+	silo_fatal("Couldn't open device %s for writing", device);
     if ((fp = fopen (filename, "r")) == NULL)
-	fatal ("Couldn't open file %s", filename);
+	silo_fatal("Couldn't open file %s", filename);
     rc = fread (buff, 1, (floppy_image || flash_image) ? 1024 : 512, fp);
     if (rc <= 0)
-	fatal ("Couldn't read new silo bootblock from %s", filename);
+	silo_fatal("Couldn't read new silo bootblock from %s", filename);
     if (floppy_image) {
         unsigned short *ush;
         unsigned short x;
@@ -707,13 +728,13 @@ void install_first_stage (char *device, char *filename)
         int i;
 
 	if (lseek (fd, 0, 0))
-		fatal ("Couldn't seek on %s", device);
+		silo_fatal("Couldn't seek on %s", device);
 	if (read(fd, (char *)&sdl, 512) != 512)
-		fatal ("Couldn't read on %s", device);
+		silo_fatal("Couldn't read on %s", device);
 	if (lseek (fd, 0, 0))
-		fatal ("Couldn't seek on %s", device);
+		silo_fatal("Couldn't seek on %s", device);
 	if (strncmp ((char *)&sdl, "-rom1fs-", 8))
-		fatal ("Couldn't find romfs image on %s", device);
+		silo_fatal("Couldn't find romfs image on %s", device);
         memcpy (((char *)&sdl) + 128, floppy_label + 128, 512 - 128);
         ush = (unsigned short *)&sdl;
 
@@ -738,13 +759,13 @@ void install_first_stage (char *device, char *filename)
         *(unsigned int *)(ush + 62) = (-d/2);
 
         if (write (fd, &sdl, 512) != 512)
-            fatal ("Couldn't write new partition table to %s", device);
+            silo_fatal("Couldn't write new partition table to %s", device);
     } else if (flash_image) {
 	/*
 	 * Make sure that both block table address and checksum fit.
 	 */
         if (rc > 1016)
-            fatal ("Flash bootblock is too large");
+            silo_fatal("Flash bootblock is too large");
         /*
          * Here we do an assumption which is not quite safe.
          * PROM gets the size looking at section headers,
@@ -754,9 +775,9 @@ void install_first_stage (char *device, char *filename)
         flash_check_sum (buff, rc);
         rc += 4;
     } else if (lseek (fd, 512, 0) != 512)
-        fatal ("Couldn't seek on %s", device);
+        silo_fatal("Couldn't seek on %s", device);
     if (write (fd, buff, rc) != rc)
-        fatal ("Couldn't write new silo bootblock to %s", device);
+        silo_fatal("Couldn't write new silo bootblock to %s", device);
     close (fd);
     fclose (fp);
 }
@@ -989,13 +1010,15 @@ struct hwdevice *get_device(int majno, int minno)
 
 			sprintf (dev, "/dev/md%d", minno);
 			md_fd = devopen (dev, O_RDONLY);
-			if (md_fd < 0) fatal ("Could not open RAID device");
+			if (md_fd < 0)
+				silo_fatal("Could not open RAID device");
 			if (ioctl (md_fd, GET_ARRAY_INFO, &md_array_info) < 0)
-				fatal ("Could not get RAID array info");
+				silo_fatal("Could not get RAID array info");
 			if (md_array_info.major_version == 0 && md_array_info.minor_version < 90)
-				fatal ("Raid versions < 0.90 are not supported");
+				silo_fatal("Raid versions < 0.90 are not "
+					   "supported");
 			if (md_array_info.level != 1)
-				fatal ("Only RAID1 supported");
+				silo_fatal("Only RAID1 supported");
 			hwdev = NULL;
 			last = NULL;
 			for (i = 0; i < md_array_info.nr_disks; i++) {
@@ -1004,7 +1027,8 @@ struct hwdevice *get_device(int majno, int minno)
 					break; // That's all folks
 				md_disk_info.number = i;
 				if (ioctl (md_fd, GET_DISK_INFO, &md_disk_info) < 0)
-					fatal ("Could not get RAID disk info for disk %d\n", i);
+					silo_fatal("Could not get RAID disk "
+						   "info for disk %d\n", i);
 				if(md_disk_info.majorno != 0 && md_disk_info.minorno != 0) {
 					d = get_device (md_disk_info.majorno, md_disk_info.minorno);
 					if (md_disk_info.state == MD_DISK_FAULTY) {
@@ -1020,7 +1044,8 @@ struct hwdevice *get_device(int majno, int minno)
 				}
 			}
 			if (!hwdev)
-				fatal ("No non-faulty disks found in RAID1");
+				silo_fatal("No non-faulty disks found "
+					   "in RAID1");
 			for (d = hwdev; d; d = d->next)
 				d->id = id++;
 			raid1 = id;
@@ -1031,7 +1056,9 @@ struct hwdevice *get_device(int majno, int minno)
 	default: {
 		char *p = find_dev (makedev (majno, minno));
 
-		if (!p) fatal ("Couldn't find out what device is second stage on");
+		if (!p)
+		    silo_fatal("Couldn't find out what device is second "
+			       "stage on");
 		strcpy (dev, p);
 		strcpy (wholedev, p);
 #ifdef __sun__
@@ -1049,7 +1076,8 @@ struct hwdevice *get_device(int majno, int minno)
 		break;
     }
     hwdev = malloc(sizeof(struct hwdevice) + strlen(dev) + strlen(wholedev) + 4);
-    if (!hwdev) fatal("Not enough memory");
+    if (!hwdev)
+	silo_fatal("Not enough memory");
     memset(hwdev, 0, sizeof(*hwdev));
     hwdev->dev = (char *)(hwdev + 1);
     strcpy (hwdev->dev, dev);
@@ -1215,7 +1243,7 @@ int main(int argc,char **argv)
 
     if (new_root && strcmp("/", new_root)) {
        if (stat (new_root, &st1) < 0 || !S_ISDIR(st1.st_mode)) {
-           fatal ("New root %s is not a directory", new_root);
+           silo_fatal("New root %s is not a directory", new_root);
        }
        oldroot = open("/", O_RDONLY);
        chroot(new_root);
@@ -1239,10 +1267,10 @@ int main(int argc,char **argv)
 
     secondary = strdup (secondary);
     if (stat (secondary, &st1) < 0)
-        fatal ("Cannot open second stage loader %s", secondary);
+        silo_fatal("Cannot open second stage loader %s", secondary);
     hwdevs = get_device (mmajor(st1.st_dev), mminor(st1.st_dev));
     if (raid1 > 32)
-	fatal ("SILO supports at most 32 disks in the RAID1 array");
+	silo_fatal("SILO supports at most 32 disks in the RAID1 array");
     if (raid1 && masterboot) {
 	struct hwdevice *d, *d1;
 	/* Check if we have to remove some RAID1 mirrors, because
@@ -1266,7 +1294,7 @@ int main(int argc,char **argv)
          * So we do not bother trying.
          */
         if (raid1)
-	    fatal ("-J cannot be used with RAID1");
+	    silo_fatal("-J cannot be used with RAID1");
 	hwdevs->wholedev = flash_image;
     }
     p = backup;
@@ -1274,12 +1302,14 @@ int main(int argc,char **argv)
     config_file = strdup (config_file);
     strcpy (backup, p);
     if (!backup || !config_file)
-	fatal ("Not enough memory");
+	silo_fatal("Not enough memory");
     if (stat (config_file, &st2) >= 0) {
 	if (raid1 && st1.st_dev != st2.st_dev)
-	    fatal ("Config file %s has to be on the same RAID1 device as second stage bootblock", config_file);
+	    silo_fatal("Config file %s has to be on the same RAID1 device "
+		       "as second stage bootblock", config_file);
 	else if (hwdevs->type == TYPE_UNKNOWN && st1.st_dev != st2.st_dev)
-	    fatal ("Config file %s has to be on the %s device", config_file, hwdevs->dev);
+	    silo_fatal("Config file %s has to be on the %s device",
+		       config_file, hwdevs->dev);
 #ifdef __linux__
         else if ((hwdevs->type == TYPE_SCSI && (mmajor(st2.st_dev) != mmajor(st1.st_dev) || (mminor(st2.st_dev) & (~0xf)) != (mminor(st1.st_dev) & (~0xf)))) ||
             (hwdevs->type == TYPE_IDE && (mmajor(st2.st_dev) != mmajor(st1.st_dev) || (mminor(st2.st_dev) & (~0x3f)) != (mminor(st1.st_dev) & (~0x3f)))))
@@ -1288,7 +1318,9 @@ int main(int argc,char **argv)
 #else
 #  error "Unknown system"
 #endif
-            fatal ("Config file %s has to be on the %s device (on any partition there)", config_file, hwdevs->wholedev);
+            silo_fatal("Config file %s has to be on the %s device "
+		       "(on any partition there)", config_file,
+		       hwdevs->wholedev);
         else {
             char *p, *q, *r, c;
      	    char readlinkbuf[2048];
@@ -1303,7 +1335,7 @@ int main(int argc,char **argv)
 	            *q = 0;
 	        } else c = 0;
 	        if (lstat (*buffer ? buffer : "/", &st3) < 0)
-	            fatal ("Couldn't stat %s\n", config_file);
+	            silo_fatal("Couldn't stat %s\n", config_file);
 	        if (st3.st_dev == st2.st_dev) {
 	            *q = c;
 	            config_file = q;
@@ -1312,7 +1344,7 @@ int main(int argc,char **argv)
 	        if (S_ISLNK(st3.st_mode)) {
 	            len = readlink (buffer, readlinkbuf, 2048);
 	            if (len < 0)
-	                fatal ("Couldn't readlink %s\n", config_file);
+	                silo_fatal("Couldn't readlink %s\n", config_file);
 	            readlinkbuf[len] = 0;
 	            if (*readlinkbuf == '/') {
 	                if (c) {
@@ -1340,7 +1372,7 @@ int main(int argc,char **argv)
 	            *q = c;
 	            p = q + 1;
 	            if (!c)
-	            	fatal ("Internal error\n");
+	            	silo_fatal("Internal error\n");
 	        }
 	    }     	               
         }
@@ -1434,7 +1466,7 @@ static errcode_t std_open (const char *name, int flags, io_channel * channel)
 	return EXT2_ET_BAD_DEVICE_NAME;
     std_fd = devopen (name, O_RDONLY);
     if (std_fd < 0)
-    	fatal ("Cannot open %s", name);
+    	silo_fatal("Cannot open %s", name);
     memset (io, 0, sizeof (struct struct_io_channel));
     io->magic = EXT2_ET_MAGIC_IO_CHANNEL;
     io->manager = std_io_manager;
@@ -1464,9 +1496,9 @@ static errcode_t std_read_blk (io_channel channel, unsigned long block, int coun
 
     size = (count < 0) ? -count : count * cbs;
     if (lseek (std_fd, block * cbs, SEEK_SET) != block * cbs)
-    	fatal ("Cannot seek");
+    	silo_fatal("Cannot seek");
     if (read (std_fd, data, size) != size)
-	fatal ("Read error on block %d", block);
+	silo_fatal("Read error on block %d", block);
     return 0;
 }
 
@@ -1491,10 +1523,10 @@ static int ufs_blocks_dump (ufs_filsys fs, blk_t *block, int i, void *private)
 static int ufs_blocks (struct hwdevice *hwdev, ino_t inode)
 {
     if (ufs_open (hwdev->dev, std_io_manager, &fs))
-    	fatal ("Cannot open ufs filesystem containing second stage");
+    	silo_fatal("Cannot open ufs filesystem containing second stage");
     hwdev->nsect = cbs / 512;
     if (ufs_block_iterate (fs, inode, ufs_blocks_dump, hwdev))
-        fatal ("Block iterating error on second stage");
+        silo_fatal("Block iterating error on second stage");
     blocks [ufs_block_idx] = 0;
     return 0;
 }

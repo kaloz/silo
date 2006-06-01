@@ -187,13 +187,13 @@ int dump_block (blk_t * blocknr, int blockcnt)
                 block_no = *blocknr;
                 block_cnt = 1;
                 if (blockcnt) {
-                    fatal ("File cannot have a hole at beginning");
+                    silo_fatal("File cannot have a hole at beginning");
                     return BLOCK_ABORT;
                 }
                 last_blockcnt = -1;
             }
             if (filebuffer + (block_cnt + ((*blocknr) ? (blockcnt - last_blockcnt - 1) : 0)) * bs > filelimit) {
-                fatal ("Image too large to fit in destination");
+                silo_fatal("Image too large to fit in destination");
                 return BLOCK_ABORT;
             }
             if (block_cnt > 0 && io_channel_read_blk (fs->io, block_no, block_cnt, filebuffer))
@@ -321,7 +321,7 @@ static int dump_device_range (char *filename, char *bogusdev, int *len,
     return 0;
 }
 
-int load_file (char *device, int partno, char *filename, char *buffer,
+int silo_load_file(char *device, int partno, char *filename, char *buffer,
 	       char *limit, int *len, int cmd,
 	       void (*lenfunc)(int, char **, char **))
 {
@@ -336,7 +336,7 @@ int load_file (char *device, int partno, char *filename, char *buffer,
 
     mark (&mmark);
     if (!device)
-	device = bootdevice;
+	device = silo_disk_get_bootdevice();
 
     bogdev = bogusdev;
 
@@ -349,7 +349,7 @@ int load_file (char *device, int partno, char *filename, char *buffer,
     } else
         bogusdev[8] = partno + '0';
 
-    if (setdisk (device) < 0)
+    if (silo_disk_setdisk(device) < 0)
 	goto done_2;
 
     do_gunzip = cmd & LOADFILE_GZIP;
@@ -379,7 +379,7 @@ int load_file (char *device, int partno, char *filename, char *buffer,
 
     if (!silo_fs_ops[i]) {
 	if (!(cmd & LOADFILE_QUIET))
-	    fatal ("Unable to open filesystem");
+	    silo_fatal("Unable to open filesystem");
 	goto done_2;
     } else
 	cur_ops = silo_fs_ops[i];
