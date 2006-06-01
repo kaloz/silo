@@ -834,6 +834,8 @@ static int get_params (char **device, int *part, char **kname, char **proll,
 
 static void initrd_lenfunc (int len, char **filebuffer, char **filelimit)
 {
+    extern unsigned long long initrd_phys;
+
     initrd_start = memory_find ((len + 16383) & ~16383);
     if (!initrd_start) {
         fatal ("You do not have enough continuous available memory for such initial ramdisk.");
@@ -842,7 +844,8 @@ static void initrd_lenfunc (int len, char **filebuffer, char **filelimit)
     initrd_size = len;
     *filebuffer = initrd_start;
     *filelimit = initrd_start + ((len + 16383) & ~16383);
-    printf("Loading initial ramdisk (%d bytes at 0x%x)...\n", len, initrd_start);
+    printf("Loading initial ramdisk (%d bytes at 0x%llx phys, 0x%x virt)...\n", len,
+	   initrd_phys, initrd_start);
 }
 
 static int parse_executable (char *base, int image_len, unsigned int *poff,

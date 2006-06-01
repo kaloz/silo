@@ -210,6 +210,8 @@ inline void sun4m_set_direct (unsigned long l, unsigned long set)
 #define ASI_ITLB_DATA_ACCESS	0x55
 #endif
 
+unsigned long long initrd_phys;
+
 unsigned long sun4m_initrd_pa;
 unsigned long sun4m_initrd_va;
 
@@ -257,6 +259,7 @@ char *memory_find (int len)
                         unsigned long lev1;
                         int i;
                     	sun4m_initrd_pa = (unsigned long)beg;
+			initrd_phys = (unsigned long long)(unsigned long)beg;
                     	lev1 = sun4m_get_lev1();
                     	for (i = 0x60; i < 0xa0; i++)
                     	    if (!(sun4m_get_direct(lev1 + 4*i) & 3))
@@ -365,7 +368,7 @@ static char *sun4u_memory_find (unsigned int len, int is_kernel)
 	} else {
 		sun4u_initrd_len = len;
 		sun4u_initrd_virt = virt;
-		sun4u_initrd_phys = phys;
+		sun4u_initrd_phys = initrd_phys = phys;
 	}
 
         __asm __volatile("\n\
