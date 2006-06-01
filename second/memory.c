@@ -376,7 +376,12 @@ static char *sun4u_memory_find (unsigned int len, int is_kernel)
 	} else {
 		sun4u_initrd_len = len;
 		sun4u_initrd_virt = virt;
-		sun4u_initrd_phys = initrd_phys = phys;
+		initrd_phys = phys;
+		/* Not sure what the old kernel crap is for, but it
+		 * expects the passed initrd physical to be relative to
+		 * the phys memory base. We'll keep compatible with older
+		 * kernels to avoid any problems. */
+		sun4u_initrd_phys = phys - phys_base;
 	}
 
         __asm __volatile("\n\
