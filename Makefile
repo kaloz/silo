@@ -40,6 +40,10 @@ install:
 	@echo SILO is only supported on SPARC Linux and Solaris.
 endif
 
+tag:
+	svn copy -m "Tag $(VERSION)" svn://svn.phunnypharm.org/silo/trunk \
+		svn://svn.phunnypharm.org/silo/tags/v$(VERSION)
+
 # This is just for me to make release tarballs
 release: ../silo-loaders-$(VERSION).tar.gz ../silo-$(VERSION).tar.gz ../silo-$(VERSION).tar.bz2
 	rm -rf ../silo-$(VERSION) boot
