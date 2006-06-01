@@ -149,10 +149,13 @@ static int do_rotate = 0;
 
 static void rotate (void)
 {
-    static int i = 0;
+    static int i = 0, slowdown = 0;
     static char rot[] = "\\|/-";
 
     if (!do_rotate)
+	return;
+
+    if (slowdown++ % 4)
 	return;
 
     printf ("%c\b", rot[i % 4]);
