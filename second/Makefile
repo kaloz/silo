@@ -83,7 +83,7 @@ util:	util.c
 	$(CC) -DSMALL_RELOC=$(SMALL_RELOC) -DLARGE_RELOC=$(LARGE_RELOC) -o util util.c
 
 clean:
-	$(RM) *.o fs/*.o second* silotftp* *.map util fs/libfs.a
+	$(RM) *.o fs/*.o second* silotftp* util fs/libfs.a
 
 crt0.o:	crt0.S
 	$(CC) $(CFLAGS) -c -Wa,-Av9 -DIMGVERSION='"SILO$(IMGVERSION)"' crt0.S
@@ -95,26 +95,15 @@ timer.o: timer.c
 	$(CC) $(CFLAGS) -c -Wa,-Av9a timer.c
 
 second.b: second util
-	$(CP) second second.tmp
-	$(CP) second2 second2.tmp
-	$(STRIP) second.tmp
-	$(STRIP) second2.tmp
-	$(ELFTOAOUT) -o second.image.tmp second.tmp
-	$(ELFTOAOUT) -o second2.image.tmp second2.tmp
-	./util second.map second.image.tmp second2.image.tmp second.b second.b2
+	$(ELFTOAOUT) -o second.aout second
+	$(ELFTOAOUT) -o second2.aout second2
+	./util second.map second.aout second2.aout second.b second.b2
 	$(GZIP) -9cfn second.b2 >> second.b
 	$(DD) if=/dev/zero bs=1 count=`$(LS) -l second.b | $(AWK) '{len=$$5%512;if(len!=0)len=512-len;print len}'` >> second.b
 	$(LS) -l second.b | $(AWK) '{printf "%c%c%c%c",0,$$5/65536,($$5%65536)/256,0}' | $(DD) of=second.b bs=4 count=1 seek=581 conv=notrunc
-	$(RM) second.tmp second.image.tmp second2.tmp second2.image.tmp second.b2
 
 silotftp.b: silotftp util
-	$(CP) silotftp silotftp.tmp
-	$(CP) silotftp2 silotftp2.tmp
-	$(STRIP) silotftp.tmp
-	$(STRIP) silotftp2.tmp
-	$(ELFTOAOUT) -o silotftp.image.tmp silotftp.tmp
-	$(ELFTOAOUT) -o silotftp2.image.tmp silotftp2.tmp
-	./util -a silotftp.map silotftp.image.tmp silotftp2.image.tmp silotftp.b silotftp.b2
+	$(ELFTOAOUT) -o silotftp.aout silotftp
+	$(ELFTOAOUT) -o silotftp2.aout silotftp2
+	./util -a silotftp.map silotftp.aout silotftp2.aout silotftp.b silotftp.b2
 	$(GZIP) -9cfn silotftp.b2 >> silotftp.b
-	$(RM) silotftp.tmp silotftp.image.tmp silotftp2.tmp silotftp2.image.tmp silotftp.b2
-
