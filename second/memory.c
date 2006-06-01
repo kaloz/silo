@@ -341,6 +341,12 @@ static char *sun4u_memory_find (unsigned int len, int is_kernel)
 			p[i].size -= sun4u_image_len;
 		}
 
+		/* Make sure initrd phys isn't greater than 32-bits. We
+		 * can only pass unsigned int to the kernel for this
+		 * location. */
+		if (!is_kernel && p[i].phys >= 0x0000000100000000ULL)
+			continue;
+
 		if (p[i].size >= len) {
 			phys = p[i].phys;
 			break;
