@@ -21,6 +21,14 @@
 
 #include <silo.h>
 
+#define IMAGE_TLB_ENTRY		63
+#define INITRD_TLB_ENTRY	62
+
+#define INITRD_VIRT_ADDR	0x50000000
+#define IMAGE_VIRT_ADDR		0x40000000
+
+static char *sun4u_memory_find (unsigned int len, int is_kernel);
+
 struct linux_prom_registers prom_reg_memlist[64];
 struct linux_mlist_v0 prom_phys_avail[64];
 
@@ -191,19 +199,23 @@ inline void sun4m_set_direct (unsigned long l, unsigned long set)
 #ifndef TLB_TAG_ACCESS
 #define TLB_TAG_ACCESS 		0x30
 #endif
+
 #ifndef ASI_DMMU
 #define ASI_DMMU 		0x58
 #define ASI_DTLB_DATA_ACCESS	0x5d
 #endif
 
-unsigned long sun4u_initrd_pa;
+#ifndef ASI_IMMU
+#define ASI_IMMU		0x50
+#define ASI_ITLB_DATA_ACCESS	0x55
+#endif
+
 unsigned long sun4m_initrd_pa;
 unsigned long sun4m_initrd_va;
 
 char *memory_find (int len)
 {
     register struct linux_mlist_v0 *mlist;
-    unsigned long long sun4u_memory_base;
     char *beg = 0, *start;
     int l = 0, num;
     unsigned long totalmem = 0;
@@ -265,44 +277,99 @@ char *memory_find (int len)
             mlist = mlist->theres_more;
         }
     } else {
-        int n, node, i;
-        struct p1275_mem { unsigned long long pa; unsigned long long len; } *p;
-        unsigned long long phys_base, base, b;
+        return sun4u_memory_find((len + 0x1fff) & ~0x2000, 0);
+    }
+not_found:
+    return (char *)0;
+}
+
+static unsigned long long sun4u_image_virt, sun4u_image_len, sun4u_image_phys;
+static unsigned long long sun4u_initrd_virt, sun4u_initrd_len;
+unsigned long long sun4u_initrd_phys;
+
+/* This might look all weird, but we use the claim/release methods to
+ * avoid having to traverse the physical memory ourselves and track what
+ * we use. We let OBP do that for us. */
+static char *sun4u_memory_find (unsigned int len, int is_kernel)
+{
+	int n, node, i;
+	struct p1275_mem {
+		unsigned long long phys;
+		unsigned long long size;
+	} *p = (struct p1275_mem *)0;
+	unsigned int virt = (is_kernel ? IMAGE_VIRT_ADDR : INITRD_VIRT_ADDR);
+	unsigned int tlb_entry = (is_kernel ? IMAGE_TLB_ENTRY : INITRD_TLB_ENTRY);
+	unsigned long long phys = 0, phys_base;
 
 	p = (struct p1275_mem *)malloc(2048);
-        node = prom_finddevice("/memory");
-        if (prom_getproperty(node, "reg", (char *)p, 2048) == -1) {
-            free (p);
-            printf("Could not get reg property\n");
-            return (char *)0;
-        }
-        phys_base = p[0].pa;
-        n = prom_getproplen(node, "available");
-        if (!n || n == -1 || prom_getproperty(node, "available", (char *)p, 2048) == -1) {
-            free (p);
-            printf("Could not get available property\n");
-            return (char *)0;
-        }
-        base = 0;
-        b = phys_base + 0x100000000ULL - 0x400000ULL;
+
+	node = prom_finddevice("/memory");
+
+	if (prom_getproperty(node, "reg", (char *)p, 2048) == -1) {
+		free (p);
+		printf("Could not get reg property\n");
+		return (char *)0;
+	}
+
+	phys_base = p[0].phys;
+
+	n = prom_getproplen(node, "available");
+
+	if (!n || n == -1 || prom_getproperty(node, "available", (char *)p, 2048) == -1) {
+		free (p);
+		printf("Could not get available property\n");
+		return (char *)0;
+	}
+
+	phys = 0;
         n /= sizeof(*p);
-        len += 8192;
-        for (i = 0; i < n; i++) {
-	    /* if we've got more ram than god, pretend it's 32M */
-	    if (p[i].len >= 0x100000000ULL)
-		p[i].len = 0x020000000ULL;
-            if (p[i].pa + p[i].len <= b &&
-                p[i].pa >= base &&
-                p[i].len >= len)
-                base = (p[i].pa + p[i].len - len + 7) & ~7;
-        }
-        free (p);
-	if (base >= b || base < phys_base + 0x400000ULL) {
-            printf("Could not find any available memory for initial ramdisk\n");
-            return (char *)0;
-        }
-	sun4u_memory_base = base & ~0x3fffffULL;
-	sun4u_initrd_pa = base - phys_base;
+
+	for (i = 0; i < n; i++) {
+		/* Do not mess with first 4 Megs of memory */
+		if (p[i].phys == phys_base) {
+			if (p[i].size <= 0x400000)
+				continue;
+			p[i].phys += 0x400000;
+			p[i].size -= 0x400000;
+		}
+
+		/* Make sure initrd doesn't overwrite kernel */
+		if (!is_kernel && p[i].phys == sun4u_image_phys) {
+			if (p[i].size <= sun4u_image_len)
+				continue;
+			p[i].phys += sun4u_image_len;
+			p[i].size -= sun4u_image_len;
+		}
+
+		if (p[i].size >= len) {
+			phys = p[i].phys;
+			break;
+		}
+	}
+
+	free (p);
+
+	if (!phys) {
+		printf("Could not find any available memory\n");
+		return (char *)0;
+	}
+
+	if (prom_map(PROM_MAP_DEFAULT, (unsigned long long)len, virt, phys) == -1) {
+		printf("Could not map memory\n");
+		return (char *)0;
+	}
+
+	if (is_kernel) {
+		sun4u_image_len = len;
+		sun4u_image_virt = virt;
+		sun4u_image_phys = phys;
+		phys += 0x4000ULL;
+		virt += 0x4000;
+	} else {
+		sun4u_initrd_len = len;
+		sun4u_initrd_virt = virt;
+	}
+
         __asm __volatile("\n\
             sethi %%hi(0xe0000000), %%g1\n\
             ldx [%3], %%g2\n\
@@ -317,29 +384,105 @@ char *memory_find (int len)
             flush %0\n\
             membar #Sync\n\
             wrpr %%g1, %%pil\n\
-        " : : "r" (0x40000000), "r" (TLB_TAG_ACCESS), "i" (ASI_DMMU),
-              "r" (&sun4u_memory_base), "r" (63 << 3), "i" (ASI_DTLB_DATA_ACCESS) : "g1", "g2");
-        return (char *)0x40000000 + ((long)base & 0x3fffffUL);
-    }
-not_found:
-    return (char *)0;
+        " : : "r" (virt), "r" (TLB_TAG_ACCESS), "i" (ASI_DMMU),
+              "r" (&phys), "r" (tlb_entry << 3),
+              "i" (ASI_DTLB_DATA_ACCESS) : "g1", "g2");
+
+	if (is_kernel) {
+	        __asm __volatile("\n\
+        	    sethi %%hi(0xe0000000), %%g1\n\
+	            ldx [%3], %%g2\n\
+        	    sllx %%g1, 32, %%g1\n\
+	            or %%g2, 0x77, %%g2\n\
+        	    or %%g2, %%g1, %%g2\n\
+	            rdpr %%pil, %%g1\n\
+        	    wrpr 15, %%pil\n\
+	            stxa %0, [%1] %2\n\
+        	    stxa %%g2, [%4] %5\n\
+	            membar #Sync\n\
+        	    flush %0\n\
+	            membar #Sync\n\
+        	    wrpr %%g1, %%pil\n\
+	        " : : "r" (virt), "r" (TLB_TAG_ACCESS), "i" (ASI_IMMU),
+        	      "r" (&phys), "r" (tlb_entry << 3),
+	              "i" (ASI_ITLB_DATA_ACCESS) : "g1", "g2");
+	}
+
+	return (char *)virt;
+}
+
+static void sun4u_memory_release(int is_kernel)
+{
+	unsigned long long virt, len;
+	unsigned int tlb_entry = (is_kernel ? IMAGE_TLB_ENTRY : INITRD_TLB_ENTRY);
+
+	if (is_kernel) {
+		virt = sun4u_image_virt;
+		len = sun4u_image_len;
+	} else {
+		virt = sun4u_initrd_virt;
+		len = sun4u_initrd_len;
+	}
+
+	if (!len)
+		return;
+
+
+	prom_unmap(len, virt);
+
+        __asm __volatile("\n\
+            rdpr %%pil, %%g1\n\
+            wrpr 15, %%pil\n\
+            stxa %%g0, [%0] %1\n\
+            membar #Sync\n\
+            stxa %%g0, [%2] %3\n\
+            membar #Sync\n\
+            wrpr %%g1, %%pil\n\
+        " : : "r" (TLB_TAG_ACCESS), "i" (ASI_DMMU),
+              "r" (tlb_entry << 3),
+              "i" (ASI_DTLB_DATA_ACCESS) : "g1");
+
+	if (is_kernel) {
+	        __asm __volatile("\n\
+        	    rdpr %%pil, %%g1\n\
+	            wrpr 15, %%pil\n\
+        	    stxa %%g0, [%0] %1\n\
+		    membar #Sync\n\
+        	    stxa %%g0, [%2] %3\n\
+	            membar #Sync\n\
+        	    wrpr %%g1, %%pil\n\
+	        " : : "r" (TLB_TAG_ACCESS), "i" (ASI_IMMU),
+        	      "r" (tlb_entry << 3),
+	              "i" (ASI_ITLB_DATA_ACCESS) : "g1");
+	}
+
+	if (is_kernel)
+		sun4u_image_len = 0;
+	else
+		sun4u_initrd_len = 0;
+}
+
+char *image_memory_find (unsigned int len)
+{
+	/* This only works for sparc64 */
+	if (architecture != sun4u)
+		return (char *)0;
+
+	return sun4u_memory_find(len, 1);
+}
+
+void image_memory_release(void)
+{
+	if (architecture != sun4u)
+		return;
+
+	sun4u_memory_release(1);
 }
 
 void memory_release(void)
 {
     if (architecture == sun4u) {
-        __asm __volatile("\n\
-            rdpr %%pil, %%g1\n\
-            wrpr 16, %%pil\n\
-            stxa %%g0, [%0] %1\n\
-            stxa %%g0, [%2] %3\n\
-            membar #Sync\n\
-            flush %4\n\
-            membar #Sync\n\
-            wrpr %%g1, %%pil\n\
-        " : : "r" (TLB_TAG_ACCESS), "i" (ASI_DMMU),
-              "r" (63 << 3), "i" (ASI_DTLB_DATA_ACCESS),
-              "r" (memory_release) : "g1");
+	    sun4u_memory_release(0);
     } else if (sun4m_initrd_pa) {
 	unsigned long lev1;
         lev1 = sun4m_get_lev1();

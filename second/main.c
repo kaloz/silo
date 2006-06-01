@@ -1107,7 +1107,7 @@ int bootmain (void)
 	"Type [prompath;]part/path_to_image [parameters] on the prompt\n"
 	  "E.g. /iommu/sbus/espdma/esp/sd@3,0;4/vmlinux root=/dev/sda4\n"
 		"or 2/vmlinux.live (to load vmlinux.live from 2nd partition of boot disk)\n");
-
+try_again:
     isfile = 0;			/* RC = 0 invalid file or not an executable */
     while (!isfile) {
 	switch (get_params (&device, &part, &kname, &proll, &params)) {
@@ -1160,11 +1160,36 @@ int bootmain (void)
 	    ret_offset = 0x4000;
 
 	} else {
-	    image_base = (unsigned char *) 0x4000;
-	    if (!load_file (device, part, kname, image_base,
-			(unsigned char *) &_start, &image_len,
-			load_cmd == CMD_LS ? LOADFILE_LS : LOADFILE_GZIP, 0)) {
+	    char *image_end = (char *)&_start;
+
+	    image_base = (char *)0x4000;
+
+	    /* See if we can use some extra memory for the kernel */
+	    if (!load_cmd) {
+		unsigned int size;
+		char *mem;
+
+		size = 0x800000;
+		mem = image_memory_find(size);
+
+		if (!mem) {
+		    size = 0x400000;
+		    mem = image_memory_find(size);
+		}
+
+		if (mem) {
+		    image_base = mem;
+		    image_end = image_base + size - 0x4000;
+		}
+	    }
+	    
+	    if (!load_file (device, part, kname, image_base, image_end,
+			&image_len, load_cmd == CMD_LS ? LOADFILE_LS : LOADFILE_GZIP, 0)) {
 		printf ("\nImage not found.... try again\n");
+
+		if (!load_cmd)
+		    image_memory_release();
+
         	continue;
             }
 
@@ -1179,8 +1204,8 @@ int bootmain (void)
         	continue;
 	    }
 
-            isfile = parse_executable (image_base, image_len, &off, &len,
-		&ret_offset, kname);
+	    isfile = parse_executable (image_base, image_len, &off, &len,
+				       &ret_offset, kname);
 	}
     }
 
@@ -1190,8 +1215,36 @@ int bootmain (void)
     	params_device = sol_params;
     } else if (!other) {
     	params_device = 0;
-        memcpy (image_base, image_base + off, len);
+
+	memcpy (image_base, image_base + off, len);
+
         p = find_linux_HdrS (image_base, image_len);
+
+	if (p && *(unsigned short *)(p + 8) < 0x300 && image_base != (char *)0x4000) {
+	    /* Kernel doesn't support being loaded to other than
+	     * phys_base, so let's try to copy it down there. */
+	    if ((unsigned int)&_start - 0x4000 < len) {
+		/* Fuck, can't do that */
+		printf("Your kernel cannot fit into the memory destination. This\n"
+		       "can be resolved by recompiling the kernel with more devices\n"
+		       "built as modules, or upgrading your kernel to one that\n"
+		       "supports being loaded to higher memory areas (currently\n"
+		       "2.6.3+ or 2.4.26+).\n");
+		goto try_again;
+	    }
+
+	    printf("Kernel doesn't support loading to high memory, relocating...");
+
+	    /* Ok, it fits, so copy it down there */
+	    memcpy ((char *)0x4000, image_base, len);
+	    image_base = (char *)0x4000;
+
+	    /* Readjust some things */
+	    ret_offset = 0x4000;
+	    p = find_linux_HdrS (image_base, image_len);
+
+	    printf("done.\n");
+	}
 
         if (p) {
 	    unsigned int linux_version = *(unsigned int *)(p + 4);
@@ -1235,8 +1288,11 @@ int bootmain (void)
                     params = s2;
                 }
             }
-            if (*(unsigned short *)(p + 8) >= 0x202)
-            	kernel_params = (char *)(*(unsigned int *)(p + 36)&0x3fffff);
+
+            if (*(unsigned short *)(p + 8) >= 0x202) {
+            	kernel_params = (char *)((*(unsigned int *)(p + 36) - 0x400000) + 
+				(image_base - 0x4000));
+	    }
 
             /* Some UltraAX machines have /dev/fd1 floppies only. */
             if (floppyswap) {
@@ -1245,6 +1301,7 @@ int bootmain (void)
             	for (s1 = params; (s1 = strstr(s1, "root=/dev/fd0")) != NULL; s1 += 13)
             		s1[12] = '1';
             }
+
             if (initrd_string) {
             	char *q, *r, *initrd_device, *initrd_kname, *initrd_limit, *initrd_cur, c;
 		char *string;
@@ -1295,10 +1352,10 @@ int bootmain (void)
 		    printf("Loaded initial ramdisk (%d bytes at 0x%x)...\n", (unsigned int)initrd_cur -
 			   (unsigned int)initrd_start, initrd_start);
     		    if (statusok) {
-	        	extern unsigned long sun4u_initrd_pa;
+	        	extern unsigned long long sun4u_initrd_phys;
 	        	extern unsigned long sun4m_initrd_pa;
 			if (architecture == sun4u)
-	            	    *(unsigned int *)(p + 16) = ((unsigned int)sun4u_initrd_pa + 0x400000);
+	            	    *(unsigned int *)(p + 16) = (unsigned int)sun4u_initrd_phys;
 	            	else if (sun4m_initrd_pa)
 	            	    *(unsigned int *)(p + 16) = ((unsigned int)sun4m_initrd_pa);
 	            	else
@@ -1311,10 +1368,10 @@ int bootmain (void)
 		    if (initrd_kname) {
 		        if (!initrd_device) initrd_device = initrd_defdevice;
 	        	if (load_file (initrd_device, initrd_partno, initrd_kname, (unsigned char *) 0x300000, (unsigned char *) LARGE_RELOC, 0, 0, initrd_lenfunc)) {
-	        	    extern unsigned long sun4u_initrd_pa;
+	        	    extern unsigned long long sun4u_initrd_phys;
 	        	    extern unsigned long sun4m_initrd_pa;
 			    if (architecture == sun4u)
-	            	        *(unsigned int *)(p + 16) = ((unsigned int)sun4u_initrd_pa + 0x400000);
+	            	        *(unsigned int *)(p + 16) = (unsigned int)sun4u_initrd_phys;
 			    else if (sun4m_initrd_pa)
 				*(unsigned int *)(p + 16) = ((unsigned int)sun4m_initrd_pa);
 	            	    else
@@ -1363,12 +1420,15 @@ int bootmain (void)
         prom_getchar ();
         printf ("\n");
     }
+
     memory_release();
+
     if (other && reboot) {
         strcpy (sol_params, params_device);
         strcat (sol_params, " ");
         strcat (sol_params, params);
     	prom_reboot(sol_params);
     }
+
     return ret_offset;
 }
