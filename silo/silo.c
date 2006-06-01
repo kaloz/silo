@@ -1002,17 +1002,19 @@ struct hwdevice *get_device(int majno, int minno)
 				md_disk_info.number = i;
 				if (ioctl (md_fd, GET_DISK_INFO, &md_disk_info) < 0)
 					fatal ("Could not get RAID disk info for disk %d\n", i);
-				d = get_device (md_disk_info.majorno, md_disk_info.minorno);
-				if (md_disk_info.state == MD_DISK_FAULTY) {
-					printf ("disk %s marked as faulty, skipping\n", d->dev);
-					continue;
+				if(md_disk_info.majorno != 0 && md_disk_info.minorno != 0) {
+					d = get_device (md_disk_info.majorno, md_disk_info.minorno);
+					if (md_disk_info.state == MD_DISK_FAULTY) {
+						printf ("disk %s marked as faulty, skipping\n", d->dev);
+						continue;
+					}
+					if (hwdev)
+						last->next = d;
+					else
+						hwdev = d;
+					while (d->next != NULL) d = d->next;
+					last = d;
 				}
-				if (hwdev)
-					last->next = d;
-				else
-					hwdev = d;
-				while (d->next != NULL) d = d->next;
-				last = d;
 			}
 			if (!hwdev)
 				fatal ("No non-faulty disks found in RAID1");
