@@ -171,7 +171,7 @@ unsigned my_main(struct linux_romvec *promvec, void *cifh, void *cifs)
     memcpy (&main_rodata_start, (char *)0x200000 + (&main_text_end - &main_text_start), &main_rodata_end - &main_rodata_start);
     memcpy (&main_data_start, (char *)0x200000 + (&main_text_end - &main_text_start) + (&main_rodata_end - &main_rodata_start), &main_data_end - &main_data_start);
     if (cifh) {
-    	unsigned char *cp = (char *)0x380000;
+    	unsigned char *cp = (char *)LARGE_RELOC;
     	unsigned short *pt = (unsigned short *)((char *)0x200000 + (&main_text_end - &main_text_start) + 
     				(&main_rodata_end - &main_rodata_start) + (&main_data_end - &main_data_start));
     	
@@ -181,7 +181,7 @@ unsigned my_main(struct linux_romvec *promvec, void *cifh, void *cifs)
     		*cp += 4;
     	}
     	pt++;
-    	cp = (char *)0x380000;
+    	cp = (char *)LARGE_RELOC;
     	while (*pt) {
     		cp += *pt;
     		pt++;

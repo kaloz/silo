@@ -9,7 +9,13 @@ STRIP=strip
 NM=nm
 ELFTOAOUT=elftoaout
 BIN2H=../common/bin2h
-CFLAGS=-Os -Wall -I. -I../include -fomit-frame-pointer -fno-strict-aliasing
+
+SMALL_RELOC=0x280000
+LARGE_RELOC=0x380000
+
+CFLAGS=-Os -Wall -I. -I../include -fomit-frame-pointer \
+	-fno-strict-aliasing -DSMALL_RELOC=$(SMALL_RELOC) \
+	-DLARGE_RELOC=$(LARGE_RELOC)
 
 OPSYS=$(shell uname)
 OSREV=$(shell uname -r)

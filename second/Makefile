@@ -21,8 +21,10 @@ include ../Rules.make
 
 # Relocate to 2.5MB. The Hitchhiker's Guide to Open Boot Rev 3 claims
 # that 3MB are guaranteed to be mapped.
-LDFLAGS_SMALL=-N -Ttext 0x280000
-LDFLAGS_LARGE=-N -Ttext 0x380000
+#
+# XXX: We seem to be going 4Megs here for LARGE? -- BenC
+LDFLAGS_SMALL=-N -Ttext $(SMALL_RELOC)
+LDFLAGS_LARGE=-N -Ttext $(LARGE_RELOC)
 
 .c.o:
 	$(CC) $(CFLAGS) -c $*.c -o $@
@@ -65,7 +67,7 @@ silotftp: $(OBJSNET) mark.o
 	$(NM) silotftp | grep -v '*ABS*' | sort > silotftp.map
 
 second.l: second
-	( $(ECHO) 'disassemble 0x280000 '`$(GREP) '_etext' second.map | $(SED) 's/ .*$$//' | $(SED) 's/^00/0x/'`; $(ECHO) quit ) | $(GDB) second | $(SED) '1,/^(gdb)/d;/^End /,$$d' > second.l
+	( $(ECHO) 'disassemble $(SMALL_RELOC) '`$(GREP) '_etext' second.map | $(SED) 's/ .*$$//' | $(SED) 's/^00/0x/'`; $(ECHO) quit ) | $(GDB) second | $(SED) '1,/^(gdb)/d;/^End /,$$d' > second.l
 
 file.o:	       file.c
 
@@ -78,7 +80,7 @@ malloc.o: ../common/malloc.c
 	$(CC) $(CFLAGS) -c -o malloc.o ../common/malloc.c
 
 util:	util.c
-	$(CC) -o util util.c
+	$(CC) -DSMALL_RELOC=$(SMALL_RELOC) -DLARGE_RELOC=$(LARGE_RELOC) -o util util.c
 
 clean:
 	$(RM) *.o fs/*.o second* silotftp* *.map util fs/libfs.a
@@ -99,7 +101,7 @@ second.b: second util
 	$(STRIP) second2.tmp
 	$(ELFTOAOUT) -o second.image.tmp second.tmp
 	$(ELFTOAOUT) -o second2.image.tmp second2.tmp
-	./util -z second.map second.image.tmp second2.image.tmp second.b second.b2
+	./util second.map second.image.tmp second2.image.tmp second.b second.b2
 	$(GZIP) -9cfn second.b2 >> second.b
 	$(DD) if=/dev/zero bs=1 count=`$(LS) -l second.b | $(AWK) '{len=$$5%512;if(len!=0)len=512-len;print len}'` >> second.b
 	$(LS) -l second.b | $(AWK) '{printf "%c%c%c%c",0,$$5/65536,($$5%65536)/256,0}' | $(DD) of=second.b bs=4 count=1 seek=581 conv=notrunc

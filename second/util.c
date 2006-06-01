@@ -31,6 +31,8 @@ unsigned int curoff;
 unsigned int prevlen;
 unsigned int prevoff;
 
+#define MAX_CHANGE	65535
+
 void save(FILE *out, int len, int type)
 {
     int i, j, k;
@@ -50,10 +52,10 @@ void save(FILE *out, int len, int type)
         for (j = 0; j < i; j++) {
     	    if (buffer[j] != buffer2[j]) {
 		if (buffer2[j] == buffer[j] + 4) {
-		    if (curoff + j > lastv[type] + 65535) {
-			if (type || !prevlen || curoff + j >= prevoff + 65535)
+		    if (curoff + j > lastv[type] + MAX_CHANGE) {
+			if (type || !prevlen || curoff + j >= prevoff + MAX_CHANGE)
 			    goto bad1;
-			k = lastv[type] + 65535;
+			k = lastv[type] + MAX_CHANGE;
 			if (k < prevoff - prevlen)
 			    goto bad1;
 			if (k >= prevoff)
@@ -66,10 +68,10 @@ void save(FILE *out, int len, int type)
 		    lastv[type] = curoff + j;
 		    ndiffs[type]++;
 		} else if (buffer2[j] == buffer[j] + 16) {
-		    if (curoff + j > lastv[type+1] + 65535) {
-			if (type || !prevlen || curoff + j >= prevoff + 65535)
+		    if (curoff + j > lastv[type+1] + MAX_CHANGE) {
+			if (type || !prevlen || curoff + j >= prevoff + MAX_CHANGE)
 			    goto bad2;
-			k = lastv[type+1] + 65535;
+			k = lastv[type+1] + MAX_CHANGE;
 			if (k < prevoff - prevlen)
 			    goto bad2;
 			if (k >= prevoff)
@@ -82,7 +84,7 @@ void save(FILE *out, int len, int type)
 		    lastv[type+1] = curoff + j;
 		    ndiffs[type+1]++;
 		} else {
-		    fprintf(stderr, "Strange, 2.5MB and 3.5MB images differ in something"
+		    fprintf(stderr, "Strange, small and large images differ in something"
 			    " different to R_SPARC_32 and R_SPARC_HI22\n");
 		    exit(1);
 		}
@@ -101,25 +103,28 @@ void save(FILE *out, int len, int type)
 bad2:
     type++;
 bad1:
-    fprintf(stderr, "Distance between two changes larger than 64K %d %d %d\n",
-	    type, curoff + j, lastv[type]);
+    fprintf(stderr, "Distance between two changes larger than %dK %d %d %d\n",
+	    MAX_CHANGE / 1024, type, curoff + j, lastv[type]);
     exit(1);
 }
 
 int main(int argc, char **argv)
 {
     FILE *g, *h;
-    int reloc = 0x280000;
+    int reloc = SMALL_RELOC;
     int first_start, first_end, second_start, second_end;
     int end, rodata_start, rodata_end;
     int net = 0;
+    int i = 1;
     char sym[256];
     unsigned int addr;
 
-    if (!strcmp (argv[1], "-a"))
-    	net = 1;
+    if (!strcmp (argv[i], "-a")) {
+	net = 1;
+	i++;
+    }
 
-    f = fopen(argv[2], "r");
+    f = fopen(argv[i++], "r");
     while (fgets (buffer, 256, f)) {
 	char sym[256];
 	unsigned int addr;
@@ -144,22 +149,24 @@ int main(int argc, char **argv)
 	}
     }
     fclose (f);
-    f = fopen(argv[3], "r");
-    e = fopen(argv[4], "r");
-    g = fopen(argv[5], "w");
-    h = fopen(argv[6], "w");
+    f = fopen(argv[i++], "r");
+    e = fopen(argv[i++], "r");
+    g = fopen(argv[i++], "w");
+    h = fopen(argv[i++], "w");
     if (fread(buffer, 1, 32, f) != 32) exit(1);
     if (fread(buffer2, 1, 32, e) != 32) exit(1);
     if (memcmp(buffer, buffer2, 32)) {
     	fprintf(stderr, "Strange. Images for 2.5MB and 3.5MB differ in a.out header\n");
     	exit(1);
     }
+
     if (!net) {
-    	memset (buffer, 0, 2048);
-    	if (fwrite(buffer, 1, 2048, g) != 2048) exit(1);
+       memset (buffer, 0, 2048);
+       if (fwrite(buffer, 1, 2048, g) != 2048) exit(1);
     } else {
-    	if (fwrite (buffer, 1, 32, g) != 32) exit(1);
+       if (fwrite (buffer, 1, 32, g) != 32) exit(1);
     }
+
     save (g, first_start, 0);
     save (h, first_end - first_start, 2);
     save (g, rodata_start - first_end, 0);

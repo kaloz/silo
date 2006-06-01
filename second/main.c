@@ -1310,7 +1310,7 @@ int bootmain (void)
 		    parse_name (initrd_string, initrd_defpart, &initrd_device, &initrd_partno, &initrd_kname);
 		    if (initrd_kname) {
 		        if (!initrd_device) initrd_device = initrd_defdevice;
-	        	if (load_file (initrd_device, initrd_partno, initrd_kname, (unsigned char *) 0x300000, (unsigned char *) 0x380000, 0, 0, initrd_lenfunc)) {
+	        	if (load_file (initrd_device, initrd_partno, initrd_kname, (unsigned char *) 0x300000, (unsigned char *) LARGE_RELOC, 0, 0, initrd_lenfunc)) {
 	        	    extern unsigned long sun4u_initrd_pa;
 	        	    extern unsigned long sun4m_initrd_pa;
 			    if (architecture == sun4u)

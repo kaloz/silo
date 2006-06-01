@@ -127,7 +127,7 @@ setup_stack:
 	be	0f
 	 sethi	%hi(gzminpi+0x100000), %l0
 	ld	[%l0 + %lo(gzminpi)], %l1
-	sethi	%hi(0x380000), %l2
+	sethi	%hi(LARGE_RELOC), %l2
 1:	lduh	[%l1], %l3
 	add	%l1, 2, %l1
 	tst	%l3
@@ -137,7 +137,7 @@ setup_stack:
 	add	%l3, 4, %l3
 	ba	1b
 	 stb	%l3, [%l2]
-2:	sethi	%hi(0x380000), %l2
+2:	sethi	%hi(LARGE_RELOC), %l2
 3:	lduh	[%l1], %l3
 	add	%l1, 2, %l1
 	tst	%l3
