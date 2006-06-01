@@ -287,9 +287,6 @@ static unsigned long long sun4u_image_virt, sun4u_image_len, sun4u_image_phys;
 static unsigned long long sun4u_initrd_virt, sun4u_initrd_len;
 unsigned long long sun4u_initrd_phys;
 
-/* This might look all weird, but we use the claim/release methods to
- * avoid having to traverse the physical memory ourselves and track what
- * we use. We let OBP do that for us. */
 static char *sun4u_memory_find (unsigned int len, int is_kernel)
 {
 	int n, node, i;

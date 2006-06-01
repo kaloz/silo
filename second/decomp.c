@@ -153,6 +153,9 @@ unsigned my_main(struct linux_romvec *promvec, void *cifh, void *cifs)
 #else
     prom_puts ("O", 1);
 #endif
+
+    printf(" Version %s\n", VERSION);
+
     if (!cifh) {
     	unsigned short *pt = (unsigned short *)gzminpi;
     	

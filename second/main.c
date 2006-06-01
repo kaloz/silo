@@ -1026,8 +1026,6 @@ int bootmain (void)
     strcpy (given_bootargs, get_bootargs (1));
     strcpy (my_bootargs, get_bootargs (0));
 
-    printf (" ");
-
 #ifndef TFTP
     if (diskinit () == -1)
 	prom_halt ();
@@ -1180,9 +1178,11 @@ try_again:
 		if (mem) {
 		    image_base = mem;
 		    image_end = image_base + size - 0x4000;
+		    printf("Allocated %d Megs of memory at 0x%x for kernel\n",
+			   size >> 20, image_base - 0x4000);
 		}
 	    }
-	    
+
 	    if (!load_file (device, part, kname, image_base, image_end,
 			&image_len, load_cmd == CMD_LS ? LOADFILE_LS : LOADFILE_GZIP, 0)) {
 		printf ("\nImage not found.... try again\n");

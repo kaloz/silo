@@ -72,15 +72,19 @@ second.l: second
 file.o:	       file.c
 
 decompnet.o:   decomp.c
-	$(CC) $(CFLAGS) -DTFTP -c -o decompnet.o decomp.c
+	$(CC) $(CFLAGS) -DTFTP -DVERSION='"$(VERSION)"' -c -o $@ $<
+
+decomp.o: decomp.c
+	$(CC) $(CFLAGS) -DVERSION='"$(VERSION)"' -c $<
+
 mainnet.o:   main.c
-	$(CC) $(CFLAGS) -DTFTP -c -o mainnet.o main.c
+	$(CC) $(CFLAGS) -DTFTP -c -o $@ $<
 
 malloc.o: ../common/malloc.c
-	$(CC) $(CFLAGS) -c -o malloc.o ../common/malloc.c
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 util:	util.c
-	$(CC) -DSMALL_RELOC=$(SMALL_RELOC) -DLARGE_RELOC=$(LARGE_RELOC) -o util util.c
+	$(CC) -DSMALL_RELOC=$(SMALL_RELOC) -DLARGE_RELOC=$(LARGE_RELOC) -o $@ $<
 
 clean:
 	$(RM) *.o fs/*.o second* silotftp* util fs/libfs.a
