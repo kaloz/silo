@@ -844,7 +844,7 @@ static void initrd_lenfunc (int len, char **filebuffer, char **filelimit)
     initrd_size = len;
     *filebuffer = initrd_start;
     *filelimit = initrd_start + ((len + 16383) & ~16383);
-    printf("Loading initial ramdisk (%d bytes at 0x%llx phys, 0x%x virt)...\n", len,
+    printf("Loading initial ramdisk (%d bytes at 0x%Lx phys, 0x%x virt)...\n", len,
 	   initrd_phys, initrd_start);
 }
 
@@ -1217,13 +1217,18 @@ try_again:
     	params = params_device;
     	params_device = sol_params;
     } else if (!other) {
+	unsigned short hdrs_ver = 0;
+
     	params_device = 0;
 
 	memcpy (image_base, image_base + off, len);
 
         p = find_linux_HdrS (image_base, image_len);
 
-	if (p && *(unsigned short *)(p + 8) < 0x300 && image_base != (char *)0x4000) {
+	if (p)
+	    hdrs_ver = *(unsigned short *)(p + 8);
+
+	if (p && hdrs_ver < 0x300 && image_base != (char *)0x4000) {
 	    /* Kernel doesn't support being loaded to other than
 	     * phys_base, so let's try to copy it down there. */
 	    if ((unsigned int)&_start - 0x4000 < len) {
@@ -1255,7 +1260,7 @@ try_again:
 	    printf("Loaded kernel version %d.%d.%d\n", (linux_version >> 16) & 0xff,
 		   (linux_version >> 8) & 0xff, linux_version & 0xff);
 
-            if (fill_reboot_cmd && *(unsigned short *)(p + 8) >= 0x201) { /* ie. uses reboot_command */
+            if (fill_reboot_cmd && hdrs_ver >= 0x201) { /* ie. uses reboot_command */
                 char *q = (char *)(*(unsigned int *)(p + 24)), *r;
                 extern char bootdevice[];
 
@@ -1292,7 +1297,7 @@ try_again:
                 }
             }
 
-            if (*(unsigned short *)(p + 8) >= 0x202) {
+            if (hdrs_ver >= 0x202) {
 		if (architecture == sun4u)
 		    kernel_params = (char *)((*(unsigned int *)(p + 36) - 0x400000) + 
 				(image_base - 0x4000));
@@ -1362,7 +1367,8 @@ try_again:
 	        	extern unsigned long sun4m_initrd_pa;
 
 			if (architecture == sun4u)
-	            	    *(unsigned int *)(p + 16) = (unsigned int)sun4u_initrd_phys + 0x400000;
+	            	    *(unsigned int *)(p + 16) = (unsigned int)sun4u_initrd_phys +
+				    (hdrs_ver < 0x301 ? 0x400000 : 0);
 	            	else if (sun4m_initrd_pa)
 	            	    *(unsigned int *)(p + 16) = ((unsigned int)sun4m_initrd_pa);
 	            	else
