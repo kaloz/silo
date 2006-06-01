@@ -20,12 +20,12 @@ install:
 	install -m755 silo/silocheck $(DESTDIR)/usr/sbin
 	[ -f $(DESTDIR)/etc/silo.conf ] || \
 		install -m644 etc/silo.conf $(DESTDIR)/etc/
- ifeq ($(OPSYS),Linux)
+ifeq ($(OPSYS),Linux)
 	install -d -m755 $(DESTDIR)/boot $(DESTDIR)/usr/bin
 	install -m644 first/*.b second/*.b first-isofs/*.b $(DESTDIR)/boot/
 	install -m755 tilo/maketilo $(DESTDIR)/usr/bin/
 	install -m755 tilo/tilo.sh $(DESTDIR)/usr/bin/tilo
- endif
+endif
 	for manpage in $(MANPAGES); do \
 		sect=`echo $$manpage | sed 's/.*\([1-8]\)$$/\1/'`; \
 		install -d -m755 $(DESTDIR)/usr/share/man/man$$sect; \
