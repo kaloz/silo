@@ -289,14 +289,6 @@ static char *sun4u_memory_find (unsigned int len, int is_kernel)
 
 	node = prom_finddevice("/memory");
 
-	if (prom_getproperty(node, "reg", (char *)p, 2048) == -1) {
-		free (p);
-		printf("Could not get reg property\n");
-		return (char *)0;
-	}
-
-	phys_base = p[0].phys;
-
 	n = prom_getproplen(node, "available");
 
 	if (!n || n == -1 || prom_getproperty(node, "available", (char *)p, 2048) == -1) {
@@ -307,6 +299,12 @@ static char *sun4u_memory_find (unsigned int len, int is_kernel)
 
 	phys = 0;
         n /= sizeof(*p);
+
+	phys_base = ~(unsigned long long)0;
+	for (i = 0; i < n; i++) {
+		if (p[i].phys < phys_base)
+			phys_base = p[i].phys;
+	}
 
 	for (i = 0; i < n; i++) {
 		/* Do not mess with first 4 Megs of memory */
