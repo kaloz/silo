@@ -1354,8 +1354,9 @@ try_again:
     		    if (statusok) {
 	        	extern unsigned long long sun4u_initrd_phys;
 	        	extern unsigned long sun4m_initrd_pa;
+
 			if (architecture == sun4u)
-	            	    *(unsigned int *)(p + 16) = (unsigned int)sun4u_initrd_phys;
+	            	    *(unsigned int *)(p + 16) = (unsigned int)sun4u_initrd_phys + 0x400000;
 	            	else if (sun4m_initrd_pa)
 	            	    *(unsigned int *)(p + 16) = ((unsigned int)sun4m_initrd_pa);
 	            	else
@@ -1374,7 +1375,7 @@ try_again:
 	        	    extern unsigned long sun4m_initrd_pa;
 
 			    if (architecture == sun4u)
-	            	        *(unsigned int *)(p + 16) = (unsigned int)sun4u_initrd_phys;
+	            	        *(unsigned int *)(p + 16) = (unsigned int)sun4u_initrd_phys + 0x400000;
 			    else if (sun4m_initrd_pa)
 				*(unsigned int *)(p + 16) = ((unsigned int)sun4m_initrd_pa);
 	            	    else

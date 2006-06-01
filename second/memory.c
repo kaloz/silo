@@ -365,6 +365,7 @@ static char *sun4u_memory_find (unsigned int len, int is_kernel)
 	} else {
 		sun4u_initrd_len = len;
 		sun4u_initrd_virt = virt;
+		sun4u_initrd_phys = phys;
 	}
 
         __asm __volatile("\n\
