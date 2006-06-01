@@ -1290,8 +1290,11 @@ try_again:
             }
 
             if (*(unsigned short *)(p + 8) >= 0x202) {
-            	kernel_params = (char *)((*(unsigned int *)(p + 36) - 0x400000) + 
+		if (architecture == sun4u)
+		    kernel_params = (char *)((*(unsigned int *)(p + 36) - 0x400000) + 
 				(image_base - 0x4000));
+		else
+		    kernel_params = (char *)(*(unsigned int *)(p + 36) & 0x3fffff);
 	    }
 
             /* Some UltraAX machines have /dev/fd1 floppies only. */
