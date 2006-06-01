@@ -384,44 +384,6 @@ static char *sun4u_memory_find (unsigned int len, int is_kernel)
 		sun4u_initrd_phys = phys - phys_base;
 	}
 
-        __asm __volatile("\n\
-            sethi %%hi(0xe0000000), %%g1\n\
-            ldx [%3], %%g2\n\
-            sllx %%g1, 32, %%g1\n\
-            or %%g2, 0x77, %%g2\n\
-            or %%g2, %%g1, %%g2\n\
-            rdpr %%pil, %%g1\n\
-            wrpr 15, %%pil\n\
-            stxa %0, [%1] %2\n\
-            stxa %%g2, [%4] %5\n\
-            membar #Sync\n\
-            flush %0\n\
-            membar #Sync\n\
-            wrpr %%g1, %%pil\n\
-        " : : "r" (virt), "r" (TLB_TAG_ACCESS), "i" (ASI_DMMU),
-              "r" (&phys), "r" (tlb_entry << 3),
-              "i" (ASI_DTLB_DATA_ACCESS) : "g1", "g2");
-
-	if (is_kernel) {
-	        __asm __volatile("\n\
-        	    sethi %%hi(0xe0000000), %%g1\n\
-	            ldx [%3], %%g2\n\
-        	    sllx %%g1, 32, %%g1\n\
-	            or %%g2, 0x77, %%g2\n\
-        	    or %%g2, %%g1, %%g2\n\
-	            rdpr %%pil, %%g1\n\
-        	    wrpr 15, %%pil\n\
-	            stxa %0, [%1] %2\n\
-        	    stxa %%g2, [%4] %5\n\
-	            membar #Sync\n\
-        	    flush %0\n\
-	            membar #Sync\n\
-        	    wrpr %%g1, %%pil\n\
-	        " : : "r" (virt), "r" (TLB_TAG_ACCESS), "i" (ASI_IMMU),
-        	      "r" (&phys), "r" (tlb_entry << 3),
-	              "i" (ASI_ITLB_DATA_ACCESS) : "g1", "g2");
-	}
-
 	return (char *)virt;
 }
 
