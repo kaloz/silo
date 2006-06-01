@@ -11,7 +11,7 @@ include ../Rules.make
 	$(CC) $(CFLAGS) -c $*.S
 
 OBJS = sdiv.o rem.o udiv.o urem.o jmp.o printf.o console.o prom.o tree.o stringops2.o\
-	stringops1.o ffs.o
+	stringops1.o ffs.o divdi3.o udivdi3.o
 PROGRAMS = bin2h
 
 all: $(OBJS) $(PROGRAMS)
