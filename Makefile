@@ -45,9 +45,9 @@ release: ../silo-loaders-$(VERSION).tar.gz ../silo-$(VERSION).tar.gz ../silo-$(V
 
 ../silo-loaders-$(VERSION).tar%:
 	if ! test -d boot; then \
-		for I in first second; do $(MAKE) -C $$I all || exit 1; done; \
+		for I in first first-isofs second; do $(MAKE) -C $$I all || exit 1; done; \
 		install -d -m755  boot; \
-		install -m644 first/*.b second/*.b boot/; \
+		install -m644 first/*.b first-isofs/*.b second/*.b boot/; \
 	fi
 	case "$*" in .gz) foo="gzip -c9";; .bz2) foo="bzip2 -c9";; *) foo=cat;; esac; \
 		tar cf - boot | $$foo > $@
