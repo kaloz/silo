@@ -21,8 +21,8 @@
 
 #include <silo.h>
 
-#define IMAGE_TLB_ENTRY		63
-#define INITRD_TLB_ENTRY	62
+#define IMAGE_TLB_ENTRY		61
+#define INITRD_TLB_ENTRY	60
 
 #define INITRD_VIRT_ADDR	0x40c00000
 #define IMAGE_VIRT_ADDR		0x40000000
