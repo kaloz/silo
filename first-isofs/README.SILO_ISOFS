@@ -69,4 +69,4 @@ mkisofs -G /boot/isofs.b -B ... -r -o IMAGENAME DIRECTORY_TREE
 and you're done. The "..." to the -B option tells it to make the generic
 isofs.b boot block the only image for all sparc-boot partition pointers.
 
-If you have any problems, mail silo-general@lists.sourceforge.net
+If you have any problems, mail silo-general@lists.sparc-boot.org

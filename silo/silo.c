@@ -387,7 +387,7 @@ again:
 	    break;
 	if (!block) {
 	    if ((j << 9) < size)
-	        fatal ("Filesystem holes are not yet supported for second stage loader. Mail silo-general@lists.sourceforge.net");
+	        fatal ("Filesystem holes are not yet supported for second stage loader. Mail silo-general@lists.sparc-boot.org");
 	    else
 	        break;
 	}
