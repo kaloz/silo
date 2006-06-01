@@ -27,6 +27,8 @@
 #define INITRD_VIRT_ADDR	0x40c00000
 #define IMAGE_VIRT_ADDR		0x40000000
 
+extern int initrd_can_do_64bit_phys;
+
 static char *sun4u_memory_find (unsigned int len, int is_kernel);
 
 struct linux_prom_registers prom_reg_memlist[64];
@@ -344,7 +346,7 @@ static char *sun4u_memory_find (unsigned int len, int is_kernel)
 		/* Make sure initrd phys isn't greater than 32-bits. We
 		 * can only pass unsigned int to the kernel for this
 		 * location. */
-		if (!is_kernel && p[i].phys >= 0x0000000100000000ULL)
+		if (!is_kernel && !initrd_can_do_64bit_phys && p[i].phys >= 0x0000000100000000ULL)
 			continue;
 
 		if (p[i].size >= len) {

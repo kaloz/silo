@@ -1,6 +1,6 @@
 /* Second stage boot loader
    
-   Copyright (C) 1996 Pete A. Zaitcev
+   Coyright (C) 1996 Pete A. Zaitcev
    		 1996 Maurizio Plaza
    		 1996 David S. Miller
    		 1996 Miguel de Icaza
@@ -32,6 +32,26 @@
 #ifndef NULL
 #define NULL (void *)0
 #endif
+
+
+struct HdrS_struct {
+	char magic[4];
+	unsigned int linux_ver;
+	unsigned short ver;
+	unsigned short root_flags;
+	unsigned short root_dev;
+	unsigned short ram_flags;
+	unsigned int ramdisk_image;
+	unsigned int ramdisk_size;
+	/* 0x201 */
+	unsigned int reboot_cmd_ptr_high;
+	unsigned int reboot_cmd_ptr_low;
+	/* 0x202 */
+	unsigned int bootstr_info_ptr_high;
+	unsigned int bootstr_info_ptr_low;
+	/* 0x301 */
+	unsigned long long ramdisk_image64;
+};
 
 /* This has to be first initialized variable in main.c */
 
@@ -68,6 +88,7 @@ int other_part = -1;
 int solaris = 0;
 int other = 0;
 char *password = 0;
+int initrd_can_do_64bit_phys = 0;
 
 static void parse_name (char *, int, char **, int *, char **);
 
@@ -1018,7 +1039,6 @@ int bootmain (void)
     char *kernel_params;
     int part;
     int isfile, fileok = 0;
-    char *p;
     unsigned int ret_offset = 0;
     char *params_device = 0;
     int silo_conf_partition;
@@ -1217,18 +1237,15 @@ try_again:
     	params = params_device;
     	params_device = sol_params;
     } else if (!other) {
-	unsigned short hdrs_ver = 0;
+	struct HdrS_struct *hdrs;
 
     	params_device = 0;
 
 	memcpy (image_base, image_base + off, len);
 
-        p = find_linux_HdrS (image_base, image_len);
+        hdrs = (struct HdrS_struct *)find_linux_HdrS (image_base, image_len);
 
-	if (p)
-	    hdrs_ver = *(unsigned short *)(p + 8);
-
-	if (p && hdrs_ver < 0x300 && image_base != (char *)0x4000) {
+	if (hdrs && hdrs->ver < 0x300 && image_base != (char *)0x4000) {
 	    /* Kernel doesn't support being loaded to other than
 	     * phys_base, so let's try to copy it down there. */
 	    if ((unsigned int)&_start - 0x4000 < len) {
@@ -1249,26 +1266,27 @@ try_again:
 
 	    /* Readjust some things */
 	    ret_offset = 0x4000;
-	    p = find_linux_HdrS (image_base, image_len);
+	    hdrs = (struct HdrS_struct *)find_linux_HdrS (image_base, image_len);
 
 	    printf("done.\n");
 	}
 
-        if (p) {
-	    unsigned int linux_version = *(unsigned int *)(p + 4);
+        if (hdrs) {
+	    unsigned int linux_ver = hdrs->linux_ver;
 
-	    printf("Loaded kernel version %d.%d.%d\n", (linux_version >> 16) & 0xff,
-		   (linux_version >> 8) & 0xff, linux_version & 0xff);
+	    printf("Loaded kernel version %d.%d.%d\n", (linux_ver >> 16) & 0xff,
+		   (linux_ver >> 8) & 0xff, linux_ver & 0xff);
 
-            if (fill_reboot_cmd && hdrs_ver >= 0x201) { /* ie. uses reboot_command */
-                char *q = (char *)(*(unsigned int *)(p + 24)), *r;
+            if (fill_reboot_cmd && hdrs->ver >= 0x201) { /* ie. uses reboot_command */
+		char *q = (char *)hdrs->reboot_cmd_ptr_high;
+                char *r;
                 extern char bootdevice[];
 
                 /* On Ultra there is xword there, this hack makes
                  * it work...
                  */
                 if (q == (char *)0xfffff800 || !q)
-                       q = (char *)(*(unsigned int *)(p+28));
+                       q = (char *)hdrs->reboot_cmd_ptr_low;
                 q = (char *)(((unsigned long)q)& 0x003fffff);
                 if (q >= (char *)0x4000 && q <= (char *)0x300000) {
                     if (given_bootargs_by_user) {
@@ -1284,7 +1302,7 @@ try_again:
                         strcpy (q, given_bootargs);
                 }
             }
-            if (!dig_into_params (params) && !*(unsigned short *)(p + 12)) {
+            if (!dig_into_params (params) && !hdrs->root_dev) {
                 char *s1, *s2;
 
                 s1 = cfg_get_strg(0, "root");
@@ -1297,12 +1315,12 @@ try_again:
                 }
             }
 
-            if (hdrs_ver >= 0x202) {
+            if (hdrs->ver >= 0x202) {
 		if (architecture == sun4u)
-		    kernel_params = (char *)((*(unsigned int *)(p + 36) - 0x400000) + 
+		    kernel_params = (char *)((hdrs->bootstr_info_ptr_low - 0x400000) + 
 				(image_base - 0x4000));
 		else
-		    kernel_params = (char *)(*(unsigned int *)(p + 36) & 0x3fffff);
+		    kernel_params = (char *)(hdrs->bootstr_info_ptr_low & 0x3fffff);
 	    }
 
             /* Some UltraAX machines have /dev/fd1 floppies only. */
@@ -1317,6 +1335,9 @@ try_again:
             	char *q, *r, *initrd_device, *initrd_kname, *initrd_limit, *initrd_cur, c;
 		char *string;
             	int initrd_partno, len, statusok = 0;
+
+		if (hdrs->ver >= 0x301)
+			initrd_can_do_64bit_phys = 1;
             	
             	q = strchr (initrd_string, '|');
             	if (q && !initrd_size) {
@@ -1366,13 +1387,20 @@ try_again:
 	        	extern unsigned long long sun4u_initrd_phys;
 	        	extern unsigned long sun4m_initrd_pa;
 
-			if (architecture == sun4u)
-	            	    *(unsigned int *)(p + 16) = (unsigned int)sun4u_initrd_phys + 0x400000;
-	            	else if (sun4m_initrd_pa)
-	            	    *(unsigned int *)(p + 16) = ((unsigned int)sun4m_initrd_pa);
-	            	else
-	            	    *(unsigned int *)(p + 16) = ((unsigned int)initrd_start | 0xf0000000);
-	            	*(unsigned int *)(p + 20) = initrd_size;
+			if (architecture == sun4u) {
+			    if (initrd_can_do_64bit_phys) {
+				hdrs->ramdisk_image64 = 
+					sun4u_initrd_phys + 0x400000ULL;
+			    } else {
+				hdrs->ramdisk_image =
+					(unsigned int)sun4u_initrd_phys + 0x400000;
+			    }
+			} else if (sun4m_initrd_pa) {
+	            	    hdrs->ramdisk_image = ((unsigned int)sun4m_initrd_pa);
+			} else
+	            	    hdrs->ramdisk_image = ((unsigned int)initrd_start | 0xf0000000);
+
+	            	hdrs->ramdisk_size = initrd_size;
     		    } else
     		        printf ("Error: initial ramdisk loading failed. No initrd will be used.\n");
             	} else {
@@ -1385,14 +1413,20 @@ try_again:
 	        	    extern unsigned long long sun4u_initrd_phys;
 	        	    extern unsigned long sun4m_initrd_pa;
 
-			    if (architecture == sun4u)
-	            	        *(unsigned int *)(p + 16) = (unsigned int)sun4u_initrd_phys + 0x400000;
-			    else if (sun4m_initrd_pa)
-				*(unsigned int *)(p + 16) = ((unsigned int)sun4m_initrd_pa);
-	            	    else
-	            	        *(unsigned int *)(p + 16) = ((unsigned int)initrd_start | 0xf0000000);
+			    if (architecture == sun4u) {
+				if (initrd_can_do_64bit_phys) {
+				    hdrs->ramdisk_image64 =
+					sun4u_initrd_phys + 0x400000ULL;
+				} else {
+				    hdrs->ramdisk_image =
+					(unsigned int)sun4u_initrd_phys + 0x400000;
+				}
+			    } else if (sun4m_initrd_pa) {
+				hdrs->ramdisk_image = ((unsigned int)sun4m_initrd_pa);
+			    } else
+	            	        hdrs->ramdisk_image = ((unsigned int)initrd_start | 0xf0000000);
 
-	            	    *(unsigned int *)(p + 20) = initrd_size;
+	            	    hdrs->ramdisk_size = initrd_size;
 	        	}
 		    } else
 			printf ("Error: initial ramdisk loading failed. No initrd will be used.\n");
