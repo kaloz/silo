@@ -5,7 +5,7 @@ CC=gcc
 LD=ld
 ELFTOAOUT=elftoaout
 BIN2H=../common/bin2h
-CFLAGS=-Os -Wall -I. -I../include -fomit-frame-pointer
+CFLAGS=-Os -Wall -I. -I../include -fomit-frame-pointer -fno-strict-aliasing
 
 OPSYS=$(shell uname)
 OSREV=$(shell uname -r)

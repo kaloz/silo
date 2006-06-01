@@ -51,65 +51,80 @@ static void putchar_1 (char c)
     }
 }
 
-void putchar (char c)
+int putchar (int __c)
 {
+    char c = (char) __c;
     if (c == '\n')
 	putchar_1 ('\r');
     putchar_1 (c);
+
+    return __c;
 }
 
 /*
  * Print an unsigned integer in base b, avoiding recursion.
  */
-static void printn (long n, int b)
+static int printn (long n, int b)
 {
     static char prbuf[24];
     register char *cp;
+    int count = 0;
 
     if (b == 10 && n < 0) {
 	putchar ('-');
+	count++;
 	n = -n;
     }
     cp = prbuf;
     do
 	*cp++ = "0123456789ABCDEF"[(unsigned int) (((unsigned long)n) % b)];
     while ((n = ((unsigned long)n) / b & 0x0FFFFFFF));
-    do
+    do {
 	putchar (*--cp);
-    while (cp > prbuf);
+	count++;
+    } while (cp > prbuf);
+
+    return count;
 }
 
-void vprintf (char *fmt, va_list adx)
+int vprintf (char *fmt, va_list adx)
 {
     register int c;
     char *s;
+    int count = 0;
 
     for (;;) {
 	while ((c = *fmt++) != '%') {
 	    if (c == '\0') {
 		putchar (0);
-		return;
+		return count;
 	    }
 	    putchar (c);
 	}
 	c = *fmt++;
 	if (c == 'd' || c == 'o' || c == 'x' || c == 'X') {
-	    printn ((long) va_arg (adx, unsigned),
-		    c == 'o' ? 8 : (c == 'd' ? 10 : 16));
+	    count += printn ((long) va_arg (adx, unsigned),
+			     c == 'o' ? 8 : (c == 'd' ? 10 : 16));
 	} else if (c == 'c') {
 	    putchar (va_arg (adx, unsigned));
+	    count++;
 	} else if (c == 's') {
 	    if ((s = va_arg (adx, char *)) == NULL)
 		s = (char *)"(null)";
-	    while ((c = *s++))
+	    while ((c = *s++)) {
 		putchar (c);
+		count++;
+	    }
 	} else if (c == 'l' || c == 'O') {
-	    printn ((long) va_arg (adx, long), c == 'l' ? 10 : 8);
+	    count += printn ((long) va_arg (adx, long), c == 'l' ? 10 : 8);
 	} else {
 	    /* This is basically what libc's printf does */
 	    putchar('%'); putchar(c);
+	    count += 2;
 	}
     }
+
+    return count;
 }
 
 /*

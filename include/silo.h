@@ -85,8 +85,8 @@ int setdisk (char *);
 int partitionable (void);
 void close (void);
 /* printf.c */
-void vprintf (char *, va_list);
-void putchar (char);
+int vprintf (char *, va_list);
+int putchar (int);
 /* malloc.c */
 void *malloc (int);
 void free (void *);

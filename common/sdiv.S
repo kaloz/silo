@@ -41,6 +41,7 @@
  *  one bit at a time.
  */
 
+.register %g2,#scratch
 
 	.globl .div
 .div:
