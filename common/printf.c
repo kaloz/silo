@@ -64,9 +64,9 @@ int putchar (int __c)
 /*
  * Print an unsigned integer in base b, avoiding recursion.
  */
-static int printn (long n, int b)
+static int printn (long long n, int b)
 {
-    static char prbuf[24];
+    static char prbuf[33];
     register char *cp;
     int count = 0;
 
@@ -78,7 +78,7 @@ static int printn (long n, int b)
     cp = prbuf;
     do
 	*cp++ = "0123456789ABCDEF"[(unsigned int) (((unsigned long)n) % b)];
-    while ((n = ((unsigned long)n) / b & 0x0FFFFFFF));
+    while ((n = ((unsigned long long)n) / b & 0x0FFFFFFFFFFFFFFFULL));
     do {
 	putchar (*--cp);
 	count++;
@@ -103,7 +103,7 @@ int vprintf (char *fmt, va_list adx)
 	}
 	c = *fmt++;
 	if (c == 'd' || c == 'o' || c == 'x' || c == 'X') {
-	    count += printn ((long) va_arg (adx, unsigned),
+	    count += printn ((long long) va_arg (adx, unsigned),
 			     c == 'o' ? 8 : (c == 'd' ? 10 : 16));
 	} else if (c == 'c') {
 	    putchar (va_arg (adx, unsigned));
@@ -116,7 +116,14 @@ int vprintf (char *fmt, va_list adx)
 		count++;
 	    }
 	} else if (c == 'l' || c == 'O') {
-	    count += printn ((long) va_arg (adx, long), c == 'l' ? 10 : 8);
+	    count += printn ((long long) va_arg (adx, long), c == 'l' ? 10 : 8);
+	} else if (c == 'L') {
+	    int hex = 0;
+	    if (*fmt == 'x') {
+		fmt++;
+		hex = 1;
+	    }
+	    count += printn ((long long) va_arg (adx, long long), hex ? 16 : 10);
 	} else {
 	    /* This is basically what libc's printf does */
 	    putchar('%'); putchar(c);
