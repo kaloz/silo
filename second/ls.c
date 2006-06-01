@@ -18,13 +18,12 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307,
    USA.  */
 
-#include <ctype.h>
-#include <sys/types.h>
 #include <silo.h>
-typedef int FILE;
-#include <linux/ext2_fs.h>
-
 #include <stringops.h>
+
+typedef int FILE;
+#include <linux/types.h>
+#include <ext2fs/ext2_fs.h>
 #include <ext2fs/ext2fs.h>
 
 int ls_opt = 0;

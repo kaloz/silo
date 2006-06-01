@@ -30,6 +30,9 @@
 #ifdef __GLIBC__
 #  define _LINUX_TIME_H
 #endif
+
+struct inode { unsigned int blah; };
+
 #include <linux/ufs_fs.h>
 
 /* Reuse and abuse */

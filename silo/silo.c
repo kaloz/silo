@@ -50,7 +50,8 @@
 #endif
 #ifdef __linux__
 #  include <linux/fs.h>
-#  include <linux/ext2_fs.h>
+#  include <ext2fs/ext2_fs.h>
+#  include <ext2fs/ext2fs.h>
 #  include <scsi/scsi.h>
 #  include <sys/vfs.h>
 #  ifdef __GLIBC__
