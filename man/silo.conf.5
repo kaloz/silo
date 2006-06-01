@@ -59,11 +59,11 @@ is:
   [<devicename>][<part>][\fB[\fP<m>\fB-\fP<n>\fB]\fP]
 
 The first form refers to a file or directory on some supported filesystem
-(currently \fIext2\fP, \fIufs\fP, \fIromfs\fP or \fIiso9660\fP), the latter
-refers to a range of 512B blocks on a device. For a device block range,
-either <devicename>, or <part>, or [<m>-<n>] must be given. If the last part
-is not given, it defaults to [1-16] (ie. 7680 bytes from offset 512 in the
-device - normal SPARC bootblock location).
+(currently \fIext2\fP, \fIext3\fP, \fIufs\fP, \fIromfs\fP or \fIiso9660\fP),
+the latter refers to a range of 512B blocks on a device. For a device block
+range, either <devicename>, or <part>, or [<m>-<n>] must be given. If the last
+part is not given, it defaults to [1-16] (ie. 7680 bytes from offset 512 in
+the device - normal SPARC bootblock location).
 
 Optional <devicename> is the PROM name of the device the file or range
 is located on. See below for its syntax. For v2 and P1275 PROMs the device

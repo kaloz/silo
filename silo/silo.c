@@ -242,7 +242,7 @@ void read_sb (struct hwdevice *hwdev)
 	fatal ("Cannot open superblock on %s", hwdev->dev);
     hwdev->bs = check_fs (fd);
     if (hwdev->bs == (unsigned short)-1)
-	fatal ("File systems other than ext2, ufs and romfs not yet supported", hwdev->dev);
+	fatal ("File systems other than ext2, ext3, ufs and romfs not yet supported", hwdev->dev);
     close (fd);
     hwdev->nsect = hwdev->bs / 512;
     if (hwdev->part == -1)

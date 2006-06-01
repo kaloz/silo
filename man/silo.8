@@ -12,8 +12,8 @@
 \fBSILO\fP can be used to boot Linux, SunOS, and/or Solaris. It is a program 
 that runs from the PROM on your SPARC machine and allows for loading of
 operating systems. It also has extended features like the ability to load
-Linux kernels arbitrarily from an \fIext2\fP, \fIufs\fP, \fIromfs\fP or
-\fIiso9660\fP filesystem.
+Linux kernels arbitrarily from an \fIext2\fP, \fIext3\fP, \fIufs\fP,
+\fIromfs\fP or \fIiso9660\fP filesystem.
 
 The PROM in the SPARC at boot time loads a bootblock from a boot
 device. This bootblock is quite short, so a full featured boot loader does
@@ -176,10 +176,10 @@ If you want to load some image or other operating system not mentioned in
 the config file (or if the config file could not be loaded because it has
 not been found or had syntax errors in it - \fBSILO\fP will print a message
 about this in such a case), you can load arbitrary image from any local
-\fIext2\fP, \fIufs\fP, \fIromfs\fP or \fIiso9660\fP filesystem and give it
-arbitrary arguments. \fBSILO\fP will handle transparent decompression of
-gzipped images. You type in the fully qualified \fBSILO\fP file name or
-partition name and arguments. For the syntax of the fully qualified
+\fIext2\fP, \fIext3\fP, \fIufs\fP, \fIromfs\fP or \fIiso9660\fP filesystem
+and give it arbitrary arguments. \fBSILO\fP will handle transparent
+decompression of gzipped images. You type in the fully qualified \fBSILO\fP
+file name or partition name and arguments. For the syntax of the fully qualified
 \fBSILO\fP file names and partition names see \fBsilo.conf(5)\fP.
 Examples:
 

@@ -178,7 +178,7 @@ void read_sb (char *device, char *bootdev)
 	fatal ("Cannot open superblock on %s", device);
     bs = check_fs (fd);
     if (bs == (unsigned short)-1)
-	fatal ("File systems other than ext2, ufs and romfs not yet supported", device);
+	fatal ("File systems other than ext2, ext3, ufs and romfs not yet supported", device);
     close (fd);
     nsect = bs / 512;
     doff = 0;
