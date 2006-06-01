@@ -68,7 +68,7 @@ static int cd_init (void)
 		*s++ = (ap->boot_dev_ctrl & 07) + '0';
 		*s++ = ',';
 		// Hopefully it's never > 10
-		*s++ = ap->boot_dev_unit;
+		*s++ = (ap->boot_dev_unit & 07) + '0';
 		*s++ = ','; 
 		*s++ = '0';
 		*s++ = ')';
