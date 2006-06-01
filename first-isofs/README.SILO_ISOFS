@@ -64,7 +64,7 @@ of iso9660.
 
 Once the tree is prepared, just do:
 
-mkisofs -G /boot/isofs.b -B ... -R -o IMAGENAME DIRECTORY_TREE
+mkisofs -G /boot/isofs.b -B ... -r -o IMAGENAME DIRECTORY_TREE
 
 and you're done. The "..." to the -B option tells it to make the generic
 isofs.b boot block the only image for all sparc-boot partition pointers.
