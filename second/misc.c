@@ -439,7 +439,9 @@ void print_message (char *msg)
             } else continue;
             if (curly && *p == '}') p++;
             msg = p;
-        } else {
+        } else if (!*p) {
+	    break;
+	} else {
             printf ("%s", msg);
             break;
         }
