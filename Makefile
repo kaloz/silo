@@ -41,8 +41,8 @@ install:
 endif
 
 tag:
-	svn copy -m "Tag $(VERSION)" svn://svn.phunnypharm.org/silo/trunk \
-		svn://svn.phunnypharm.org/silo/tags/v$(VERSION)
+	svn copy -m "Tag $(VERSION)" svn://svn.sparc-boot.org/silo/trunk \
+		svn://svn.sparc-boot.org/silo/tags/v$(VERSION)
 
 # This is just for me to make release tarballs
 release: ../silo-loaders-$(VERSION).tar.gz ../silo-$(VERSION).tar.gz ../silo-$(VERSION).tar.bz2
