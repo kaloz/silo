@@ -39,3 +39,33 @@ else
 install:
 	@echo SILO is only supported on SPARC Linux and Solaris.
 endif
+
+tag:
+	svn copy -m "Tag $(VERSION)" svn://svn.sparc-boot.org/silo/trunk \
+		svn://svn.sparc-boot.org/silo/tags/v$(VERSION)
+
+# This is just for me to make release tarballs
+release: ../silo-loaders-$(VERSION).tar.gz ../silo-$(VERSION).tar.gz ../silo-$(VERSION).tar.bz2
+	rm -rf ../silo-$(VERSION) boot
+
+../silo-loaders-$(VERSION).tar%:
+	rm -rf ../silo-$(VERSION)
+	svn export svn://svn.sparc-boot.org/silo/tags/v$(VERSION) \
+		../silo-$(VERSION)
+	install -d ../silo-$(VERSION)/boot
+	for I in first first-isofs second; do $(MAKE) -C ../silo-$(VERSION)/$$I all || exit 1; done;
+	install -d ../silo-$(VERSION)/boot
+	(cd ../silo-$(VERSION); install -m644 first/*.b first-isofs/*.b second/*.b boot/)
+	(cd ../silo-$(VERSION); \
+		case "$*" in .gz) foo="gzip -c9";; .bz2) foo="bzip2 -c9";; *) foo=cat;; esac; \
+		tar cf - boot | $$foo > $@; \
+	)
+	rm -rf ../silo-$(VERSION)
+
+../silo-$(VERSION).tar%: clean
+	rm -rf ../silo-$(VERSION)
+	svn export svn://svn.sparc-boot.org/silo/tags/v$(VERSION) \
+		../silo-$(VERSION)
+	case "$*" in .gz) foo="gzip -c9";; .bz2) foo="bzip2 -c9";; *) foo=cat;; esac; \
+		(cd ../ && tar cf - silo-$(VERSION)) | $$foo > $@
+	rm -rf ../silo-$(VERSION)

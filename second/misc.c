@@ -493,7 +493,7 @@ void silo_set_prollargs(char *params, unsigned int kbase, int ksize)
 
 enum arch silo_get_architecture(void)
 {
-    char *buffer = "sun4c    ";
+    char buffer[] = "sun4c    ";
     int i;
 
     if (prom_vers == PROM_P1275) {
