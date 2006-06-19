@@ -101,6 +101,23 @@ static int cd_init (void)
 	return 0;
 }
 
+static void cd_fini(void)
+{
+	switch (prom_vers) {
+	case PROM_V0:
+		romvec->pv_v0devops.v0_devclose(fd);
+		break;
+
+	case PROM_V2:
+	case PROM_V3:
+		romvec->pv_v2devops.v2_dev_close(fd);
+		break;
+
+	case PROM_P1275:
+		p1275_cmd("close", 1, fd);
+		break;
+	};
+}
 
 static int cd_read_block(unsigned long long offset, int size, void *data)
 {
@@ -444,6 +461,8 @@ char *cd_main (struct linux_romvec *promvec, void *cifh, void *cifs)
 	sinfo->id = 'L';
 	sinfo->conf_part = 1;
 	strcpy(sinfo->conf_file, silo_conf);
+
+	cd_fini();
 
 	prom_putchar(sinfo->id);
 
