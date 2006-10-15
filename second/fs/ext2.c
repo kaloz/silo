@@ -91,7 +91,7 @@ static int ls_ext2_proc(struct ext2_dir_entry *dirent, int offset,
 
     if (LINUX_S_ISLNK (ino.i_mode)) {
 	sl = 1;
-	if (ext2fs_inode_data_blocks(fs, ino)) {
+	if (ext2fs_inode_data_blocks(fs, &ino)) {
 	    if (io_channel_read_blk(fs->io, ino.i_block[0], 1, symlink))
 		ino.i_size = 0;
 	} else {

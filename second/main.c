@@ -55,7 +55,7 @@ struct HdrS_struct {
 
 /* This has to be first initialized variable in main.c */
 
-extern unsigned char silo_conf[256];
+extern char silo_conf[256];
 extern unsigned char silo_conf_part, silo_conf_parts[32], raid_dsk_number;
 
 int useconf = 0;
@@ -871,7 +871,7 @@ static void initrd_lenfunc (int len, char **filebuffer, char **filelimit)
 	   initrd_phys, initrd_start);
 }
 
-static int parse_executable (char *base, int image_len, unsigned int *poff,
+static int parse_executable (unsigned char *base, int image_len, unsigned int *poff,
 			     int *plen, unsigned *pstart, char *image_name)
 {
     int isfile = 0;
@@ -889,7 +889,7 @@ static int parse_executable (char *base, int image_len, unsigned int *poff,
     /* the kernel) so we check if it is an executable file, either */
     /* an a.out or an elf binary */
 
-    hp.b = base;
+    hp.b = (char *)base;
     if (hp.a->magic == 0x01030107) {
     	if (solaris) {
     	    printf ("\nYour Solaris `ufsboot' is not an ELF image. Try again.\n");
@@ -1043,7 +1043,7 @@ int bootmain (void)
     int len = 0, image_len;
     char *kname, *params, *device;
     char *proll = 0;
-    char *image_base = (char *) 0x4000;
+    unsigned char *image_base = (unsigned char *) 0x4000;
     char *kernel_params;
     int part;
     int isfile, fileok = 0;
@@ -1095,7 +1095,7 @@ int bootmain (void)
 	if (!fileok || (unsigned) len >= 65535)
 	    printf ("\nCouldn't load %s\n", silo_conf);
 	else {
-	    if (!cfg_parse (silo_conf, (unsigned char *) 0x4000, len)) {
+	    if (!cfg_parse (silo_conf, (char *) 0x4000, len)) {
 		char *p, *q;
 		int len = 0;
 		int defpart = -1;
@@ -1180,11 +1180,12 @@ try_again:
 	        printf ("\nProll not found.... try again\n");
 		continue;
 	    }
-            if (!parse_executable ((char *)0x4000, image_len, &off, &len, NULL, proll))
+            if (!parse_executable ((unsigned char *)0x4000, image_len, &off,
+				    &len, NULL, proll))
 		continue;
             memcpy ((char *) 0x4000, ((char *) 0x4000) + off, len);
 
-	    image_base = (char *) 0x40000;
+	    image_base = (unsigned char *) 0x40000;
 	    if (!silo_load_file(device, part, kname, image_base,
 				(unsigned char *) &_start, &image_len,
 				LOADFILE_GZIP, 0)) {
@@ -1197,19 +1198,19 @@ try_again:
 	    ret_offset = 0x4000;
 
 	} else {
-	    char *image_end = (char *)&_start;
+	    unsigned char *image_end = (unsigned char *)&_start;
 
 	    /* See if we can use some extra memory for the kernel */
 	    if (!load_cmd) {
 		unsigned int size;
-		char *mem;
+		unsigned char *mem;
 
 		size = 0x800000;
-		mem = image_memory_find(size);
+		mem = (unsigned char *)image_memory_find(size);
 
 		if (!mem) {
 		    size = 0x400000;
-		    mem = image_memory_find(size);
+		    mem = (unsigned char *)image_memory_find(size);
 		}
 
 		if (mem) {
@@ -1260,9 +1261,9 @@ try_again:
 	memcpy (image_base, image_base + off, len);
 
         hdrs = (struct HdrS_struct *)
-		silo_find_linux_HdrS(image_base, image_len);
+		silo_find_linux_HdrS((char *)image_base, image_len);
 
-	if (hdrs && hdrs->ver < 0x300 && image_base != (char *)0x4000) {
+	if (hdrs && hdrs->ver < 0x300 && image_base != (unsigned char *)0x4000) {
 	    /* Kernel doesn't support being loaded to other than
 	     * phys_base, so let's try to copy it down there. */
 	    if ((unsigned int)&_start - 0x4000 < len) {
@@ -1279,12 +1280,12 @@ try_again:
 
 	    /* Ok, it fits, so copy it down there */
 	    memcpy ((char *)0x4000, image_base, len);
-	    image_base = (char *)0x4000;
+	    image_base = (unsigned char *)0x4000;
 
 	    /* Readjust some things */
 	    ret_offset = 0x4000;
 	    hdrs = (struct HdrS_struct *)
-		silo_find_linux_HdrS(image_base, image_len);
+		silo_find_linux_HdrS((char *)image_base, image_len);
 
 	    printf("done.\n");
 	}
@@ -1386,8 +1387,8 @@ try_again:
 			if (!initrd_kname) break;
 			if (!initrd_device) initrd_device = initrd_defdevice;
 			if (!silo_load_file(initrd_device, initrd_partno,
-					    initrd_kname, initrd_cur,
-					    initrd_limit, &len, 0, 0))
+					    initrd_kname, (unsigned char *)initrd_cur,
+					    (unsigned char *)initrd_limit, &len, 0, 0))
 			  break;
 			initrd_cur += len;
 			if (!c) {
@@ -1432,7 +1433,7 @@ try_again:
 		    if (initrd_kname) {
 		        if (!initrd_device) initrd_device = initrd_defdevice;
 	        	if (silo_load_file(initrd_device, initrd_partno,
-					   initrd_kname, (char *) 0x300000,
+					   initrd_kname, (unsigned char *) 0x300000,
 					   (unsigned char *) LARGE_RELOC,
 					   0, 0, initrd_lenfunc)) {
 	        	    extern unsigned long long sun4u_initrd_phys;

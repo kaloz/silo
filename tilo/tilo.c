@@ -118,8 +118,8 @@ int decompress (char *outptr, char *outptrlim, unsigned char (*get_input) (void)
 	gzip_release (&save_ptr);
 	return -1;
     }
-    output_data = outptr;
-    output_limit = outptrlim;
+    output_data = (unsigned char *)outptr;
+    output_limit = (unsigned char *)outptrlim;
     get_input_fun = get_input;
     unget_input_fun = unget_input;
     bytes_out = 0;
@@ -209,7 +209,7 @@ int kernel_number;
     memmove (moved_ramdisk, orig_code + image_table[ROOT_IMAGE].packed_start, image_table[ROOT_IMAGE].packed_len);
     memmove (moved_kernel, orig_code + image_table[kernel_number].packed_start, image_table[kernel_number].packed_len);
 
-    gzminp = (char*) moved_kernel;		/* decompress kernel */
+    gzminp = (unsigned char *)moved_kernel;		/* decompress kernel */
     kernel_base = (char*) 0x4000;
 
     if (decompress (kernel_base, kernel_base + ((image_table[kernel_number].unpacked_len

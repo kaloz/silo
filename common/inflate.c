@@ -958,13 +958,17 @@ static int gunzip (void)
     if ((flags & RESERVED) != 0) {
 	error ("Input has invalid flags");
     }
-    (ulg) get_byte ();		/* Get timestamp */
-    (ulg) get_byte ();
-    (ulg) get_byte ();
-    (ulg) get_byte ();
 
-    (void) get_byte ();		/* Ignore extra flags for the moment */
-    (void) get_byte ();		/* Ignore OS type for the moment */
+    /* Ignore timestamp */
+    (void) get_byte ();
+    (void) get_byte ();
+    (void) get_byte ();
+    (void) get_byte ();
+
+    /* Ignore extra flags for the moment */
+    (void) get_byte ();
+    /* Ignore OS type for the moment */
+    (void) get_byte ();
 
     if ((flags & EXTRA_FIELD) != 0) {
 	unsigned len = (unsigned) get_byte ();

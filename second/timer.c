@@ -216,7 +216,7 @@ void close_timer ()
         if (addr_to_free == (unsigned char *)0xffffffff)
             sun4c_unmapio (TICKER_VIRTUAL);
         else
-	    (*romvec->pv_v2devops.v2_dumb_munmap)(addr_to_free, len_to_free);
+	    (*romvec->pv_v2devops.v2_dumb_munmap)((char *)addr_to_free, len_to_free);
 	addr_to_free = 0;
     }
 }

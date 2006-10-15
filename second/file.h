@@ -24,7 +24,7 @@ typedef int FILE;
 
 extern unsigned int bs;			/* Block Size */
 extern io_manager silo_io_manager;	/* The Filesystem I/O Manager */
-extern unsigned char *filebuffer;
+extern void *filebuffer;
 extern ext2_filsys fs;			/* Generic filesystem */
 extern ino_t root, cwd;			/* root and cwd for current fs */
 extern int solaris;

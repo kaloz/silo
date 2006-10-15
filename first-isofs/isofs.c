@@ -281,8 +281,9 @@ static void parse_rr (unsigned char *chr, unsigned char *end,
 
 			if (cd_read_block(cont_extent, 1, sect_buf) < 0)
 				return;
-			parse_rr(&sect_buf[cont_offset], &sect_buf[cont_offset +
-				 cont_size - 3], name, symlink);
+			parse_rr((unsigned char *)(&sect_buf[cont_offset]),
+				 (unsigned char *)(&sect_buf[cont_offset +
+				 cont_size - 3]), name, symlink);
 		}
 	}
 
@@ -330,7 +331,7 @@ static int isofs_lookup (struct isofs_inode *dir, const char *name,
 				rr++;
 
 			*symlink = 0;
-			parse_rr(rr, &buffer[i-3], namebuf, symlink);
+			parse_rr(rr, (unsigned char *)(&buffer[i-3]), namebuf, symlink);
 
 			if (idr->name_len[0] == 1 && !idr->name[0]) {
 				namebuf[0] = '.';
@@ -466,7 +467,7 @@ char *cd_main (struct linux_romvec *promvec, void *cifh, void *cifs)
 
 	prom_putchar(sinfo->id);
 
-	return dest;
+	return (char *)dest;
 }
 
 

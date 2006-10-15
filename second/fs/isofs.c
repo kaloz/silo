@@ -259,7 +259,8 @@ static void parse_rr (isofs_filsys fs, unsigned char *chr, unsigned char *end,
 	    char *sect = alloca (2048);
 	    if (io_channel_read_blk (fs->io, cont_extent, 1, sect))
 		return;
-	    parse_rr (fs, &sect [cont_offset], &sect [cont_offset + cont_size - 3],
+	    parse_rr (fs, (unsigned char *)(&sect[cont_offset]),
+		      (unsigned char *)(&sect[cont_offset + cont_size - 3]),
 		      name, symlink, sino);
 	}
     }
@@ -307,7 +308,7 @@ static int isofs_lookup (isofs_filsys fs, struct isofs_inode *dir,
 
 	    *symlink = 0;
 	    memset(&sino, 0, sizeof(struct silo_inode));
-	    parse_rr (fs, rr, &buffer[i-3], namebuf, symlink, &sino);
+	    parse_rr (fs, rr, (unsigned char *)(&buffer[i-3]), namebuf, symlink, &sino);
 
 	    if (idr->name_len[0] == 1 && !idr->name[0])
 		strcpy(namebuf, ".");

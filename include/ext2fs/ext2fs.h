@@ -868,6 +868,8 @@ extern int ext2fs_test_ib_dirty(ext2_filsys fs);
 extern int ext2fs_test_bb_dirty(ext2_filsys fs);
 extern int ext2fs_group_of_blk(ext2_filsys fs, blk_t blk);
 extern int ext2fs_group_of_ino(ext2_filsys fs, ino_t ino);
+extern blk_t ext2fs_inode_data_blocks(ext2_filsys fs,
+				     struct ext2_inode *inode);
 
 /*
  * The actual inlined functions definitions themselves...

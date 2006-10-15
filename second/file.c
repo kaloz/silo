@@ -27,14 +27,14 @@
 ext2_filsys fs = 0;
 
 unsigned int bs;
-unsigned char *filebuffer;
+void *filebuffer;
 ino_t root, cwd;
 
 static int do_gunzip = 0;
 static unsigned int *gzipped_blocks;
 static unsigned int *cur_gzipped_block;
 
-static unsigned char *filelimit;
+static char *filelimit;
 static int first_block;
 static int block_no;
 static int block_cnt;
@@ -69,14 +69,14 @@ void register_silo_inode (unsigned int mtime, unsigned int size,
 			  const char *symlink)
 {
     struct silo_inode *sino = (struct silo_inode *)filebuffer;
-    unsigned char *p;
+    void *p;
     int name_len = strlen(name);
 
     if (match != NULL)
         if (strlen(match) > name_len || strncmp(match, name, strlen(match)))
             return;
 
-    strncpy(sino->name, name, name_len);
+    strncpy((char *)sino->name, name, name_len);
     sino->name[name_len] = 0;
     sino->mtime = mtime;
     sino->size = size;
@@ -84,10 +84,10 @@ void register_silo_inode (unsigned int mtime, unsigned int size,
     sino->uid = uid;
     sino->gid = gid;
 
-    p = strchr (sino->name, 0) + 1;
+    p = strchr((char *)sino->name, 0) + 1;
     if (symlink) {
-        strncpy (p, symlink, size);
-        p[size] = 0;
+        strncpy ((char *)p, symlink, size);
+        ((char *)p)[size] = 0;
         p += size + 1;
     }
     if ((long)p & 3) p += 4 - ((long)p & 3);
@@ -192,7 +192,7 @@ int dump_block (blk_t * blocknr, int blockcnt)
                 }
                 last_blockcnt = -1;
             }
-            if (filebuffer + (block_cnt + ((*blocknr) ? (blockcnt - last_blockcnt - 1) : 0)) * bs > filelimit) {
+            if ((char *)filebuffer + (block_cnt + ((*blocknr) ? (blockcnt - last_blockcnt - 1) : 0)) * bs > filelimit) {
                 silo_fatal("Image too large to fit in destination");
                 return BLOCK_ABORT;
             }
@@ -201,7 +201,9 @@ int dump_block (blk_t * blocknr, int blockcnt)
             if (first_block) {
                 first_block = 0;
                 last_blockcnt = 0;
-                if (*filebuffer == 037 && (filebuffer[1] == 0213 || filebuffer[1] == 0236)) {   /* gzip magic */
+                if (*(unsigned char *)filebuffer == 037 &&
+			(((unsigned char *)filebuffer)[1] == 0213 ||
+			((unsigned char *)filebuffer)[1] == 0236)) {   /* gzip magic */
                     unsigned long sa = (unsigned long)&_start;
                     gunzip_buffer = malloc (16 * bs);
                     memcpy (gunzip_buffer, filebuffer, bs);
@@ -321,8 +323,8 @@ static int dump_device_range (char *filename, char *bogusdev, int *len,
     return 0;
 }
 
-int silo_load_file(char *device, int partno, char *filename, char *buffer,
-	       char *limit, int *len, int cmd,
+int silo_load_file(char *device, int partno, char *filename, unsigned char *buffer,
+	       unsigned char *limit, int *len, int cmd,
 	       void (*lenfunc)(int, char **, char **))
 {
     struct silo_inode *sino;
@@ -359,7 +361,7 @@ int silo_load_file(char *device, int partno, char *filename, char *buffer,
 	do_rotate = 1;
 
     filebuffer = buffer;
-    filelimit = limit;
+    filelimit = (char *)limit;
 
     if (*filename == '[') {
 	if (cmd & LOADFILE_LS) {

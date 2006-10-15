@@ -309,12 +309,12 @@ unsigned char *silo_find_linux_HdrS(char *base, int len)
 
     q = base+8;
     if (*q == 'H' && q[1] == 'd' && q[2] == 'r' && q[3] == 'S')
-    	return q;
+    	return (unsigned char *)q;
     if (p >= base + len || p <= base)
 	return 0;
     for (q = p + 512; p < q; p += 4) {
 	if (*p == 'H' && p[1] == 'd' && p[2] == 'r' && p[3] == 'S')
-	    return p;
+	    return (unsigned char *)p;
     }
     return 0;
 }

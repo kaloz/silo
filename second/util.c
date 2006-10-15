@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <string.h>
 
 FILE *f, *e;
 unsigned char buffer[2048];

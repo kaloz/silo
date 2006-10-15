@@ -138,8 +138,8 @@ struct sun_disklabel {
 enum typeenum { TYPE_UNKNOWN, TYPE_SCSI, TYPE_IDE };
 
 struct hwdevice {
-    unsigned char *wholedev;
-    unsigned char *dev;
+    char *wholedev;
+    char *dev;
     enum typeenum type;
     int id;
     int part;
@@ -242,7 +242,7 @@ void read_sb (struct hwdevice *hwdev)
     int i;
 
     hwdev->partat0 = 0;
-    if ((fd = devopen (hwdev->dev, O_RDONLY)) == -1)
+    if ((fd = devopen ((char *)hwdev->dev, O_RDONLY)) == -1)
 	silo_fatal("Cannot open superblock on %s", hwdev->dev);
     hwdev->bs = check_fs (fd);
     if (hwdev->bs == (unsigned short)-1)
@@ -481,7 +481,8 @@ void write_block_device (struct hwdevice *hwdev)
     __u32 tmp;
     unsigned char part;
 
-    if ((fd = devopen (masterboot ? hwdev->wholedev : hwdev->dev, O_RDWR)) == -1)
+    if ((fd = devopen (masterboot ? hwdev->wholedev : hwdev->dev,
+		       O_RDWR)) == -1)
 	silo_fatal("Cannot open %s", hwdev->dev);
     if (flash_image) off = IEEE32_OFFSET;
     else if (floppy_image) off = 1020 + 512 - 4;
@@ -552,7 +553,7 @@ void write_block_tables (struct hwdevice *hwdev, char *filename, char *config_fi
 	unsigned char partno;
 	unsigned char partat0;
 	unsigned char raid_dsk_number;
-	unsigned char silo_conf[256];
+	char silo_conf[256];
 	unsigned char silover[8];
 	unsigned int len;
 	unsigned char partnos[32];

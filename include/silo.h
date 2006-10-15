@@ -94,7 +94,9 @@ void free (void *);
 void mark (void **);
 void release (void *);
 /* file.c */
-int silo_load_file(char *, int, char *, char *, char *, int *, int, void (*)(int, char **, char **));
+int silo_load_file(char *, int, char *, unsigned char *,
+		   unsigned char *, int *, int,
+		   void (*)(int, char **, char **));
 /* misc.c */
 void silo_fatal(const char *);
 char *silo_get_bootargs(int);

@@ -111,8 +111,8 @@ int decompress (char *outptr, char *outptrlim, unsigned char (*get_input) (void)
 	gzip_release (&save_ptr);
 	return -1;
     }
-    output_data = outptr;
-    output_limit = outptrlim;
+    output_data = (uch *)outptr;
+    output_limit = (uch *)outptrlim;
     get_input_fun = get_input;
     unget_input_fun = unget_input;
     bytes_out = 0;
@@ -140,7 +140,7 @@ static void unget_input(void)
 extern char main_text_start, main_text_end, main_data_start, main_data_end, main_rodata_start, main_rodata_end, __bss_start;
 
 /* This has to be in data section, so that it does not get cleared. See crt0.S for details. */
-char *gzminpi = (char *)0xdeadbeef;
+unsigned char *gzminpi = (unsigned char *)0xdeadbeef;
 
 extern int bootmain(void);
 
@@ -163,7 +163,7 @@ unsigned my_main(struct linux_romvec *promvec, void *cifh, void *cifs)
     	pt++;
     	while (*pt) pt++;
     	pt++;
-    	gzminpi = (char *)pt;
+    	gzminpi = (unsigned char *)pt;
     }
     gzminp = gzminpi;
     if (decompress ((char *)0x200000, (char *)&_start, get_input, unget_input) == -1) {
@@ -174,7 +174,7 @@ unsigned my_main(struct linux_romvec *promvec, void *cifh, void *cifs)
     memcpy (&main_rodata_start, (char *)0x200000 + (&main_text_end - &main_text_start), &main_rodata_end - &main_rodata_start);
     memcpy (&main_data_start, (char *)0x200000 + (&main_text_end - &main_text_start) + (&main_rodata_end - &main_rodata_start), &main_data_end - &main_data_start);
     if (cifh) {
-    	unsigned char *cp = (char *)LARGE_RELOC;
+    	unsigned char *cp = (unsigned char *)LARGE_RELOC;
     	unsigned short *pt = (unsigned short *)((char *)0x200000 + (&main_text_end - &main_text_start) + 
     				(&main_rodata_end - &main_rodata_start) + (&main_data_end - &main_data_start));
     	
@@ -184,7 +184,7 @@ unsigned my_main(struct linux_romvec *promvec, void *cifh, void *cifs)
     		*cp += 4;
     	}
     	pt++;
-    	cp = (char *)LARGE_RELOC;
+    	cp = (unsigned char *)LARGE_RELOC;
     	while (*pt) {
     		cp += *pt;
     		pt++;

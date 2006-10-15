@@ -31,12 +31,12 @@ int ls_opt = 0;
 static int do_ls_cmp (struct silo_inode *a, struct silo_inode *b)
 {
     int ret;
-    ret = strcmp (a->name, b->name);
+    ret = strcmp ((char *)a->name, (char *)b->name);
     if (ret) {
-	if (!strcmp (a->name, ".")) return -1;
-	if (!strcmp (b->name, ".")) return 1;
-	if (!strcmp (a->name, "..")) return -1;
-	if (!strcmp (b->name, "..")) return 1;
+	if (!strcmp ((char *)a->name, ".")) return -1;
+	if (!strcmp ((char *)b->name, ".")) return 1;
+	if (!strcmp ((char *)a->name, "..")) return -1;
+	if (!strcmp ((char *)b->name, "..")) return 1;
     }
     if (ls_opt & LSOPT_T) {
 	if (a->mtime < b->mtime)
@@ -202,7 +202,7 @@ int do_ls (unsigned char *buf, int *tab_ambiguous)
 	    print_number (min, 2, '0');
 	    printf (" %d %s", year, array[i]->name);
 	    if (LINUX_S_ISLNK (array[i]->mode)) {
-		q = strchr (array[i]->name, 0) + 1;
+		q = strchr ((char *)array[i]->name, 0) + 1;
 		if (*q) printf (" -> %s", q);
 	    }
 	    printf ("\n");
@@ -216,7 +216,7 @@ int do_ls (unsigned char *buf, int *tab_ambiguous)
 
 	    for (i = 0; i < n; i++) {
 		printf ("%s", array[i]->name);
-		j = 19 - strlen(array[i]->name);
+		j = 19 - strlen((char *)array[i]->name);
 		if ((i & 3) == 3 || i == n - 1)
 		    printf ("\n");
 		else
