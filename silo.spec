@@ -1,7 +1,7 @@
 Summary: The SILO boot loader for SPARCs.
 Name: silo
 Version: 1.4.13
-Release: 1
+Release: 2
 Copyright: GPL
 ExclusiveArch: sparc
 Group: System Environment/Base
@@ -11,9 +11,12 @@ BuildRoot: /var/tmp/%{name}-root
 
 %description
 The silo package installs the SILO (Sparc Improved LOader) boot
-loader, which you'll need to boot Red Hat Linux on a SPARC.  SILO
+loader, which you'll need to boot Linux on a SPARC.  SILO
 installs onto your system's boot block and can be configured to boot
 Linux, Solaris and SunOS.
+
+The package also includes TILO (Trivial Image LOader), a tool for creating
+TFTP images.
 
 %prep 
 %setup -q -n silo-%{version}
@@ -48,6 +51,9 @@ rm -rf $RPM_BUILD_ROOT
 /usr/share/man/man8/silo.8*
  
 %changelog
+* Thu Jan 04 2007 Horst H. von Brand <vonbrand@inf.utfsm.cl> 1.4.13-2
+- Fix RPM description
+
 * Mon May 28 2001 Pieter Krul <pkrul@auxio.org>
 - Updated manpath and added tilo
 
