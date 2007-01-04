@@ -1,5 +1,6 @@
 VERSION=1.4.13
 IMGVERSION=0.99
+SHELL=/bin/bash
 RM=rm -f
 # We want to force 32-bit builds
 CC=gcc -m32
