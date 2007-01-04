@@ -42,7 +42,7 @@ first: first.o
 
 first.b: first
 	$(ELFTOAOUT) -o first.b first
-	echo -n 'SILO'$(IMGVERSION) | $(DD) of=first.b bs=8 conv=notrunc seek=3 count=1
+	printf 'SILO'$(IMGVERSION) | $(DD) of=first.b bs=8 conv=notrunc seek=3 count=1
 	$(DD) if=/dev/zero of=first.b bs=4 count=1 seek=127
 
 ultra.o: ultra.S
@@ -55,8 +55,8 @@ ultra: ultra.o
 
 ultra.b: ultra
 	$(ELFTOAOUT) -o ultra.b ultra
-	echo -n 'SILO'$(IMGVERSION) | $(DD) of=ultra.b bs=8 conv=notrunc seek=3 count=1
-	echo -n -e '\340' | $(DD) of=ultra.b bs=1 count=1 seek=7 conv=notrunc
+	printf 'SILO'$(IMGVERSION) | $(DD) of=ultra.b bs=8 conv=notrunc seek=3 count=1
+	printf '\340' | $(DD) of=ultra.b bs=1 count=1 seek=7 conv=notrunc
 	$(DD) if=/dev/zero of=ultra.b bs=4 count=1 seek=127
 
 generic.o: generic.S
@@ -69,8 +69,8 @@ generic: generic.o
 
 generic.b: generic
 	$(ELFTOAOUT) -o generic.b generic
-	echo -n 'SILO'$(IMGVERSION) | $(DD) of=generic.b bs=8 conv=notrunc seek=3 count=1
-	echo -n -e '\340' | $(DD) of=generic.b bs=1 count=1 seek=7 conv=notrunc
+	printf 'SILO'$(IMGVERSION) | $(DD) of=generic.b bs=8 conv=notrunc seek=3 count=1
+	printf '\340' | $(DD) of=generic.b bs=1 count=1 seek=7 conv=notrunc
 	$(DD) if=/dev/zero of=generic.b bs=4 count=1 seek=255
 
 fd.o: fd.S
@@ -83,8 +83,8 @@ fd: fd.o
 
 fd.b: fd
 	$(ELFTOAOUT) -o fd.b fd
-	echo -n 'SILO'$(IMGVERSION) | $(DD) of=fd.b bs=8 conv=notrunc seek=3 count=1
-	echo -n -e '\340' | $(DD) of=fd.b bs=1 count=1 seek=7 conv=notrunc
+	printf 'SILO'$(IMGVERSION) | $(DD) of=fd.b bs=8 conv=notrunc seek=3 count=1
+	printf '\340' | $(DD) of=fd.b bs=1 count=1 seek=7 conv=notrunc
 	$(DD) if=/dev/zero of=fd.b bs=4 count=1 seek=255
 
 ieee32.o: ieee32.S ieee32.h
