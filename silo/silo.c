@@ -1022,10 +1022,7 @@ struct hwdevice *get_device(int majno, int minno)
 				silo_fatal("Only RAID1 supported");
 			hwdev = NULL;
 			last = NULL;
-			for (i = 0; i < md_array_info.nr_disks; i++) {
-				if (i == md_array_info.nr_disks - 1 && md_disk_info.majorno == 0 &&
-				    md_disk_info.minorno == 0)
-					break; // That's all folks
+			for (i = 0; i < md_array_info.raid_disks; i++) {
 				md_disk_info.number = i;
 				if (ioctl (md_fd, GET_DISK_INFO, &md_disk_info) < 0)
 					silo_fatal("Could not get RAID disk "
