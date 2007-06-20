@@ -1,10 +1,11 @@
 Summary: A boot loader for SPARCs
 Name: silo
 Version: 1.4.13
-Release: 3
-Copyright: GPL
+Release: 4%{?dist}
+License: GPL
 ExclusiveArch: sparc
 Group: System Environment/Base
+URL: http://www.sparc-boot.org
 Source: http://www.sparc-boot.org/pub/silo/silo-%{version}.tar.gz
 
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
@@ -28,6 +29,7 @@ make
 %install
 rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
+rm -f $RPM_BUILD_ROOT/etc/silo.conf
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -45,6 +47,7 @@ rm -rf $RPM_BUILD_ROOT
 /boot/ieee32.b
 /boot/silotftp.b
 /boot/second.b
+/boot/generic.b
 /usr/sbin/silocheck
 /usr/share/man/man1/tilo.1*
 /usr/share/man/man1/maketilo.1*
@@ -52,6 +55,12 @@ rm -rf $RPM_BUILD_ROOT
 /usr/share/man/man8/silo.8*
  
 %changelog
+* Tue Jun  5 2007 Horst H. von Brand <vonbrand@inf.utfsm.cl> 1.4.13-4
+- Copyright tag should be License, add URL tag
+- Add %%{?dist} to release
+- Add /boot/generic.b file
+- Delete /etc/silo.conf
+
 * Fri Jan 05 2007 Horst H. von Brand <vonbrand@inf.utfsm.cl> 1.4.13-3
 - Bring spec into line with Fedora's "Developer's Guide"
 - Add BuildPrereq (if nothing else, it is useful documentation)
