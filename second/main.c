@@ -1205,12 +1205,16 @@ try_again:
 		unsigned int size;
 		unsigned char *mem;
 
-		size = 0x800000;
-		mem = (unsigned char *)image_memory_find(size);
-
-		if (!mem) {
-		    size = 0x400000;
-		    mem = (unsigned char *)image_memory_find(size);
+		/* As of 2.6.25-rc6, an "allyesconfig" kernel is around
+		 * ~42MB in size.  So we try to carve out up to 64MB of
+		 * memory for the kernel.
+		 */
+		for (size = 64 * 1024 * 1024;
+		     size >= 4 * 1024 * 1024;
+		     size -= 4 * 1024 * 1024) {
+			mem = (unsigned char *)image_memory_find(size);
+			if (mem)
+				break;
 		}
 
 		if (mem) {
