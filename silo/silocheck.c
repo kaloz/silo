@@ -22,6 +22,7 @@
 #include "../second/fs/ufs.c"
 #endif
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
@@ -254,7 +255,11 @@ char *find_dev(int number)
     p = strchr (name, 0);
     while ((dir = readdir(dp)) != NULL) {
         strcpy(p,dir->d_name);
-        if (stat(name,&s) < 0) return NULL;
+        /*
+         * It is possible that we got an unresolved symlink under /dev.
+         * Such a file will make silocheck fail and we do not want this.
+         */
+        if (stat(name,&s) < 0 && errno != ENOENT) return NULL;
         if (S_ISBLK(s.st_mode) && s.st_rdev == number) return name;
     }
     return NULL;
