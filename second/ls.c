@@ -157,7 +157,8 @@ int do_ls (unsigned char *buf, int *tab_ambiguous)
     if (tab_ambiguous == NULL && ls_opt & LSOPT_L) {
 	char mode[11];
 	char *q;
-	unsigned int mtime, day, hour, min, month, year;
+	unsigned int mtime;
+	int day, hour, min, month, year;
 	static char *months[] = {
 	    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
 	    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
