@@ -44,12 +44,14 @@ tag:
 	git-tag -s -m "Tag v$(VERSION)" v$(VERSION)
 
 # This is just for me to make release tarballs
-release: ../silo-loaders-$(VERSION).tar.gz ../silo-$(VERSION).tar.gz ../silo-$(VERSION).tar.bz2
+release: ../silo-$(VERSION).tar.gz ../silo-$(VERSION).tar.bz2
 	rm -rf ../silo-$(VERSION) boot
+# ../silo-loaders-$(VERSION).tar.gz
 
 ../silo-loaders-$(VERSION).tar%:
 	rm -rf ../silo-$(VERSION)
 	git-clone `pwd` ../silo-$(VERSION)
+	(cd ../silo-$(VERSION); git-branch v$(VERSION) v$(VERSION); git-checkout v$(VERSION))
 	rm -rf ../silo-$(VERSION)/.git
 	install -d ../silo-$(VERSION)/boot
 	for I in first first-isofs second; do $(MAKE) -C ../silo-$(VERSION)/$$I all || exit 1; done;
@@ -64,6 +66,7 @@ release: ../silo-loaders-$(VERSION).tar.gz ../silo-$(VERSION).tar.gz ../silo-$(V
 ../silo-$(VERSION).tar%: clean
 	rm -rf ../silo-$(VERSION)
 	git-clone `pwd` ../silo-$(VERSION)
+	(cd ../silo-$(VERSION); git-branch v$(VERSION) v$(VERSION); git-checkout v$(VERSION))
 	rm -rf ../silo-$(VERSION)/.git
 	case "$*" in .gz) foo="gzip -c9";; .bz2) foo="bzip2 -c9";; *) foo=cat;; esac; \
 		(cd ../ && tar cf - silo-$(VERSION)) | $$foo > $@
