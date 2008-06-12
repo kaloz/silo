@@ -1,6 +1,6 @@
 Summary: A boot loader for SPARCs
 Name: silo
-Version: 1.4.13
+Version: 1.4.14
 Release: 4%{?dist}
 License: GPL
 ExclusiveArch: sparc
