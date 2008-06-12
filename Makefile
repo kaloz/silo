@@ -41,8 +41,7 @@ install:
 endif
 
 tag:
-	svn copy -m "Tag $(VERSION)" svn://svn.sparc-boot.org/silo/trunk \
-		svn://svn.sparc-boot.org/silo/tags/v$(VERSION)
+	git-tag -s -m "Tag v$(VERSION)" v$(VERSION)
 
 # This is just for me to make release tarballs
 release: ../silo-loaders-$(VERSION).tar.gz ../silo-$(VERSION).tar.gz ../silo-$(VERSION).tar.bz2
@@ -50,8 +49,8 @@ release: ../silo-loaders-$(VERSION).tar.gz ../silo-$(VERSION).tar.gz ../silo-$(V
 
 ../silo-loaders-$(VERSION).tar%:
 	rm -rf ../silo-$(VERSION)
-	svn export svn://svn.sparc-boot.org/silo/tags/v$(VERSION) \
-		../silo-$(VERSION)
+	git-clone `pwd` ../silo-$(VERSION)
+	rm -rf ../silo-$(VERSION)/.git
 	install -d ../silo-$(VERSION)/boot
 	for I in first first-isofs second; do $(MAKE) -C ../silo-$(VERSION)/$$I all || exit 1; done;
 	install -d ../silo-$(VERSION)/boot
@@ -64,8 +63,8 @@ release: ../silo-loaders-$(VERSION).tar.gz ../silo-$(VERSION).tar.gz ../silo-$(V
 
 ../silo-$(VERSION).tar%: clean
 	rm -rf ../silo-$(VERSION)
-	svn export svn://svn.sparc-boot.org/silo/tags/v$(VERSION) \
-		../silo-$(VERSION)
+	git-clone `pwd` ../silo-$(VERSION)
+	rm -rf ../silo-$(VERSION)/.git
 	case "$*" in .gz) foo="gzip -c9";; .bz2) foo="bzip2 -c9";; *) foo=cat;; esac; \
 		(cd ../ && tar cf - silo-$(VERSION)) | $$foo > $@
 	rm -rf ../silo-$(VERSION)
