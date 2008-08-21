@@ -87,6 +87,8 @@ int silo_disk_partitionable(void);
 void silo_disk_close(void);
 /* printf.c */
 int vprintf (char *, va_list);
+int vsprintf (char *str, char *fmt, va_list adx);
+int sprintf (char *s, char *format, ...);
 int putchar (int);
 /* malloc.c */
 void *malloc (int);
