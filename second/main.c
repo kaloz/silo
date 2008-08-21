@@ -25,8 +25,7 @@
 /* TODO: This file is a good candidate for rewrite from scratch.  */
 
 #include <silo.h>
-#include <asm/page.h>
-#include <linux/elf.h>
+#include <elf.h>
 #include <stringops.h>
 
 #ifndef NULL

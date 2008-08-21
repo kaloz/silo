@@ -39,7 +39,7 @@ extern "C" {
  */
 #define EXT2_LIB_CURRENT_REV	0
 
-#ifdef HAVE_SYS_TYPES_H
+#if defined(HAVE_SYS_TYPES_H) && !defined(_LINUX_TYPES_H)
 #include <sys/types.h>
 #endif
 
