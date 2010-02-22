@@ -11,8 +11,8 @@ NM=nm
 ELFTOAOUT=elftoaout
 BIN2H=../common/bin2h
 
-SMALL_RELOC=0x2E0000
-LARGE_RELOC=0x3E0000
+SMALL_RELOC=0x280000
+LARGE_RELOC=0x380000
 
 cc-option-yn = $(shell if $(CC) $(CFLAGS) $(1) -S -o /dev/null -xc /dev/null \
 		> /dev/null 2>&1; then echo "y"; else echo "n"; fi;)
