@@ -7,9 +7,7 @@
 #ifndef __SIZE_TYPE__
 #define __SIZE_TYPE__ long unsigned int
 #endif
-#ifndef _LINUX_TYPES_H
 typedef __SIZE_TYPE__ size_t;
-#endif
 
 /* stringops1.c */
 char *strcpy(char *, const char *);
