@@ -27,6 +27,12 @@ static char *malloc_ptr = (char *) MALLOC_BASE;
 
 static char *last_alloc = 0;
 
+static char *align_ptr_to(char *ptr, unsigned long align)
+{
+    return (char *) ((((unsigned long) ptr) + (align - 1UL)) &
+		     ~(align - 1UL));
+}
+
 void *malloc (int size)
 {
     char *caddr;
@@ -34,8 +40,32 @@ void *malloc (int size)
     caddr = malloc_ptr;
     malloc_ptr += size;
     last_alloc = caddr;
-    malloc_ptr = (char *) ((((unsigned long) malloc_ptr) + 7) & (~7));
+    malloc_ptr = align_ptr_to(malloc_ptr, 8UL);
     return caddr;
+}
+
+int posix_memalign(void **memptr, unsigned long alignment, unsigned long size)
+{
+    char *caddr;
+
+    if (alignment & (alignment - 1UL))
+        return -1;
+    if (alignment & (sizeof(void *) - 1UL))
+        return -1;
+
+    if (size == 0) {
+      *memptr = (void *) 0;
+      return 0;
+    }
+
+    caddr = align_ptr_to(malloc_ptr, alignment);
+    malloc_ptr = (caddr + size);
+    last_alloc = caddr;
+    malloc_ptr = align_ptr_to(malloc_ptr, 8UL);
+
+    *memptr = caddr;
+
+    return 0;
 }
 
 void free (void *m)
