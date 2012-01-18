@@ -18,6 +18,8 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307,
    USA.  */
 
+#include <stringops.h>
+
 #ifndef MALLOC_BASE
 extern unsigned long _start;
 static char *malloc_ptr = ((char *)&_start) + 0x30000;
@@ -42,6 +44,23 @@ void *malloc (int size)
     last_alloc = caddr;
     malloc_ptr = align_ptr_to(malloc_ptr, 8UL);
     return caddr;
+}
+
+void *calloc (int nmemb, int memb_size)
+{
+    char *ret;
+    int size;
+
+    if (!nmemb || !memb_size)
+        return (void *) 0;
+
+    size = nmemb * memb_size;
+    ret = malloc(size);
+
+    if (ret)
+        memset(ret, 0, size);
+
+    return ret;
 }
 
 int posix_memalign(void **memptr, unsigned long alignment, unsigned long size)
