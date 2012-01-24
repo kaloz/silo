@@ -58,13 +58,13 @@ fs/libfs.a: $(FS_OBJS)
 	$(AR) rc $@ $(FS_OBJS)
 
 second: $(OBJS) mark.o
-	$(LD) $(LDFLAGS_SMALL) -Bstatic -o second $(OBJS) -lext2fs mark.o `$(CC) -print-libgcc-file-name`
-	$(LD) $(LDFLAGS_LARGE) -Bstatic -o second2 $(OBJS) -lext2fs mark.o `$(CC) -print-libgcc-file-name`
+	$(LD) $(LDFLAGS_SMALL) -Bstatic -o second $(OBJS) mark.o `$(CC) -print-libgcc-file-name`
+	$(LD) $(LDFLAGS_LARGE) -Bstatic -o second2 $(OBJS) mark.o `$(CC) -print-libgcc-file-name`
 	$(NM) second | grep -v '*ABS*' | sort > second.map
 
 silotftp: $(OBJSNET) mark.o
-	$(LD) $(LDFLAGS_SMALL) -Bstatic -o silotftp $(OBJSNET) -lext2fs mark.o `$(CC) -print-libgcc-file-name`
-	$(LD) $(LDFLAGS_LARGE) -Bstatic -o silotftp2 $(OBJSNET) -lext2fs mark.o `$(CC) -print-libgcc-file-name`
+	$(LD) $(LDFLAGS_SMALL) -Bstatic -o silotftp $(OBJSNET) mark.o `$(CC) -print-libgcc-file-name`
+	$(LD) $(LDFLAGS_LARGE) -Bstatic -o silotftp2 $(OBJSNET) mark.o `$(CC) -print-libgcc-file-name`
 	$(NM) silotftp | grep -v '*ABS*' | sort > silotftp.map
 
 second.l: second
