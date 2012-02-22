@@ -57,6 +57,8 @@ struct silo_ext2_state {
 	__u32			block_size;
 	__u32			addr_per_block;
 	__u32			addr_per_block_bits;
+	__u32			desc_per_block;
+	__u32			desc_per_block_bits;
 };
 static struct silo_ext2_state *sstate;
 
@@ -285,8 +287,8 @@ static void read_group(struct silo_ext2_state *s, __u32 grp_no,
 	__u32 first = ext2_to_cpu_32(s->super->s_first_data_block);
 	__u32 blk, offset;
 
-	blk = first + 1;
-	offset = grp_no * sizeof(*grp);
+	blk = first + 1 + (grp_no >> s->desc_per_block_bits);
+	offset = (grp_no & (s->desc_per_block - 1)) * sizeof(*grp);
 
 	read_data(s, blk, offset, sizeof(*grp), grp);
 }
@@ -371,6 +373,8 @@ static int open_ext2(char *device)
 
 	s->addr_per_block = s->block_size / sizeof(__u32);
 	s->addr_per_block_bits = calc_ilog2(s->addr_per_block);
+	s->desc_per_block = s->block_size / sizeof(struct ext2_group_desc);
+	s->desc_per_block_bits = calc_ilog2(s->desc_per_block);
 
 	s->scratch_block[0] = malloc(s->block_size * 4);
 	if (!s->scratch_block[0]) {
