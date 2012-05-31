@@ -2,6 +2,7 @@
 #define __STRINGOPS_H
 
 #include <silo.h>
+#include <stddef.h>
 
 /* common */
 #ifndef __SIZE_TYPE__
