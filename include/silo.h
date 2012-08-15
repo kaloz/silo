@@ -125,6 +125,7 @@ int strtol (const char *, char **, int);
 int decompress (char *, char *, unsigned char (*)(void), void (*)(void));
 /* main.c */
 extern enum arch architecture;
+extern int sun4v_cpu;
 /* timer.c */
 int init_timer ();
 void close_timer ();

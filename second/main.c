@@ -64,6 +64,7 @@ enum {
     CMD_LS
 } load_cmd;
 enum arch architecture;
+int sun4v_cpu;
 static int timer_status = 0;
 static char *initrd_start;
 static int initrd_size;

@@ -517,8 +517,10 @@ enum arch silo_get_architecture(void)
 	return sun4d;
     case 'e':
 	return sun4e;
-    case 'u':
     case 'v':
+	sun4v_cpu = 1;
+	/* FALLTHRU */
+    case 'u':
 	return sun4u;
     default:
     	for(i = 0; i < NUM_SUN_MACHINES; i++)

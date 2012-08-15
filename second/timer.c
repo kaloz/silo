@@ -156,7 +156,7 @@ static inline int sun4u_init_timer ()
     }
     if (!foundcpu || !clock_frequency)
         clock_frequency = prom_getint(prom_root_node, "clock-frequency") / 100;
-    if (notimer) {
+    if (notimer && !sun4v_cpu) {
         sun4u_notimer = 1;
         __asm__ __volatile__ ("\t"
         	"rd	%%tick_cmpr, %%g1\n\t"
