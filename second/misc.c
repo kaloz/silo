@@ -501,7 +501,7 @@ enum arch silo_get_architecture(void)
         if ((i = prom_searchsiblings(i, "MicroSPARC-IIep")) != 0) {
             return sun4p;
         }
-        return sun4u;
+	buffer[4] = 'u';
     }
     i = prom_getproperty (prom_root_node, "compatability", buffer, 8);
 
