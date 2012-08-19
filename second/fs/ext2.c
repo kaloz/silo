@@ -147,7 +147,7 @@ static struct ext4_extent_header *search_leaf(struct silo_ext2_state *s,
 			return ehp;
 
 		for (i = 0; i < ext2_to_cpu_16(ehp->eh_entries); i++, idxp++)
-			if (ext2_to_cpu_32(idxp->ei_block) > file_block)
+			if (file_block < ext2_to_cpu_32(idxp->ei_block))
 				break;
 
 		if (i == 0)
@@ -226,14 +226,15 @@ static unsigned long long resolve_extent(struct silo_ext2_state *s,
 	ep = (struct ext4_extent *) (ehp + 1);
 
 	for (i = 0; i < ext2_to_cpu_16(ehp->eh_entries); i++, ep++)
-		if (ext2_to_cpu_32(ep->ee_block) > file_block)
+		if (file_block < ext2_to_cpu_32(ep->ee_block))
 			break;
 
 	if (i == 0)
 		return BLOCK_MAP_ERROR;
 
+	ep -= 1;
 	file_block -= ext2_to_cpu_32(ep->ee_block);
-	if (ext2_to_cpu_16(ep->ee_len) < file_block)
+	if (file_block >= ext2_to_cpu_16(ep->ee_len))
 		return BLOCK_MAP_ERROR;
 
 	hi = ((unsigned long long)ext2_to_cpu_16(ep->ee_start_hi)) << 32;
