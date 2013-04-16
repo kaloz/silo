@@ -93,6 +93,7 @@ CONFIG cf_image[] =
     {cft_flag, "pause-after", NULL},
     {cft_strg, "pause-message", NULL},
     {cft_flag, "solaris", NULL},
+    {cft_flag, "flash", NULL},
     {cft_flag, "fill-reboot-cmd", NULL},
     {cft_strg, "bootblock", NULL},
     {cft_flag, "single-key", NULL},

@@ -86,6 +86,7 @@ static int floppyswap = 0;
 int tab_ambiguous = 0;
 int other_part = -1;
 int solaris = 0;
+int flash = 0;
 int other = 0;
 char *password = 0;
 int initrd_can_do_64bit_phys = 0;
@@ -537,6 +538,8 @@ static int get_params (char **device, int *part, char **kname, char **proll,
 	    	other = 1;
 	    else if (cfg_get_flag (label, "solaris"))
 	    	solaris = 1;
+	    else if (cfg_get_flag (label, "flash"))
+	    	flash = 1;
 	    p = cfg_get_strg (label, "literal");
 	    if (!p && other)
 	    	p = cfg_get_strg (label, "append");
@@ -851,6 +854,11 @@ static int get_params (char **device, int *part, char **kname, char **proll,
     	    }
     	}
     }
+    if (!flash) {
+    	p = strstr (*params, "flash");
+	if (p)
+	    flash = 1;
+    }
     return 0;
 }
 
@@ -919,7 +927,27 @@ static int parse_executable (unsigned char *base, int image_len, unsigned int *p
 			   "ELF image");
 		prom_halt ();
 	    }
-	    if (solaris) {
+	    if (flash) {
+	        int i;
+
+		if (architecture != sun4u) {
+		    silo_fatal("Flash boots only supported on sun4u "
+			       "and later");
+		    prom_halt ();
+		}
+	        for (i = 0; i < hp.e->e_phnum; i++, p++) {
+	            printf("SILO: Loading flash segment %d at vaddr[0x%x] len[0x%x]\n",
+			   i, p->p_vaddr, p->p_filesz);
+	            memcpy ((char *)p->p_vaddr,
+			    (base + p->p_offset), p->p_filesz);
+	            if (p->p_filesz < p->p_memsz)
+	                memset ((char *)(p->p_vaddr + p->p_filesz), 0,
+				p->p_memsz - p->p_filesz);
+	        }
+	        isfile = 1;
+	        st = hp.e->e_entry;
+		printf("SILO: Flash image entry is at vaddr[0x%x]\n", st);
+	    } else if (solaris) {
 	        int i;
 	        unsigned long sa = (unsigned long)&_start;
 
@@ -977,7 +1005,28 @@ static int parse_executable (unsigned char *base, int image_len, unsigned int *p
 			   "ELF image");
 		prom_halt ();
 	    }
-	    if (solaris) {
+	    if (flash) {
+		int i;
+
+		if (architecture != sun4u) {
+		    silo_fatal("Flash boots only supported on sun4u "
+			       "and later");
+		    prom_halt ();
+		}
+		for (i = 0; i < hp.f->e_phnum; i++, p++) {
+	            printf("SILO: Loading flash segment %d at vaddr[0x%x] len[0x%x]\n",
+			   i, (unsigned int) p->p_vaddr, (unsigned int) p->p_filesz);
+		    memcpy ((Elf64_Addr *)(long)(p->p_vaddr),
+			    (Elf64_Addr *)(long)(base + p->p_offset),
+			    p->p_filesz);
+		    if (p->p_filesz < p->p_memsz)
+			memset ((Elf64_Addr *)(long)(p->p_vaddr + p->p_filesz),
+				0, p->p_memsz - p->p_filesz);
+		}
+		isfile = 1;
+		st = hp.f->e_entry;
+		printf("SILO: Flash image entry is at vaddr[0x%x]\n", st);
+	    } else if (solaris) {
 		int i;
 		unsigned long sa = (unsigned long)&_start;
 
@@ -1257,7 +1306,7 @@ try_again:
     if (solaris) {
     	params = params_device;
     	params_device = sol_params;
-    } else if (!other) {
+    } else if (!other && !flash) {
 	struct HdrS_struct *hdrs;
 
     	params_device = 0;
