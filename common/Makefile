@@ -16,6 +16,9 @@ PROGRAMS = bin2h
 
 all: $(OBJS) $(PROGRAMS)
 
+bin2h: bin2h.c
+	$(HOSTCC) $(HOSTCFLAGS) -o $@ $<
+
 prom.o: prom.c
 	$(CC) $(CFLAGS) -c -Wa,-Av9 -o prom.o prom.c
 

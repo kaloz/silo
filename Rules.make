@@ -4,6 +4,7 @@ SHELL=/bin/bash
 RM=rm -f
 # We want to force 32-bit builds
 CC=gcc -m32
+HOSTCC=gcc
 LD=ld -m elf32_sparc
 AS=as
 STRIP=strip
@@ -20,6 +21,7 @@ cc-option-yn = $(shell if $(CC) $(CFLAGS) $(1) -S -o /dev/null -xc /dev/null \
 CFLAGS = -Os -Wall -I. -I../include -fomit-frame-pointer \
 	-fno-strict-aliasing -DSMALL_RELOC=$(SMALL_RELOC) \
 	-DLARGE_RELOC=$(LARGE_RELOC)
+HOSTCFLAGS = -O2 -Wall
 
 ifeq ($(call cc-option-yn, -fno-stack-protector),y)
 CFLAGS += -fno-stack-protector

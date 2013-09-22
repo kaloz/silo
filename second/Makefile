@@ -85,7 +85,7 @@ malloc.o: ../common/malloc.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 util:	util.c
-	$(CC) -DSMALL_RELOC=$(SMALL_RELOC) -DLARGE_RELOC=$(LARGE_RELOC) -o $@ $<
+	$(HOSTCC) $(HOSTCFLAGS) -DSMALL_RELOC=$(SMALL_RELOC) -DLARGE_RELOC=$(LARGE_RELOC) -o $@ $<
 
 clean:
 	$(RM) *.o fs/*.o second* silotftp* util fs/libfs.a
