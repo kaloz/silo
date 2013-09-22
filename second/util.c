@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
+#include <arpa/inet.h>
 
 FILE *f, *e;
 unsigned char buffer[2048];
@@ -61,11 +62,11 @@ void save(FILE *out, int len, int type)
 			    goto bad1;
 			if (k >= prevoff)
 			    k = prevoff - 1;
-			diffs[type][ndiffs[type]] = k - lastv[type];
+			diffs[type][ndiffs[type]] = htons(k - lastv[type]);
 			lastv[type] = k;
 			ndiffs[type]++;
 		    }
-		    diffs[type][ndiffs[type]] = curoff + j - lastv[type]; 
+		    diffs[type][ndiffs[type]] = htons(curoff + j - lastv[type]);
 		    lastv[type] = curoff + j;
 		    ndiffs[type]++;
 		} else if (buffer2[j] == buffer[j] + 16) {
@@ -77,11 +78,13 @@ void save(FILE *out, int len, int type)
 			    goto bad2;
 			if (k >= prevoff)
 			    k = prevoff - 1;
-			diffs[type+1][ndiffs[type+1]] = k - lastv[type+1];
+			diffs[type+1][ndiffs[type+1]] =
+				htons(k - lastv[type+1]);
 			lastv[type+1] = k;
 			ndiffs[type+1]++;
 		    }
-		    diffs[type+1][ndiffs[type+1]] = curoff + j - lastv[type+1]; 
+		    diffs[type+1][ndiffs[type+1]] =
+			htons(curoff + j - lastv[type+1]);
 		    lastv[type+1] = curoff + j;
 		    ndiffs[type+1]++;
 		} else {
