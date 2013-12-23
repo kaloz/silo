@@ -50,7 +50,7 @@ do_image () {
 	to_remove="$to_remove $KERNEL.gz"
 	PSIZE=`ls -l $KERNEL.gz | awk '{print$5}'`
 	SIZE=`ls -l $KERNEL.raw | awk '{print$5}'`
-	ROOTA=`nm $KERNEL | awk '/A _end$/{print$1}'`
+	ROOTA=`nm $KERNEL | awk '/[AB] _end$/{print$1}'`
 	rm $KERNEL.raw
 	echo "Sizes ($tag):"
 	echo "  raw size     = $SIZE"
