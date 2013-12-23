@@ -175,6 +175,7 @@ char *my_main (struct linux_romvec *promvec, void *cifh, void *cifs)
 char *orig_code,*moved_code,*moved_ramdisk,*moved_kernel,*kernel_base;
 unsigned *p,*q = NULL;
 int kernel_number;
+char *kernel_end, *kernel_limit;
 
     prom_init(promvec, cifh, cifs);
     
@@ -215,9 +216,16 @@ int kernel_number;
 
     gzminp = (unsigned char *)moved_kernel;		/* decompress kernel */
     kernel_base = (char*) 0x4000;
+    kernel_end = kernel_base +
+		 ((image_table[kernel_number].unpacked_len + 0xfff) & ~0xfff);
+    kernel_limit = moved_kernel;
 
-    if (decompress (kernel_base, kernel_base + ((image_table[kernel_number].unpacked_len
-		 + 0xfff) & ~0xfff), get_input, unget_input) == -1)
+    if (kernel_end > kernel_limit) {
+	printf("No space to decompress the kernel.\n");
+	prom_halt();
+    }
+
+    if (decompress (kernel_base, kernel_end, get_input, unget_input) == -1)
     	{
         printf ("\nKernel decompression error\n");
         prom_halt();
