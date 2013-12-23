@@ -7,18 +7,21 @@
 	to the boot loader and patches the addresses in its image_table[]
 	
 	Parameters:
-			kernel4=<filename>
-			kernel4c=<filename>
-			kernel4u=<filename>
-				... compressed kernel images (in a.out format)
+			sun4=<filename>
+			sun4c=<filename>
+			sun4u=<filename>
+				... compressed kernel images
+				    (in a.out or ELF format)
 			size4=<bytes>
 			size4c=<bytes>
 			size4u=<bytes>
-				... original sizes of kernel images (uncompressed)
+				... original sizes of kernel images
+				    (uncompressed)
 			root4=<addr>
 			root4c=<addr>
 			root4u=<addr>
-				... virtual address of root image for each kernel (in hex)
+				... virtual address of root image for each
+				    kernel (in hex)
 			root=<filename>
 				... compressed root image
 			out=<filename>
