@@ -24,10 +24,14 @@
 #define NULL (void *)0
 #endif
 
+#ifdef SUPERTILO
+#define MOVED_BASE 0x9c0000
+#else
 #ifndef LARGETILO
 #define MOVED_BASE 0x3c0000
 #else
 #define MOVED_BASE 0x4c0000
+#endif
 #endif
 
 /*

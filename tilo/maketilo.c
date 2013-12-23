@@ -33,8 +33,9 @@
 #include <string.h>
 #include "b.h"
 #include "b2.h"
+#include "b3.h"
 
-#define MAX_BOOT_LEN	0x400000
+#define MAX_BOOT_LEN	0x900000
 
 char output_buffer[MAX_BOOT_LEN];
 
@@ -162,7 +163,14 @@ int main (int argc, char **argv)
 		rootlen = 0;
 	}
 	
-	if (rootlen + sun4_size + 0x4000 + 0x10000 >= 0x330000 ||
+	if (rootlen + sun4_size + 0x4000 + 0x10000 >= 0x430000 ||
+	    rootlen + sun4c_size + 0x4000 + 0x10000 >= 0x430000 ||
+	    rootlen + sun4u_size + 0x4000 + 0x10000 >= 0x430000) {
+		printf("Images are super large. Will load on machines with at least 10M mapped by PROM only\n");
+
+		for (i=0; i<SUPER_BOOT_LEN; i++)
+			output_buffer[i] = super_boot_loader[i];
+	} else if (rootlen + sun4_size + 0x4000 + 0x10000 >= 0x330000 ||
 	    rootlen + sun4c_size + 0x4000 + 0x10000 >= 0x330000 ||
 	    rootlen + sun4u_size + 0x4000 + 0x10000 >= 0x330000) {
 		printf("Images are large. Will load on machines with at least 5M mapped by PROM only\n");
