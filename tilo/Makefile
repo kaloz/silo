@@ -27,7 +27,7 @@ OBJS = crt0.o tilo.o $(OBJS_COMMON) malloc.o
 OBJS2 = crt0l.o tilol.o $(OBJS_COMMON) mallocl.o
 
 maketilo: maketilo.c b.h b2.h
-	$(CC) $(CFLAGS) maketilo.c -o maketilo
+	$(HOSTCC) $(HOSTCFLAGS) -g maketilo.c -o maketilo
 
 b.h : b.out $(BIN2H)
 	$(BIN2H) -l BOOT_LEN boot_loader $< > $@ || ($(RM) $@; exit 1)
