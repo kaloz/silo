@@ -28,6 +28,7 @@
 
 #include <stdio.h>
 #include <sys/stat.h>
+#include <arpa/inet.h>
 #include <stdlib.h>
 #include <string.h>
 #include "b.h"
@@ -220,7 +221,7 @@ int main (int argc, char **argv)
 	output_end = root_image_start + rootlen;
 
 	/* patch code, data and BSS size in the .out header */
-	*(unsigned*)(output_buffer+4) = output_end - output_buffer;
+	*(unsigned*)(output_buffer+4) = htonl(output_end - output_buffer);
 	*(unsigned*)(output_buffer+8) = 0;
 	*(unsigned*)(output_buffer+12) = 0;
 
@@ -267,6 +268,13 @@ int main (int argc, char **argv)
 	ii[3].packed_len = output_end - root_image_start;
 	ii[3].unpacked_len = 0;
 	ii[3].root_start = 0;
+
+	for (i = 0; i < 4; i++) {
+		ii[i].packed_start = htonl(ii[i].packed_start);
+		ii[i].packed_len   = htonl(ii[i].packed_len);
+		ii[i].unpacked_len = htonl(ii[i].unpacked_len);
+		ii[i].root_start   = htonl(ii[i].root_start);
+	}
 
 	f = fopen (output_file, "wb");
 	if (!f) {
