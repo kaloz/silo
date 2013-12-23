@@ -112,7 +112,7 @@ if [ -z "$sun4u" -a -z "$sun4c" ]; then
 	exit 1
 fi
 
-`echo $0 | sed 's/tilo$/maketilo/'` $tilo_args out=$output
+$(dirname $0)/maketilo $tilo_args out=$output
 
 rm -f $to_remove
 
