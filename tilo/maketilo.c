@@ -56,7 +56,7 @@ int root_tweak (char *s)
 int main (int argc, char **argv)
 {
 	int i,len,rootlen;
-	FILE *f, *g;
+	FILE *f, *g = NULL;
 	struct ImageInfo *ii;
 
 	char *sun4_kernel_start;
@@ -112,26 +112,26 @@ int main (int argc, char **argv)
 	
 	if (!sun4_kernel) {
 		/*fprintf (stderr, "WARNING: Kernel for Sun4 not specified\n");*/
-	} else if (!sun4_size || !sun4_root) {
+	} else if (!sun4_size || (!sun4_root && root_image)) {
 		fprintf (stderr, "WARNING: Original size and root address must be specified for Sun4\n");
 		return -1;
 	}
 	
 	if (!sun4c_kernel) {
 		fprintf (stderr, "WARNING: Kernel for Sun4c/m/d not specified\n");
-	} else if (!sun4c_size || !sun4c_root) {
+	} else if (!sun4c_size || (!sun4c_root && root_image)) {
 		fprintf (stderr, "ERROR: Original size and root address must be specified for Sun4c\n");
 		return -1;
 	}
 	
 	if (!sun4u_kernel) {
 		fprintf (stderr, "WARNING: Kernel for Sun4u not specified\n");
-	} else if (!sun4u_size || !sun4u_root) {
+	} else if (!sun4u_size || (!sun4u_root && root_image)) {
 		fprintf (stderr, "ERROR: Original size and root address must be specified for Sun4u\n");
 		return -1;
 	}
 	
-	if (!root_image) {
+	if (!root_image && (sun4_root || sun4c_root || sun4u_root)) {
 		fprintf (stderr, "ERROR: Root image not specified\n");
 		return -1;
 	}
@@ -141,15 +141,18 @@ int main (int argc, char **argv)
 		return -1;
 	}
 	
-	g = fopen (root_image, "rb");
-	if (!g) {
-		fprintf (stderr, "Can't load %s\n", root_image);
-		return -1;
+	if (root_image) {
+		g = fopen (root_image, "rb");
+		if (!g) {
+			fprintf (stderr, "Can't load %s\n", root_image);
+			return -1;
+		}
+		fseek (g, 0, SEEK_END);
+		rootlen = ftell (g);
+		fseek (g, 0, SEEK_SET);
+	} else {
+		rootlen = 0;
 	}
-	
-	fseek (g, 0, SEEK_END);
-	rootlen = ftell (g);
-	fseek (g, 0, SEEK_SET);
 	
 	if (rootlen + sun4_size + 0x4000 + 0x10000 >= 0x330000 ||
 	    rootlen + sun4c_size + 0x4000 + 0x10000 >= 0x330000 ||
@@ -215,8 +218,10 @@ int main (int argc, char **argv)
 
 	root_image_start = sun4u_kernel_start + len;
 	
-	fread (root_image_start, 1, rootlen, g);
-	fclose (g);
+	if (root_image) {
+		fread (root_image_start, 1, rootlen, g);
+		fclose (g);
+	}
 
 	output_end = root_image_start + rootlen;
 
