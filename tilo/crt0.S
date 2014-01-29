@@ -23,10 +23,14 @@
 
 #define COPY	jmpl	%o7 + (copy - _start), %l7
 
+#ifdef SUPERTILO
+#define STACK_BASE 0xa00000
+#else
 #ifndef LARGETILO
 #define STACK_BASE 0x400000
 #else
 #define STACK_BASE 0x500000
+#endif
 #endif
 
 	.text

@@ -7,18 +7,21 @@
 	to the boot loader and patches the addresses in its image_table[]
 	
 	Parameters:
-			kernel4=<filename>
-			kernel4c=<filename>
-			kernel4u=<filename>
-				... compressed kernel images (in a.out format)
+			sun4=<filename>
+			sun4c=<filename>
+			sun4u=<filename>
+				... compressed kernel images
+				    (in a.out or ELF format)
 			size4=<bytes>
 			size4c=<bytes>
 			size4u=<bytes>
-				... original sizes of kernel images (uncompressed)
+				... original sizes of kernel images
+				    (uncompressed)
 			root4=<addr>
 			root4c=<addr>
 			root4u=<addr>
-				... virtual address of root image for each kernel (in hex)
+				... virtual address of root image for each
+				    kernel (in hex)
 			root=<filename>
 				... compressed root image
 			out=<filename>
@@ -28,12 +31,14 @@
 
 #include <stdio.h>
 #include <sys/stat.h>
+#include <arpa/inet.h>
 #include <stdlib.h>
 #include <string.h>
 #include "b.h"
 #include "b2.h"
+#include "b3.h"
 
-#define MAX_BOOT_LEN	0x400000
+#define MAX_BOOT_LEN	0x900000
 
 char output_buffer[MAX_BOOT_LEN];
 
@@ -52,10 +57,18 @@ int root_tweak (char *s)
 	return p ? (p + 32 + 0x1fff) & ~0x1fff : 0;	/* add 32 bytes and round to 8 KB */
 }
 
+static void check_size (char const *name, int len, int pos, int max)
+{
+	if (max - pos < len) {
+		fprintf (stderr, "%s will not fit into the image.\n", name);
+		exit (EXIT_FAILURE);
+	}
+}
+
 int main (int argc, char **argv)
 {
 	int i,len,rootlen;
-	FILE *f, *g;
+	FILE *f, *g = NULL;
 	struct ImageInfo *ii;
 
 	char *sun4_kernel_start;
@@ -111,26 +124,26 @@ int main (int argc, char **argv)
 	
 	if (!sun4_kernel) {
 		/*fprintf (stderr, "WARNING: Kernel for Sun4 not specified\n");*/
-	} else if (!sun4_size || !sun4_root) {
+	} else if (!sun4_size || (!sun4_root && root_image)) {
 		fprintf (stderr, "WARNING: Original size and root address must be specified for Sun4\n");
 		return -1;
 	}
 	
 	if (!sun4c_kernel) {
 		fprintf (stderr, "WARNING: Kernel for Sun4c/m/d not specified\n");
-	} else if (!sun4c_size || !sun4c_root) {
+	} else if (!sun4c_size || (!sun4c_root && root_image)) {
 		fprintf (stderr, "ERROR: Original size and root address must be specified for Sun4c\n");
 		return -1;
 	}
 	
 	if (!sun4u_kernel) {
 		fprintf (stderr, "WARNING: Kernel for Sun4u not specified\n");
-	} else if (!sun4u_size || !sun4u_root) {
+	} else if (!sun4u_size || (!sun4u_root && root_image)) {
 		fprintf (stderr, "ERROR: Original size and root address must be specified for Sun4u\n");
 		return -1;
 	}
 	
-	if (!root_image) {
+	if (!root_image && (sun4_root || sun4c_root || sun4u_root)) {
 		fprintf (stderr, "ERROR: Root image not specified\n");
 		return -1;
 	}
@@ -140,17 +153,27 @@ int main (int argc, char **argv)
 		return -1;
 	}
 	
-	g = fopen (root_image, "rb");
-	if (!g) {
-		fprintf (stderr, "Can't load %s\n", root_image);
-		return -1;
+	if (root_image) {
+		g = fopen (root_image, "rb");
+		if (!g) {
+			fprintf (stderr, "Can't load %s\n", root_image);
+			return -1;
+		}
+		fseek (g, 0, SEEK_END);
+		rootlen = ftell (g);
+		fseek (g, 0, SEEK_SET);
+	} else {
+		rootlen = 0;
 	}
 	
-	fseek (g, 0, SEEK_END);
-	rootlen = ftell (g);
-	fseek (g, 0, SEEK_SET);
-	
-	if (rootlen + sun4_size + 0x4000 + 0x10000 >= 0x330000 ||
+	if (rootlen + sun4_size + 0x4000 + 0x10000 >= 0x430000 ||
+	    rootlen + sun4c_size + 0x4000 + 0x10000 >= 0x430000 ||
+	    rootlen + sun4u_size + 0x4000 + 0x10000 >= 0x430000) {
+		printf("Images are super large. Will load on machines with at least 10M mapped by PROM only\n");
+
+		for (i=0; i<SUPER_BOOT_LEN; i++)
+			output_buffer[i] = super_boot_loader[i];
+	} else if (rootlen + sun4_size + 0x4000 + 0x10000 >= 0x330000 ||
 	    rootlen + sun4c_size + 0x4000 + 0x10000 >= 0x330000 ||
 	    rootlen + sun4u_size + 0x4000 + 0x10000 >= 0x330000) {
 		printf("Images are large. Will load on machines with at least 5M mapped by PROM only\n");
@@ -173,6 +196,8 @@ int main (int argc, char **argv)
 		fseek (f, 0, SEEK_END);
 		len = ftell (f);
 		fseek (f, 0, SEEK_SET);
+		check_size (sun4_kernel, sun4_kernel_start - output_buffer, len,
+			    MAX_BOOT_LEN);
 		fread (sun4_kernel_start, 1, len, f);
 		fclose (f);
 	} else
@@ -190,6 +215,8 @@ int main (int argc, char **argv)
 		fseek (f, 0, SEEK_END);
 		len = ftell (f);
 		fseek (f, 0, SEEK_SET);
+		check_size (sun4c_kernel, sun4c_kernel_start - output_buffer,
+			    len, MAX_BOOT_LEN);
 		fread (sun4c_kernel_start, 1, len, f);
 		fclose (f);
 	} else
@@ -207,6 +234,8 @@ int main (int argc, char **argv)
 		fseek (f, 0, SEEK_END);
 		len = ftell (f);
 		fseek (f, 0, SEEK_SET);
+		check_size (sun4u_kernel, sun4u_kernel_start - output_buffer,
+			    len, MAX_BOOT_LEN);
 		fread (sun4u_kernel_start, 1, len, f);
 		fclose (f);
 	} else
@@ -214,13 +243,17 @@ int main (int argc, char **argv)
 
 	root_image_start = sun4u_kernel_start + len;
 	
-	fread (root_image_start, 1, rootlen, g);
-	fclose (g);
+	if (root_image) {
+		check_size (root_image, root_image_start - output_buffer, len,
+			    MAX_BOOT_LEN);
+		fread (root_image_start, 1, rootlen, g);
+		fclose (g);
+	}
 
 	output_end = root_image_start + rootlen;
 
 	/* patch code, data and BSS size in the .out header */
-	*(unsigned*)(output_buffer+4) = output_end - output_buffer;
+	*(unsigned*)(output_buffer+4) = htonl(output_end - output_buffer);
 	*(unsigned*)(output_buffer+8) = 0;
 	*(unsigned*)(output_buffer+12) = 0;
 
@@ -267,6 +300,13 @@ int main (int argc, char **argv)
 	ii[3].packed_len = output_end - root_image_start;
 	ii[3].unpacked_len = 0;
 	ii[3].root_start = 0;
+
+	for (i = 0; i < 4; i++) {
+		ii[i].packed_start = htonl(ii[i].packed_start);
+		ii[i].packed_len   = htonl(ii[i].packed_len);
+		ii[i].unpacked_len = htonl(ii[i].unpacked_len);
+		ii[i].root_start   = htonl(ii[i].root_start);
+	}
 
 	f = fopen (output_file, "wb");
 	if (!f) {

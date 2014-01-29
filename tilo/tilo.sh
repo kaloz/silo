@@ -50,16 +50,18 @@ do_image () {
 	to_remove="$to_remove $KERNEL.gz"
 	PSIZE=`ls -l $KERNEL.gz | awk '{print$5}'`
 	SIZE=`ls -l $KERNEL.raw | awk '{print$5}'`
-	ROOTA=`nm $KERNEL | awk '/A _end$/{print$1}'`
+	ROOTA=`nm $KERNEL | awk '/[AB] _end$/{print$1}'`
 	rm $KERNEL.raw
 	echo "Sizes ($tag):"
 	echo "  raw size     = $SIZE"
 	echo "  packed size  = $PSIZE"
 	echo "  root address = $ROOTA"
 	if [ -n "$sun4u" ]; then
-		tilo_args="$tilo_args sun4u=$KERNEL.gz size4u=$SIZE root4u=$ROOTA"
+		tilo_args="$tilo_args sun4u=$KERNEL.gz size4u=$SIZE"
+		root_addr="$root_addr root4u=$ROOTA"
 	else
-		tilo_args="$tilo_args sun4c=$KERNEL.gz size4c=$SIZE root4c=$ROOTA"
+		tilo_args="$tilo_args sun4c=$KERNEL.gz size4c=$SIZE"
+		root_addr="$root_addr root4c=$ROOTA"
 	fi
 }
 
@@ -80,7 +82,7 @@ do_root () {
 	fi
 	ROOT_SIZE=`ls -l $rootimg | awk '{print$5}'`
 	echo Root image packed size = $ROOT_SIZE
-	tilo_args="$tilo_args root=$rootimg"
+	root_img="root=$rootimg"
 }
 
 while [ $# != 0 ]; do
@@ -112,7 +114,8 @@ if [ -z "$sun4u" -a -z "$sun4c" ]; then
 	exit 1
 fi
 
-`echo $0 | sed 's/tilo$/maketilo/'` $tilo_args out=$output
+[ -n "$root_img" ] && root_img="$root_img $root_addr"
+$(dirname $0)/maketilo $tilo_args $root_img out=$output
 
 rm -f $to_remove
 
