@@ -221,12 +221,6 @@ struct struct_ext2_filsys {
 	struct ext2_inode_cache		*icache;
 };
 
-#if EXT2_FLAT_INCLUDES
-#include "e2_bitops.h"
-#else
-#include "ext2fs/bitops.h"
-#endif
-
 /*
  * Return flags for the block iterator functions
  */
