@@ -158,7 +158,7 @@ void sun4c_unmapio (unsigned long virtual)
     sun4c_map (virtual & ~4095, 0);
 }
 
-inline unsigned long sun4m_get_lev1 (void)
+static inline unsigned long sun4m_get_lev1 (void)
 {
     unsigned long ret;
     
@@ -172,7 +172,7 @@ inline unsigned long sun4m_get_lev1 (void)
     return ret;
 }
 
-inline unsigned long sun4m_probe (unsigned long l)
+static inline unsigned long sun4m_probe (unsigned long l)
 {
     unsigned long ret;
     
@@ -181,7 +181,7 @@ inline unsigned long sun4m_probe (unsigned long l)
     return ret;
 }
 
-inline unsigned long sun4m_get_direct (unsigned long l)
+static inline unsigned long sun4m_get_direct (unsigned long l)
 {
     unsigned long ret;
     __asm__ ("\n\t"
@@ -189,7 +189,7 @@ inline unsigned long sun4m_get_direct (unsigned long l)
     return ret;
 }
 
-inline void sun4m_set_direct (unsigned long l, unsigned long set)
+static inline void sun4m_set_direct (unsigned long l, unsigned long set)
 {
     __asm__ ("\n\t"
 	"sta %0, [%1] 32\n\t" : : "r" (set), "r" (l));

@@ -127,7 +127,7 @@ void cfg_error (char *msg,...)
     longjmp (env, 1);
 }
 
-inline int my_getc ()
+static inline int my_getc ()
 {
     if (currp == endp)
 	return EOF;

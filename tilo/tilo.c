@@ -73,7 +73,7 @@ static unsigned outcnt = 0;	/* bytes in output buffer */
 static void flush_window (void);
 static void error (char *);
 #define gzip_mark mark
-inline void gzip_release (void **p)
+static inline void gzip_release (void **p)
 {
     release (*p);
 }
