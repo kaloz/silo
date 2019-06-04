@@ -244,8 +244,8 @@ int main (int argc, char **argv)
 	root_image_start = sun4u_kernel_start + len;
 	
 	if (root_image) {
-		check_size (root_image, root_image_start - output_buffer, len,
-			    MAX_BOOT_LEN);
+		check_size (root_image, root_image_start - output_buffer,
+			    rootlen, MAX_BOOT_LEN);
 		fread (root_image_start, 1, rootlen, g);
 		fclose (g);
 	}
