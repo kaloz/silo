@@ -3,27 +3,37 @@ include Rules.make
 
 # These only get built on Linux
 ifeq ($(OPSYS),Linux)
-  SUBDIRS  = common first second first-isofs tilo
+ifneq ($(TILO_ONLY),yes)
+  SUBDIRS  = common first second first-isofs
+endif
+  SUBDIRS += tilo
   MANPAGES = maketilo.1 tilo.1
 endif
 
+ifneq ($(TILO_ONLY),yes)
 # These get built on Linux and Solaris
 MANPAGES += silo.8 silo.conf.5
 SUBDIRS  += silo
+endif
 
 all dep depend clean:
 	@for I in $(SUBDIRS); do $(MAKE) -C $$I $@ || exit 1; done
 
 ifeq ($(OPSYS),$(findstring $(OPSYS),Linux Solaris))
 install:
+ifneq ($(TILO_ONLY),yes)
 	install -d -m755 $(DESTDIR)/etc $(DESTDIR)/sbin $(DESTDIR)/usr/sbin
 	install -m755 silo/silo $(DESTDIR)/sbin
 	install -m755 silo/silocheck $(DESTDIR)/usr/sbin
 	[ -f $(DESTDIR)/etc/silo.conf ] || \
 		install -m644 etc/silo.conf $(DESTDIR)/etc/
+endif
 ifeq ($(OPSYS),Linux)
-	install -d -m755 $(DESTDIR)/boot $(DESTDIR)/usr/bin
+ifneq ($(TILO_ONLY),yes)
+	install -d -m755 $(DESTDIR)/boot
 	install -m644 first/*.b second/*.b first-isofs/*.b $(DESTDIR)/boot/
+endif
+	install -d -m755 $(DESTDIR)/usr/bin
 	install -m755 tilo/maketilo $(DESTDIR)/usr/bin/
 	install -m755 tilo/tilo.sh $(DESTDIR)/usr/bin/tilo
 endif
