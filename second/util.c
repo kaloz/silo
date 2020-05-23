@@ -120,8 +120,6 @@ int main(int argc, char **argv)
     int end, rodata_start, rodata_end;
     int net = 0;
     int i = 1;
-    char sym[256];
-    unsigned int addr;
 
     if (!strcmp (argv[i], "-a")) {
 	net = 1;
