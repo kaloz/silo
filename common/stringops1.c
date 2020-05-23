@@ -74,7 +74,7 @@ int strlen(const char *s)
 {
 	const char *sc;
 	for (sc = s; *sc != '\0'; ++sc);
-		return sc - s;
+	return sc - s;
 }
 
 int strncmp(const char *cs, const char *ct, size_t count)
