@@ -1574,7 +1574,8 @@ linux_loaded_at_entry:
 					(unsigned int)sun4u_initrd_phys + 0x400000;
 			    }
 			} else if (sun4m_initrd_pa) {
-	            	    hdrs->ramdisk_image = ((unsigned int)sun4m_initrd_pa);
+	            	    hdrs->ramdisk_image = ((unsigned int)
+	            	    	(sun4m_initrd_pa - sun4m_kernel_phys_base));
 			} else
 	            	    hdrs->ramdisk_image = ((unsigned int)initrd_start | 0xf0000000);
 
@@ -1601,7 +1602,8 @@ linux_loaded_at_entry:
 					(unsigned int)sun4u_initrd_phys + 0x400000;
 				}
 			    } else if (sun4m_initrd_pa) {
-				hdrs->ramdisk_image = ((unsigned int)sun4m_initrd_pa);
+				hdrs->ramdisk_image = ((unsigned int)
+					(sun4m_initrd_pa - sun4m_kernel_phys_base));
 			    } else
 	            	        hdrs->ramdisk_image = ((unsigned int)initrd_start | 0xf0000000);
 

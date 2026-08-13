@@ -140,6 +140,8 @@ int get_ticks (void);
 void reset_ticks (void);
 /* memory.c */
 char *memory_find (int);
+
+extern unsigned long sun4m_kernel_phys_base;
 void memory_release (void);
 char *image_memory_find (unsigned int len);
 void image_memory_release (void);

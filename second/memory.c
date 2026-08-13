@@ -40,6 +40,9 @@ static unsigned long sun4m_kernel_pa;
 static unsigned long sun4m_kernel_va;
 static unsigned long sun4m_kernel_len;
 
+/* Physical base the kernel was loaded at, 0 if it was not high loaded. */
+unsigned long sun4m_kernel_phys_base;
+
 /* Internal Prom library routine to sort a linux_mlist_v0 memory
  * list.  Used below in initialization.
  */
@@ -132,6 +135,8 @@ int sun4m_map_kernel_elf_window(unsigned long va,
         sun4m_kernel_pa = pa;
         sun4m_kernel_va = map_va;
         sun4m_kernel_len = map_len;
+        /* Linux computes initrd_start as sparc_ramdisk_image + phys_base. */
+        sun4m_kernel_phys_base = pa;
 
         printf("SILO: reserved kernel PA 0x%x..0x%x VA 0x%x len 0x%x\n",
                sun4m_kernel_pa,
