@@ -1406,6 +1406,12 @@ try_again:
 			image_base = (unsigned char *)elf_map_va;
 			len = elf_map_len;
 
+			/* Point at HdrS inside the loaded image, so the initrd
+			 * and boot arguments below reach the running kernel.
+			 */
+			hdrs = (struct HdrS_struct *)
+				silo_find_linux_HdrS((char *)eh->e_entry, len);
+
 			/*
 			 * Skip the old compressed-image memcpy/HdrS relocation
 			 * path for this experiment.
