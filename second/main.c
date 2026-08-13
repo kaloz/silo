@@ -1353,6 +1353,17 @@ try_again:
     image_base[2] == ELFMAG2 &&
     image_base[3] == ELFMAG3) {
 	Elf32_Ehdr *eh = (Elf32_Ehdr *)image_base;
+	/* HdrS is found in the flattened image, which begins at off. */
+	struct HdrS_struct *hh = (struct HdrS_struct *)
+		silo_find_linux_HdrS((char *)image_base + off, len);
+
+	/* Only kernels that say they tolerate running from somewhere
+	 * other than phys_base may be left in the high window. */
+	if (!hh || hh->ver < 0x300) {
+		printf("SILO: HdrS 0x%x does not support high load, "
+		       "using the low path\n", hh ? hh->ver : 0);
+		goto normal_linux_load;
+	}
 
 	if (eh->e_ident[EI_CLASS] == ELFCLASS32 &&
 	    eh->e_ident[EI_DATA] == ELFDATA2MSB) {
