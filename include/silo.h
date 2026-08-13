@@ -5,6 +5,13 @@
 
 #define CMD_LENG 512
 
+
+
+int sun4m_map_kernel_elf_window(unsigned long va,
+				unsigned long len,
+				unsigned long *mapped_va,
+				unsigned long *mapped_len);
+
 extern unsigned long _start;
 
 struct aout_hdr {

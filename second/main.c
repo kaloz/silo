@@ -920,7 +920,26 @@ static int parse_executable (unsigned char *base, int image_len, unsigned int *p
 	}
 	if (hp.e->e_ident[EI_CLASS] == ELFCLASS32) {
 	    Elf32_Phdr *p;
+printf("SILO: ELF32 entry=0x%x phoff=0x%x phnum=0x%x\n",
+       hp.e->e_entry, hp.e->e_phoff, hp.e->e_phnum);
 
+{
+	int di;
+	Elf32_Phdr *dp = (Elf32_Phdr *)(hp.b + hp.e->e_phoff);
+
+	for (di = 0; di < hp.e->e_phnum; di++, dp++) {
+		printf("SILO: PHDR %d type=0x%x off=0x%x vaddr=0x%x "
+		       "paddr=0x%x filesz=0x%x memsz=0x%x flags=0x%x\n",
+		       di,
+		       dp->p_type,
+		       dp->p_offset,
+		       dp->p_vaddr,
+		       dp->p_paddr,
+		       dp->p_filesz,
+		       dp->p_memsz,
+		       dp->p_flags);
+	}
+}
 	    p = (Elf32_Phdr *) (hp.b + hp.e->e_phoff);
 	    if (p->p_type != PT_LOAD) {
 		silo_fatal("Cannot find a loadable segment in your "
@@ -989,6 +1008,8 @@ static int parse_executable (unsigned char *base, int image_len, unsigned int *p
 	                }
 	            }
 	    	    off = p->p_offset + hp.e->e_entry - p->p_vaddr;
+		    printf("SILO: ELF32 computed off=0x%x len=0x%x entry=0x%x base=0x%x\n",
+       			off, len, hp.e->e_entry, base);
 	    	    len = p->p_filesz;
 	    	    if (len > image_len) len = image_len;
 	    	    isfile = 1;
@@ -1099,6 +1120,10 @@ int bootmain (void)
     unsigned int ret_offset = 0;
     char *params_device = 0;
     int silo_conf_partition;
+    unsigned long elf_map_va = 0;
+    unsigned long elf_map_len = 0;
+
+
 
     prom_ranges_init ();
     get_idprom();
@@ -1258,10 +1283,17 @@ try_again:
 		 * ~42MB in size.  So we try to carve out up to 64MB of
 		 * memory for the kernel.
 		 */
-		for (size = 64 * 1024 * 1024;
+
+		printf("SILO: arch=%d _start=%x initial image_base=%x\n",
+			architecture, &_start, image_base);
+
+		for (size = 16 * 1024 * 1024;
 		     size >= 4 * 1024 * 1024;
 		     size -= 4 * 1024 * 1024) {
 			mem = (unsigned char *)image_memory_find(size);
+			printf("SILO: size bytes 0x%x\n", size);
+			printf("SILO: size mb 0x%x\n", size >> 20);
+			printf("SILO: mem 0x%x\n", mem);
 			if (mem)
 				break;
 		}
@@ -1299,6 +1331,7 @@ try_again:
 
 	    isfile = parse_executable (image_base, image_len, &off, &len,
 				       &ret_offset, kname);
+
 	}
     }
 
@@ -1310,11 +1343,76 @@ try_again:
 	struct HdrS_struct *hdrs;
 
     	params_device = 0;
+	printf("SILO: parse result image_base=0x%x image_len=0x%x off=0x%x len=0x%x ret_offset=0x%x\n",
+       		image_base, image_len, off, len, ret_offset);
 
+	if (architecture == sun4m &&
+    image_base != (unsigned char *)0x4000 &&
+    image_base[0] == ELFMAG0 &&
+    image_base[1] == ELFMAG1 &&
+    image_base[2] == ELFMAG2 &&
+    image_base[3] == ELFMAG3) {
+	Elf32_Ehdr *eh = (Elf32_Ehdr *)image_base;
+
+	if (eh->e_ident[EI_CLASS] == ELFCLASS32 &&
+	    eh->e_ident[EI_DATA] == ELFDATA2MSB) {
+		Elf32_Phdr *ph = (Elf32_Phdr *)(image_base + eh->e_phoff);
+		int i;
+		int loaded = 0;
+
+		for (i = 0; i < eh->e_phnum; i++, ph++) {
+			if (ph->p_type != PT_LOAD)
+				continue;
+
+			printf("SILO: sun4m ELF load off=0x%x vaddr=0x%x filesz=0x%x memsz=0x%x\n",
+			       ph->p_offset, ph->p_vaddr,
+			       ph->p_filesz, ph->p_memsz);
+
+
+			if (sun4m_map_kernel_elf_window(ph->p_vaddr,
+				ph->p_memsz,
+				&elf_map_va,
+				&elf_map_len) < 0) {
+				printf("SILO: sun4m ELF map failed\n");
+				goto normal_linux_load;
+			}
+			memcpy((char *)ph->p_vaddr,
+			       image_base + ph->p_offset,
+			       ph->p_filesz);
+
+			if (ph->p_memsz > ph->p_filesz) {
+				memset((char *)(ph->p_vaddr + ph->p_filesz),
+				       0,
+				       ph->p_memsz - ph->p_filesz);
+			}
+
+			loaded++;
+		}
+
+		if (loaded) {
+			printf("SILO: sun4m ELF entry 0x%x\n", eh->e_entry);
+			ret_offset = eh->e_entry;
+			image_base = (unsigned char *)elf_map_va;
+			len = elf_map_len;
+
+			/*
+			 * Skip the old compressed-image memcpy/HdrS relocation
+			 * path for this experiment.
+			 */
+			goto linux_loaded_at_entry;
+		}
+	}
+}
+
+normal_linux_load:
+
+/* existing HdrS logic follows */
 	memcpy (image_base, image_base + off, len);
 
         hdrs = (struct HdrS_struct *)
 		silo_find_linux_HdrS((char *)image_base, image_len);
+
+	printf("SILO: HdrS version 0x%x\n", hdrs ? hdrs->ver : 0);
 
 	if (hdrs && hdrs->ver < 0x300 && image_base != (unsigned char *)0x4000) {
 	    /* Kernel doesn't support being loaded to other than
@@ -1328,7 +1426,6 @@ try_again:
 		       "2.6.3+ or 2.4.26+).\n");
 		goto try_again;
 	    }
-
 	    printf("Kernel doesn't support loading to high memory, relocating...");
 
 	    /* Ok, it fits, so copy it down there */
@@ -1342,7 +1439,10 @@ try_again:
 
 	    printf("done.\n");
 	}
+linux_loaded_at_entry:
 
+	printf("SILO: final entry 0x%x image_base 0x%x len 0x%x\n",
+               ret_offset, image_base, len);
         if (hdrs) {
 	    unsigned int linux_ver = hdrs->linux_ver;
 
@@ -1563,6 +1663,7 @@ try_again:
         strcat (sol_params, params);
     	prom_reboot(sol_params);
     }
-
+	printf("SILO: final return ret_offset=0x%x image_base=0x%x len=0x%x\n",
+       		ret_offset, image_base, len);
     return ret_offset;
 }
