@@ -325,7 +325,7 @@ static int isofs_lookup (struct isofs_inode *dir, const char *name,
 			namebuf[(unsigned char)idr->name_len[0]] = 0;
 
 			rr = (unsigned char *)(idr + 1);
-			rr += ((unsigned char)idr->name_len[0]) - sizeof(idr->name);
+			rr += ((unsigned char)idr->name_len[0]) - 1;
 
 			if (!(idr->name_len[0] & 1))
 				rr++;
@@ -361,7 +361,7 @@ static int isofs_lookup (struct isofs_inode *dir, const char *name,
 			}
 
 			if (i >= ISOFS_BLOCK_SIZE - sizeof(struct iso_directory_record) +
-			    sizeof(idr->name))
+			    1)
 				break;
 		}
 	}
