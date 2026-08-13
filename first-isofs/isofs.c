@@ -19,6 +19,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307,
    USA.  */
 
+#include <stddef.h>
 #include <sys/types.h>
 #include <linux/iso_fs.h>
 
@@ -324,8 +325,8 @@ static int isofs_lookup (struct isofs_inode *dir, const char *name,
 			memcpy(namebuf, idr->name, (unsigned char)idr->name_len[0]);
 			namebuf[(unsigned char)idr->name_len[0]] = 0;
 
-			rr = (unsigned char *)(idr + 1);
-			rr += ((unsigned char)idr->name_len[0]) - sizeof(idr->name);
+			rr = (unsigned char *)idr->name +
+				(unsigned char)idr->name_len[0];
 
 			if (!(idr->name_len[0] & 1))
 				rr++;
@@ -360,8 +361,8 @@ static int isofs_lookup (struct isofs_inode *dir, const char *name,
 				return 0;
 			}
 
-			if (i >= ISOFS_BLOCK_SIZE - sizeof(struct iso_directory_record) +
-			    sizeof(idr->name))
+			if (i >= ISOFS_BLOCK_SIZE -
+			    offsetof(struct iso_directory_record, name))
 				break;
 		}
 	}

@@ -20,6 +20,7 @@
    USA.  */
 
 #include <ctype.h>
+#include <stddef.h>
 #include <sys/types.h>
 #include <errno.h>
 #include <linux/iso_fs.h>
@@ -300,8 +301,8 @@ static int isofs_lookup (isofs_filsys fs, struct isofs_inode *dir,
 	    strncpy(namebuf, idr->name, (unsigned char)idr->name_len[0]);
 	    namebuf[(unsigned char)idr->name_len[0]] = 0;
 
-	    rr = (unsigned char *)(idr + 1);
-	    rr += ((unsigned char)idr->name_len[0]) - sizeof(idr->name);
+	    rr = (unsigned char *)idr->name +
+		 (unsigned char)idr->name_len[0];
 
 	    if (!(idr->name_len[0] & 1))
 		rr++;
@@ -339,7 +340,8 @@ static int isofs_lookup (isofs_filsys fs, struct isofs_inode *dir,
 		return 0;
 	    }
 
-	    if (i >= 2048 - sizeof(struct iso_directory_record) + sizeof(idr->name))
+	    if (i >= 2048 -
+		offsetof(struct iso_directory_record, name))
 		break;
 	}
     }
