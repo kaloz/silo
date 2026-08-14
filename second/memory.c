@@ -31,9 +31,304 @@ static char *sun4u_memory_find (unsigned int len, int is_kernel);
 struct linux_prom_registers prom_reg_memlist[64];
 struct linux_mlist_v0 prom_phys_avail[64];
 
+
+static unsigned long sun4m_image_pa;
+static unsigned long sun4m_image_va;
+static unsigned long sun4m_image_len;
+
+static unsigned long sun4m_kernel_pa;
+static unsigned long sun4m_kernel_va;
+static unsigned long sun4m_kernel_len;
+
+/* Physical base the kernel was loaded at, 0 if it was not high loaded. */
+unsigned long sun4m_kernel_phys_base;
+
 /* Internal Prom library routine to sort a linux_mlist_v0 memory
  * list.  Used below in initialization.
  */
+
+#define SUN4M_L1_ET_MASK	0x3
+/* Linux/sparc32 PAGE_OFFSET, the virtual address phys_base is
+ * defined against.
+ */
+#define SUN4M_PAGE_OFFSET	0xf0000000UL
+#define SUN4M_L1_SIZE   0x01000000
+#define SUN4M_LOW_AVOID 0x01000000
+
+#if SUN4M_L1_SIZE != 0x01000000
+#error "SUN4M_L1_SIZE must be 16 MB for SRMMU L1 mappings"
+#endif
+
+static inline void sun4m_flush_tlb_all(void);
+static inline unsigned long sun4m_get_lev1(void);
+static inline unsigned long sun4m_get_direct(unsigned long l);
+static inline void sun4m_set_direct(unsigned long l, unsigned long set);
+static unsigned long sun4m_find_phys_window(unsigned long len);
+static inline unsigned long sun4m_make_l1_pte(unsigned long pa);
+
+static int sun4m_map_l1_window(unsigned long va,
+			       unsigned long pa,
+			       unsigned long len)
+{
+	unsigned long lev1;
+	unsigned long off;
+	unsigned long idx;
+	unsigned long pte;
+
+	if (va & (SUN4M_L1_SIZE - 1))
+		return -1;
+	if (pa & (SUN4M_L1_SIZE - 1))
+		return -1;
+	if (len & (SUN4M_L1_SIZE - 1))
+		return -1;
+
+	lev1 = sun4m_get_lev1();
+
+	/* Never displace a mapping somebody else owns: PROM and SILO state
+	 * live in this table too.
+	 */
+	for (off = 0; off < len; off += SUN4M_L1_SIZE) {
+		idx = (va + off) >> 24;
+		pte = sun4m_get_direct(lev1 + 4 * idx);
+		if (pte & SUN4M_L1_ET_MASK)
+			return -1;
+	}
+
+	for (off = 0; off < len; off += SUN4M_L1_SIZE) {
+		sun4m_set_direct(lev1 + (((va + off) >> 24) * 4),
+				  sun4m_make_l1_pte(pa + off));
+	}
+	sun4m_flush_tlb_all();
+	return 0;
+}
+
+
+static int ranges_overlap(unsigned long a_start, unsigned long a_len,
+			  unsigned long b_start, unsigned long b_len)
+{
+	unsigned long a_end = a_start + a_len;
+	unsigned long b_end = b_start + b_len;
+
+	return a_start < b_end && b_start < a_end;
+}
+
+
+/* Map one contiguous physical span covering [min_va, max_va), install every
+ * L1 entry for it once, and record the single VA<->PA relationship.
+ */
+int sun4m_map_kernel_elf_window(unsigned long min_va,
+                                unsigned long max_va,
+                                unsigned long *mapped_va,
+                                unsigned long *mapped_len)
+{
+        unsigned long map_va;
+        unsigned long map_end;
+        unsigned long map_len;
+        unsigned long pa;
+
+        if (max_va <= min_va)
+                return -1;
+
+        map_va = min_va & ~(SUN4M_L1_SIZE - 1);
+        map_end = (max_va + SUN4M_L1_SIZE - 1) & ~(SUN4M_L1_SIZE - 1);
+        if (map_end <= map_va)
+                return -1;
+        map_len = map_end - map_va;
+
+        /* phys_base is what PAGE_OFFSET maps to, so a window that does not
+         * cover it cannot express one.
+         */
+        if (map_va > SUN4M_PAGE_OFFSET || map_end <= SUN4M_PAGE_OFFSET)
+                return -1;
+
+        pa = sun4m_find_phys_window(map_len);
+        if (!pa)
+                return -1;
+
+        if (sun4m_map_l1_window(map_va, pa, map_len) < 0)
+                return -1;
+
+        printf("SILO: sun4m kernel ELF map VA=0x%x PA=0x%x LEN=0x%x\n",
+               map_va, pa, map_len);
+
+        sun4m_kernel_pa = pa;
+        sun4m_kernel_va = map_va;
+        sun4m_kernel_len = map_len;
+
+        /* What PAGE_OFFSET maps to, which is what Linux calls phys_base.
+         * Equal to pa whenever the image starts at PAGE_OFFSET.
+         */
+        sun4m_kernel_phys_base = pa + (SUN4M_PAGE_OFFSET - map_va);
+
+        if (mapped_va)
+                *mapped_va = map_va;
+
+        if (mapped_len)
+                *mapped_len = map_len;
+
+        return 0;
+}
+
+/* Drop the staging mapping and forget it. */
+void sun4m_image_release(void)
+{
+        unsigned long lev1;
+        unsigned long off;
+
+        if (!sun4m_image_len)
+                goto out;
+
+        lev1 = sun4m_get_lev1();
+        for (off = 0; off < sun4m_image_len; off += SUN4M_L1_SIZE)
+                sun4m_set_direct(lev1 + (((sun4m_image_va + off) >> 24) * 4), 0);
+        sun4m_flush_tlb_all();
+
+out:
+        sun4m_image_pa = 0;
+        sun4m_image_va = 0;
+        sun4m_image_len = 0;
+}
+
+/* Drop the kernel mapping and forget it, so a fallback or retry cannot
+ * inherit stale state.
+ */
+void sun4m_kernel_release(void)
+{
+        unsigned long lev1;
+        unsigned long off;
+
+        if (!sun4m_kernel_len)
+                goto out;
+
+        lev1 = sun4m_get_lev1();
+        for (off = 0; off < sun4m_kernel_len; off += SUN4M_L1_SIZE)
+                sun4m_set_direct(lev1 + (((sun4m_kernel_va + off) >> 24) * 4), 0);
+        sun4m_flush_tlb_all();
+
+out:
+        sun4m_kernel_pa = 0;
+        sun4m_kernel_va = 0;
+        sun4m_kernel_len = 0;
+        sun4m_kernel_phys_base = 0;
+}
+
+static inline unsigned long sun4m_make_l1_pte(unsigned long pa)
+{
+	/*
+	 * Same L1 PTE form as SILO's existing sun4m initrd mapping:
+	 * 16 MB physical base encoded into an SRMMU level-1 PTE.
+	 *
+	 * Caller must pass a 16 MB aligned PA.
+	 */
+	return ((pa & 0xff000000) >> 4) | 0x9e;
+}
+
+static inline void sun4m_flush_tlb_all(void)
+{
+	/*
+	 * SRMMU flush/probe ASI.  Type 4 is whole-MMU flush.
+	 */
+	unsigned long addr = 4 << 8;
+
+	__asm__ __volatile__ ("sta %%g0, [%0] 3\n\t" : : "r" (addr));
+}
+
+static int sun4m_map_image_window(unsigned long va,
+				  unsigned long pa,
+				  unsigned long len)
+{
+	return sun4m_map_l1_window(va, pa, len);
+}
+
+static unsigned long sun4m_find_phys_window(unsigned long len)
+{
+	struct linux_mlist_v0 *mlist;
+	unsigned long start, end;
+
+	prom_meminit();
+
+	for (mlist = prom_phys_avail; mlist; mlist = mlist->theres_more) {
+		start = (unsigned long)mlist->start_adr;
+		end = start + mlist->num_bytes;
+
+
+		if (start < SUN4M_LOW_AVOID)
+			start = SUN4M_LOW_AVOID;
+
+		start = (start + SUN4M_L1_SIZE - 1) & ~(SUN4M_L1_SIZE - 1);
+
+		while (end > start && end - start >= len) {
+			if (sun4m_image_pa &&
+			    ranges_overlap(start, len,
+					   sun4m_image_pa,
+					   sun4m_image_len)) {
+
+				start = sun4m_image_pa + sun4m_image_len;
+				start = (start + SUN4M_L1_SIZE - 1) &
+					~(SUN4M_L1_SIZE - 1);
+				continue;
+			}
+
+			if (sun4m_kernel_pa &&
+			    ranges_overlap(start, len,
+					   sun4m_kernel_pa,
+					   sun4m_kernel_len)) {
+				start = sun4m_kernel_pa + sun4m_kernel_len;
+				start = (start + SUN4M_L1_SIZE - 1) &
+					~(SUN4M_L1_SIZE - 1);
+				continue;
+			}
+
+			printf("SILO: sun4m selected image PA 0x%x len 0x%x\n",
+			       start, len);
+			return start;
+		}
+	}
+
+	printf("SILO: sun4m no phys window for len 0x%x\n", len);
+	return 0;
+}
+
+
+static char *sun4m_image_memory_find(unsigned int len)
+{
+	unsigned long va = IMAGE_VIRT_ADDR;
+	unsigned long pa;
+	unsigned long map_len;
+
+
+	/* Only reuse the cached staging window if it still fits. */
+	if (sun4m_image_va) {
+		if (sun4m_image_len >= (unsigned long)len + 0x4000)
+			return (char *)(sun4m_image_va + 0x4000);
+		sun4m_image_release();
+	}
+
+	/*
+	 * main.c expects image_base - 0x4000 to be the mapped allocation
+	 * base.  The actual file load starts at returned pointer.
+	 */
+	map_len = len + 0x4000;
+	map_len = (map_len + SUN4M_L1_SIZE - 1) & ~(SUN4M_L1_SIZE - 1);
+
+
+	pa = sun4m_find_phys_window(map_len);
+	if (!pa) {
+		printf("SILO: sun4m: no %d MB image window available\n",
+		       map_len >> 20);
+		return 0;
+	}
+
+	if (sun4m_map_image_window(va, pa, map_len) < 0)
+		return 0;
+
+	sun4m_image_pa = pa;
+	sun4m_image_va = va;
+	sun4m_image_len = map_len;
+
+	return (char *)(va + 0x4000);
+}
+
 static void prom_sortmemlist (struct linux_mlist_v0 *thislist)
 {
     int swapi = 0;
@@ -200,76 +495,235 @@ unsigned long long initrd_phys;
 unsigned long sun4m_initrd_pa;
 unsigned long sun4m_initrd_va;
 
-char *memory_find (int len)
+static char *sun4m_map_initrd_window(char *beg)
 {
-    register struct linux_mlist_v0 *mlist;
-    char *beg = 0, *start;
-    int l = 0, num;
-    unsigned long totalmem = 0;
-    char *min = (char *)0x300000;
+	unsigned long lev1;
+	int i;
 
-    if (architecture != sun4u) {
-        prom_meminit ();
-        for (mlist = prom_phys_avail; mlist; mlist = mlist->theres_more) {
-            totalmem += mlist->num_bytes;
-            if (totalmem >= 0x4000000)
-            	break;
-        }
-        if (architecture != sun4c) {
-            unsigned long ll;
-            if (totalmem >= 0x4000000)
-		min = (char *)0x3000000;
-	    else if (totalmem >= 0x2000000)
-		min = (char *)0x1000000;
-	    ll = (sun4m_probe (0x4000) & 0xffffff00) << 4;
-	    ll -= 0x4000;
-	    min += ll;
-	}
-        mlist = prom_phys_avail;
-        for (;;) {
-            if (beg && mlist->start_adr != beg + l)
-                beg = 0;
-            start = mlist->start_adr;
-            num = mlist->num_bytes;
-            if (start <= min) {
-                num += start - min;
-                start = min;
-            }
-            if (num > 0) {
-                if (num + (beg ? l : 0) >= len) {
-                    if (!beg) beg = start;
-                    if (architecture == sun4c)
-                    	return beg;
-                    else {
-                        unsigned long lev1;
-                        int i;
-                    	sun4m_initrd_pa = (unsigned long)beg;
-			initrd_phys = (unsigned long long)(unsigned long)beg;
-                    	lev1 = sun4m_get_lev1();
-                    	for (i = 0x60; i < 0xa0; i++)
-                    	    if (!(sun4m_get_direct(lev1 + 4*i) & 3))
-                   		break;
-                        if (i == 0xa0) return (char *)0;
-                        sun4m_set_direct(lev1 + 4*i, ((sun4m_initrd_pa & 0xff000000) >> 4) | 0x9e);
-                        sun4m_initrd_va = i << 24;
-                        return (char *)sun4m_initrd_va + (sun4m_initrd_pa & 0xffffff);
-                    }
-                }
-                if (beg) l += num;
-                else {
-                    beg = start;
-                    l = num;
-                }
-            }
-            if (!mlist->theres_more) goto not_found;
-            mlist = mlist->theres_more;
-        }
-    } else {
-        return sun4u_memory_find((len + 0x1fff) & ~0x1fff, 0);
-    }
-not_found:
-    return (char *)0;
+	sun4m_initrd_pa = (unsigned long)beg;
+	initrd_phys = (unsigned long long)(unsigned long)beg;
+
+	lev1 = sun4m_get_lev1();
+
+	for (i = 0x60; i < 0xa0; i++)
+		if (!(sun4m_get_direct(lev1 + 4 * i) & 3))
+			break;
+
+	if (i == 0xa0)
+		return (char *)0;
+
+	sun4m_set_direct(lev1 + 4 * i,
+			 ((sun4m_initrd_pa & 0xff000000) >> 4) | 0x9e);
+
+	sun4m_initrd_va = i << 24;
+
+	return (char *)sun4m_initrd_va + (sun4m_initrd_pa & 0xffffff);
 }
+
+
+static char *memory_find_try_region(char **begp, int *lp,
+				    char *start, int num, int len)
+{
+	char *beg = *begp;
+	int l = *lp;
+
+	if (num <= 0)
+		return (char *)0;
+
+	if (beg && start != beg + l) {
+		beg = 0;
+		l = 0;
+	}
+
+	if (num + (beg ? l : 0) >= len) {
+		if (!beg)
+			beg = start;
+
+		*begp = beg;
+		*lp = l;
+
+		if (architecture == sun4c)
+			return beg;
+
+		return sun4m_map_initrd_window(beg);
+	}
+
+	if (beg) {
+		l += num;
+	} else {
+		beg = start;
+		l = num;
+	}
+
+	*begp = beg;
+	*lp = l;
+
+	return (char *)0;
+}
+
+
+char *memory_find(int len)
+{
+	register struct linux_mlist_v0 *mlist;
+	char *beg = 0, *start;
+	int l = 0, num;
+	unsigned long totalmem = 0;
+	char *min = (char *)0x300000;
+
+	if (architecture == sun4u)
+		return sun4u_memory_find((len + 0x1fff) & ~0x1fff, 0);
+
+	prom_meminit();
+
+
+	for (mlist = prom_phys_avail; mlist; mlist = mlist->theres_more) {
+		totalmem += mlist->num_bytes;
+		if (totalmem >= 0x4000000)
+			break;
+	}
+
+	if (architecture != sun4c) {
+		unsigned long ll;
+
+		if (totalmem >= 0x4000000)
+			min = (char *)0x3000000;
+		else if (totalmem >= 0x2000000)
+			min = (char *)0x1000000;
+
+		ll = (sun4m_probe(0x4000) & 0xffffff00) << 4;
+		ll -= 0x4000;
+		min += ll;
+	}
+
+	mlist = prom_phys_avail;
+
+	for (;;) {
+		char *ret;
+
+		start = mlist->start_adr;
+		num = mlist->num_bytes;
+
+		if (start <= min) {
+			num += start - min;
+			start = min;
+		}
+
+                /*
+                 * On sun4m, SILO may already have reserved private physical
+                 * memory for:
+                 *
+                 *   1. the high staging image buffer, sun4m_image_pa
+                 *   2. the final linked-VA kernel ELF mapping, sun4m_kernel_pa
+                 *
+                 * prom_phys_avail does not know about either reservation.
+                 * Do not let the initrd allocator reuse those pages.
+                 */
+                if (architecture == sun4m && num > 0) {
+                        unsigned long seg_start = (unsigned long)start;
+                        unsigned long seg_end = seg_start + num;
+
+                        for (;;) {
+                                unsigned long res_start = 0;
+                                unsigned long res_len = 0;
+                                unsigned long res_end;
+
+                                /*
+                                 * Prefer skipping the earliest overlapping
+                                 * reserved range.  This lets us split a large
+                                 * PROM span into:
+                                 *
+                                 *   usable-before, reserved, usable-after
+                                 *
+                                 * and then loop again if usable-after also
+                                 * overlaps another reserved range.
+                                 */
+                                if (sun4m_image_pa &&
+                                    ranges_overlap(seg_start,
+                                                         seg_end - seg_start,
+                                                         sun4m_image_pa,
+                                                         sun4m_image_len)) {
+                                        res_start = sun4m_image_pa;
+                                        res_len = sun4m_image_len;
+                                }
+
+                                if (sun4m_kernel_pa &&
+                                    ranges_overlap(seg_start,
+                                                         seg_end - seg_start,
+                                                         sun4m_kernel_pa,
+                                                         sun4m_kernel_len)) {
+                                        if (!res_start ||
+                                            sun4m_kernel_pa < res_start) {
+                                                res_start = sun4m_kernel_pa;
+                                                res_len = sun4m_kernel_len;
+                                        }
+                                }
+
+                                if (!res_start)
+                                        break;
+
+                                res_end = res_start + res_len;
+
+
+                                /*
+                                 * First try the usable part before the
+                                 * reserved range.
+                                 */
+                                if (seg_start < res_start) {
+                                        ret = memory_find_try_region(&beg, &l,
+                                                                     (char *)seg_start,
+                                                                     res_start - seg_start,
+                                                                     len);
+                                        if (ret)
+                                                return ret;
+                                }
+
+                                /*
+                                 * The reserved range is a hard gap.  Anything
+                                 * after it cannot be accumulated with anything
+                                 * before it.
+                                 */
+                                beg = 0;
+                                l = 0;
+
+                                /*
+                                 * Continue with the part after the reserved
+                                 * range.  There may be another reserved range
+                                 * later in the same PROM span.
+                                 */
+                                if (seg_end <= res_end) {
+                                        seg_start = seg_end;
+                                        break;
+                                }
+
+                                seg_start = res_end;
+                        }
+
+                        if (seg_end > seg_start) {
+                                ret = memory_find_try_region(&beg, &l,
+                                                             (char *)seg_start,
+                                                             seg_end - seg_start,
+                                                             len);
+                                if (ret)
+                                        return ret;
+                        }
+
+                        goto next_mlist;
+                }
+		ret = memory_find_try_region(&beg, &l, start, num, len);
+		if (ret)
+			return ret;
+
+next_mlist:
+		if (!mlist->theres_more)
+			goto not_found;
+
+		mlist = mlist->theres_more;
+	}
+
+not_found:
+	return (char *)0;
+}
+
 
 static unsigned long long sun4u_image_virt, sun4u_image_len, sun4u_image_phys;
 static unsigned long long sun4u_initrd_virt, sun4u_initrd_len;
@@ -391,17 +845,25 @@ static void sun4u_memory_release(int is_kernel)
 		sun4u_initrd_len = 0;
 }
 
-char *image_memory_find (unsigned int len)
-{
-	/* This only works for sparc64 */
-	if (architecture != sun4u)
-		return (char *)0;
 
-	return sun4u_memory_find(len, 1);
+char *image_memory_find(unsigned int len)
+{
+	if (architecture == sun4u)
+		return sun4u_memory_find(len, 1);
+
+	if (architecture == sun4m)
+		return sun4m_image_memory_find(len);
+
+	return (char *)0;
 }
 
 void image_memory_release(void)
 {
+	if (architecture == sun4m) {
+		sun4m_image_release();
+		return;
+	}
+
 	if (architecture != sun4u)
 		return;
 

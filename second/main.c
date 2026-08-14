@@ -1100,6 +1100,8 @@ int bootmain (void)
     char *params_device = 0;
     int silo_conf_partition;
 
+
+
     prom_ranges_init ();
     get_idprom();
     architecture = silo_get_architecture();
@@ -1252,18 +1254,30 @@ try_again:
 	    /* See if we can use some extra memory for the kernel */
 	    if (!load_cmd) {
 		unsigned int size;
-		unsigned char *mem;
+		unsigned char *mem = (unsigned char *)0;
 
 		/* As of 2.6.25-rc6, an "allyesconfig" kernel is around
 		 * ~42MB in size.  So we try to carve out up to 64MB of
 		 * memory for the kernel.
 		 */
-		for (size = 64 * 1024 * 1024;
-		     size >= 4 * 1024 * 1024;
-		     size -= 4 * 1024 * 1024) {
+		if (architecture == sun4m) {
+			/* Every sun4m request is rounded up to the same 16MB
+			 * level 1 window, so a smaller retry cannot succeed
+			 * where this one failed. Ask 0x4000 short of 16MB:
+			 * the allocation is mapped with that much space below
+			 * the pointer returned, so a round request would
+			 * cross the boundary and cost 32MB.
+			 */
+			size = 16 * 1024 * 1024 - 0x4000;
 			mem = (unsigned char *)image_memory_find(size);
-			if (mem)
-				break;
+		} else {
+			for (size = 64 * 1024 * 1024;
+			     size >= 4 * 1024 * 1024;
+			     size -= 4 * 1024 * 1024) {
+				mem = (unsigned char *)image_memory_find(size);
+				if (mem)
+					break;
+			}
 		}
 
 		if (mem) {
@@ -1299,6 +1313,7 @@ try_again:
 
 	    isfile = parse_executable (image_base, image_len, &off, &len,
 				       &ret_offset, kname);
+
 	}
     }
 
@@ -1328,7 +1343,6 @@ try_again:
 		       "2.6.3+ or 2.4.26+).\n");
 		goto try_again;
 	    }
-
 	    printf("Kernel doesn't support loading to high memory, relocating...");
 
 	    /* Ok, it fits, so copy it down there */
@@ -1563,6 +1577,5 @@ try_again:
         strcat (sol_params, params);
     	prom_reboot(sol_params);
     }
-
     return ret_offset;
 }
