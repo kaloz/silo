@@ -265,7 +265,7 @@ char *memory_find (int len)
             mlist = mlist->theres_more;
         }
     } else {
-        return sun4u_memory_find((len + 0x1fff) & ~0x2000, 0);
+        return sun4u_memory_find((len + 0x1fff) & ~0x1fff, 0);
     }
 not_found:
     return (char *)0;
