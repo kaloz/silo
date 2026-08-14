@@ -1099,6 +1099,8 @@ int bootmain (void)
     unsigned int ret_offset = 0;
     char *params_device = 0;
     int silo_conf_partition;
+    unsigned long elf_map_va = 0;
+    unsigned long elf_map_len = 0;
 
 
 
@@ -1194,6 +1196,8 @@ int bootmain (void)
 	  "E.g. /iommu/sbus/espdma/esp/sd@3,0;4/vmlinux root=/dev/sda4\n"
 		"or 2/vmlinux.live (to load vmlinux.live from 2nd partition of boot disk)\n");
 try_again:
+    /* Start every attempt with no inherited high load mapping. */
+    sun4m_kernel_release();
     isfile = 0;			/* RC = 0 invalid file or not an executable */
     while (!isfile) {
 	switch (get_params (&device, &part, &kname, &proll, &params)) {
@@ -1322,10 +1326,138 @@ try_again:
     	params = params_device;
     	params_device = sol_params;
     } else if (!other && !flash) {
-	struct HdrS_struct *hdrs;
+	struct HdrS_struct *hdrs = NULL;
 
     	params_device = 0;
 
+	if (architecture == sun4m &&
+	    image_base != (unsigned char *)0x4000 &&
+	    image_base[0] == ELFMAG0 &&
+	    image_base[1] == ELFMAG1 &&
+	    image_base[2] == ELFMAG2 &&
+	    image_base[3] == ELFMAG3) {
+	Elf32_Ehdr *eh = (Elf32_Ehdr *)image_base;
+	/* HdrS is found in the flattened image, which begins at off. */
+	struct HdrS_struct *hh = (struct HdrS_struct *)
+		silo_find_linux_HdrS((char *)image_base + off, len);
+
+	/* Nothing below may read a header the image is too short to hold. */
+	if ((unsigned long)image_len < sizeof(*eh))
+		goto normal_linux_load;
+
+	/* Only kernels that say they tolerate running from somewhere
+	 * other than 0x4000 may be left in the high window.
+	 */
+	if (!hh || hh->ver < 0x300) {
+		printf("SILO: HdrS 0x%x does not support high load, "
+		       "using the low path\n", hh ? hh->ver : 0);
+		goto normal_linux_load;
+	}
+
+	if (eh->e_ident[EI_CLASS] == ELFCLASS32 &&
+	    eh->e_ident[EI_DATA] == ELFDATA2MSB) {
+		Elf32_Phdr *phdr;
+		Elf32_Phdr *ph;
+		unsigned long min_va = ~0UL;
+		unsigned long max_va = 0;
+		unsigned long hdrs_off;
+		int entry_valid = 0;
+		int loadable = 0;
+		int i;
+
+		/* A boot loader must not install page table entries from a
+		 * file it has not checked. Validate, then measure the whole
+		 * span before mapping anything.
+		 */
+		if (eh->e_phentsize != sizeof(Elf32_Phdr) ||
+		    eh->e_phnum == 0 || eh->e_phnum > 64 ||
+		    eh->e_phoff > (unsigned long)image_len ||
+		    eh->e_phnum * sizeof(Elf32_Phdr) >
+				(unsigned long)image_len - eh->e_phoff)
+			goto normal_linux_load;
+
+		phdr = (Elf32_Phdr *)(image_base + eh->e_phoff);
+
+		for (i = 0, ph = phdr; i < eh->e_phnum; i++, ph++) {
+			if (ph->p_type != PT_LOAD)
+				continue;
+
+			if (ph->p_filesz > ph->p_memsz ||
+			    ph->p_offset > (unsigned long)image_len ||
+			    ph->p_filesz >
+				(unsigned long)image_len - ph->p_offset ||
+			    ph->p_vaddr + ph->p_memsz < ph->p_vaddr)
+				goto normal_linux_load;
+
+			if (ph->p_vaddr < min_va)
+				min_va = ph->p_vaddr;
+			if (ph->p_vaddr + ph->p_memsz > max_va)
+				max_va = ph->p_vaddr + ph->p_memsz;
+
+			/* One span is mapped, so an entry point in a hole
+			 * between segments would be mapped but empty.
+			 */
+			if (eh->e_entry >= ph->p_vaddr &&
+			    eh->e_entry - ph->p_vaddr < ph->p_filesz)
+				entry_valid = 1;
+
+			loadable++;
+		}
+
+		if (!loadable || !entry_valid)
+			goto normal_linux_load;
+
+		/* One span for every loadable segment, mapped once. */
+		if (sun4m_map_kernel_elf_window(min_va, max_va,
+						&elf_map_va,
+						&elf_map_len) < 0) {
+			printf("SILO: sun4m ELF map failed\n");
+			sun4m_kernel_release();
+			goto normal_linux_load;
+		}
+
+		/* Everything is mapped, so the segments can just be filled in. */
+		for (i = 0, ph = phdr; i < eh->e_phnum; i++, ph++) {
+			if (ph->p_type != PT_LOAD)
+				continue;
+			memcpy((char *)ph->p_vaddr,
+			       image_base + ph->p_offset,
+			       ph->p_filesz);
+			if (ph->p_memsz > ph->p_filesz)
+				memset((char *)(ph->p_vaddr + ph->p_filesz), 0,
+				       ph->p_memsz - ph->p_filesz);
+		}
+
+		/* Translate the HdrS already found in the staging copy rather
+		 * than scanning the mapping for the signature again.
+		 */
+		hdrs_off = (unsigned char *)hh - image_base;
+		for (i = 0, ph = phdr; i < eh->e_phnum; i++, ph++) {
+			if (ph->p_type != PT_LOAD)
+				continue;
+			if (hdrs_off >= ph->p_offset &&
+			    ph->p_filesz >= sizeof(*hh) &&
+			    hdrs_off - ph->p_offset <=
+					ph->p_filesz - sizeof(*hh)) {
+				hdrs = (struct HdrS_struct *)
+					(ph->p_vaddr +
+					 (hdrs_off - ph->p_offset));
+				break;
+			}
+		}
+		if (!hdrs) {
+			sun4m_kernel_release();
+			goto normal_linux_load;
+		}
+
+		ret_offset = eh->e_entry;
+		image_base = (unsigned char *)elf_map_va;
+		len = elf_map_len;
+		goto linux_loaded_at_entry;
+	}
+}
+
+normal_linux_load:
 	memcpy (image_base, image_base + off, len);
 
         hdrs = (struct HdrS_struct *)
@@ -1356,6 +1488,7 @@ try_again:
 
 	    printf("done.\n");
 	}
+linux_loaded_at_entry:
 
         if (hdrs) {
 	    unsigned int linux_ver = hdrs->linux_ver;
@@ -1488,7 +1621,19 @@ try_again:
 					(unsigned int)sun4u_initrd_phys + 0x400000;
 			    }
 			} else if (sun4m_initrd_pa) {
-	            	    hdrs->ramdisk_image = ((unsigned int)sun4m_initrd_pa);
+			    /* The kernel adds phys_base back, so an initrd
+			     * below it cannot be expressed. Refuse rather
+			     * than wrap.
+			     */
+			    if (sun4m_initrd_pa < sun4m_kernel_phys_base) {
+				printf("SILO: initrd below the kernel base, "
+				       "not passing it\n");
+				initrd_size = 0;
+			    } else {
+				hdrs->ramdisk_image = (unsigned int)
+					(sun4m_initrd_pa -
+					 sun4m_kernel_phys_base);
+			    }
 			} else
 	            	    hdrs->ramdisk_image = ((unsigned int)initrd_start | 0xf0000000);
 
@@ -1515,7 +1660,18 @@ try_again:
 					(unsigned int)sun4u_initrd_phys + 0x400000;
 				}
 			    } else if (sun4m_initrd_pa) {
-				hdrs->ramdisk_image = ((unsigned int)sun4m_initrd_pa);
+				/* The kernel adds phys_base back, so an initrd below
+				 * it cannot be expressed. Refuse rather than wrap.
+				 */
+				if (sun4m_initrd_pa < sun4m_kernel_phys_base) {
+					printf("SILO: initrd below the kernel "
+					       "base, not passing it\n");
+					initrd_size = 0;
+				} else {
+					hdrs->ramdisk_image = (unsigned int)
+						(sun4m_initrd_pa -
+						 sun4m_kernel_phys_base);
+				}
 			    } else
 	            	        hdrs->ramdisk_image = ((unsigned int)initrd_start | 0xf0000000);
 
