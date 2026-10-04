@@ -236,5 +236,31 @@ flush_icache:
 	retl
 	 nop
 
+/* Copy a kernel down over SILO and enter it. A copy of this is placed
+   after the staged image and entered with the registers the kernel is
+   to get, so only globals are used. The four words after it hold the
+   source, destination, length (a multiple of 8) and entry point. */
+	.align	8
+	.global	silo_tramp, silo_tramp_end
+silo_tramp:
+	mov	%o7, %g5
+2:	call	1f
+	 nop
+1:	ld	[%o7 + (silo_tramp_end - 2b)], %g1
+	ld	[%o7 + (silo_tramp_end - 2b + 4)], %g4
+	ld	[%o7 + (silo_tramp_end - 2b + 8)], %g6
+	ld	[%o7 + (silo_tramp_end - 2b + 12)], %g7
+3:	ldd	[%g1], %g2
+	add	%g1, 8, %g1
+	std	%g2, [%g4]
+	flush	%g4			! not every sun4m I-cache snoops stores
+	subcc	%g6, 8, %g6
+	bgu	3b
+	 add	%g4, 8, %g4
+	jmpl	%g7, %g0
+	 mov	%g5, %o7
+	.align	8
+silo_tramp_end:
+
 	.section	".rodata"
 	.word	_start

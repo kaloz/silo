@@ -1106,6 +1106,42 @@ printf("SILO: ELF32 entry=0x%x phoff=0x%x phnum=0x%x\n",
     return isfile;
 }
 
+/* Where the kernel bytes at [va, va + size) sit in the staged image that
+ * silo_tramp copies to 0x4000, or NULL if they are not among those bytes.
+ * sparc32 kernels are linked at KERNBASE 0xf0000000.
+ */
+static char *tramp_staged(unsigned char *image_base, unsigned int len,
+			  unsigned int va, unsigned int size)
+{
+	unsigned int pa = va & 0x0fffffff;
+
+	if (pa < 0x4000 || pa + size > 0x4000 + len)
+		return NULL;
+	return (char *)image_base + (pa - 0x4000);
+}
+
+/* Put silo_tramp and its arguments after the staged image and return
+ * where it was put.
+ */
+static unsigned int tramp_setup(unsigned char *image_base, unsigned int len,
+				unsigned int entry)
+{
+	extern char silo_tramp[], silo_tramp_end[];
+	unsigned int n = silo_tramp_end - silo_tramp;
+	char *t = (char *)(((unsigned int)image_base + len + 7) & ~7);
+	unsigned int *args = (unsigned int *)(t + n);
+	unsigned int i;
+
+	memcpy(t, silo_tramp, n);
+	args[0] = (unsigned int)image_base;
+	args[1] = 0x4000;
+	args[2] = (len + 7) & ~7;
+	args[3] = entry;
+	for (i = 0; i < n + 16; i += 8)
+		__asm__ __volatile__("flush %0" : : "r" (t + i));
+	return (unsigned int)t;
+}
+
 /* Here we are launched */
 int bootmain (void)
 {
@@ -1122,6 +1158,7 @@ int bootmain (void)
     int silo_conf_partition;
     unsigned long elf_map_va = 0;
     unsigned long elf_map_len = 0;
+    unsigned int tramp_len = 0;
 
 
 
@@ -1434,6 +1471,19 @@ normal_linux_load:
 	if (hdrs && hdrs->ver < 0x300 && image_base != (unsigned char *)0x4000) {
 	    /* Kernel doesn't support being loaded to other than
 	     * phys_base, so let's try to copy it down there. */
+	    if ((unsigned int)&_start - 0x4000 < len &&
+		architecture == sun4m) {
+		/* The copy would overwrite SILO, so it is left to
+		 * silo_tramp, which runs from beyond the staged image
+		 * once SILO is done. Until then HdrS is filled in the
+		 * staged image.
+		 */
+		printf("Kernel doesn't support loading to high memory, "
+		       "relocating on entry\n");
+		tramp_len = len;
+		ret_offset = 0x4000;
+		goto linux_loaded_at_entry;
+	    }
 	    if ((unsigned int)&_start - 0x4000 < len) {
 		/* Fuck, can't do that */
 		printf("Your kernel cannot fit into the memory destination. This\n"
@@ -1475,8 +1525,15 @@ linux_loaded_at_entry:
                  */
                 if (q == (char *)0xfffff800 || !q)
                        q = (char *)hdrs->reboot_cmd_ptr_low;
-                q = (char *)(((unsigned long)q)& 0x003fffff);
-                if (q >= (char *)0x4000 && q <= (char *)0x300000) {
+                if (tramp_len) {
+                    q = tramp_staged(image_base, tramp_len,
+                                     (unsigned int)q, 256);
+                } else {
+                    q = (char *)(((unsigned long)q)& 0x003fffff);
+                    if (q < (char *)0x4000 || q > (char *)0x300000)
+                        q = NULL;
+                }
+                if (q) {
                     if (given_bootargs_by_user) {
                         if (strlen (silo_disk_get_bootdevice()) <= 254) {
 			    strcpy (q, silo_disk_get_bootdevice());
@@ -1507,6 +1564,9 @@ linux_loaded_at_entry:
 		if (architecture == sun4u)
 		    kernel_params = (char *)((hdrs->bootstr_info_ptr_low - 0x400000) + 
 				(image_base - 0x4000));
+		else if (tramp_len)
+		    kernel_params = tramp_staged(image_base, tramp_len,
+						 hdrs->bootstr_info_ptr_low, 8);
 		else
 		    kernel_params = (char *)(hdrs->bootstr_info_ptr_low & 0x3fffff);
 	    }
@@ -1684,5 +1744,7 @@ linux_loaded_at_entry:
     }
 	printf("SILO: final return ret_offset=0x%x image_base=0x%x len=0x%x\n",
        		ret_offset, image_base, len);
+    if (tramp_len)
+	ret_offset = tramp_setup(image_base, tramp_len, ret_offset);
     return ret_offset;
 }
